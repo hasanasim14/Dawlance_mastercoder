@@ -1,9 +1,10 @@
 import type React from "react";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import "./globals.css";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
+import Image from "next/image";
+import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -25,7 +26,17 @@ export default function RootLayout({
           <AppSidebar />
           <SidebarInset>
             <div className="flex flex-col h-full">
-              <main className="flex-1 overflow-auto">{children}</main>
+              <div className="w-full mb-2 flex-shrink-0">
+                <Image
+                  src="/logo.png"
+                  alt="Master Coding Header"
+                  width={1200}
+                  height={120}
+                  className="w-50 object-cover opacity-90"
+                  priority
+                />
+                <main className="flex-1 overflow-auto">{children}</main>
+              </div>
             </div>
           </SidebarInset>
         </SidebarProvider>

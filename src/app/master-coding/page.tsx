@@ -10,7 +10,6 @@ import { ValidationModule } from "ag-grid-community";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RightSheet } from "@/components/RightSheet";
-import Image from "next/image";
 
 // Register modules
 ModuleRegistry.registerModules([ClientSideRowModelModule, ValidationModule]);
@@ -201,17 +200,6 @@ const MasterCoding = () => {
 
   return (
     <div className="flex flex-col h-screen p-4 md:p-6 box-border">
-      <div className="w-full mb-2 flex-shrink-0">
-        <Image
-          src="/logo.png"
-          alt="Master Coding Header"
-          width={1200}
-          height={120}
-          className="w-50 object-cover opacity-90"
-          priority
-        />
-      </div>
-
       <div className="flex flex-col flex-grow overflow-hidden h-[calc(100%-120px)]">
         <div className="rounded-lg border bg-card flex-grow shadow-sm flex flex-col h-full">
           <div className="p-4 border-b flex justify-between items-center flex-shrink-0">

@@ -4,8 +4,7 @@ import type React from "react";
 import {
   Sidebar,
   SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
+  SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -15,68 +14,44 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
-import { Calendar, Home, Inbox, Search, Settings } from "lucide-react";
+import { Atom, Upload } from "lucide-react";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const { isMobile } = useSidebar();
-
   const items = [
     {
       title: "Master Coding",
       url: "/master-coding",
-      icon: Home,
+      icon: Atom,
     },
-    {
-      title: "Inbox",
-      url: "#",
-      icon: Inbox,
-    },
-    {
-      title: "Calendar",
-      url: "#",
-      icon: Calendar,
-    },
+
     {
       title: "Upload",
-      url: "/sample",
-      icon: Search,
-    },
-    {
-      title: "Settings",
-      url: "#",
-      icon: Settings,
+      url: "/upload",
+      icon: Upload,
     },
   ];
 
   return (
-    <>
-      <Sidebar collapsible="icon" {...props}>
-        <SidebarContent className={cn(isMobile ? "p-2" : "p-1")}>
-          <SidebarGroup>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                <SidebarMenuItem></SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarTrigger />
-
-                  {items.map((item) => (
-                    <SidebarMenuItem key={item.title}>
-                      <SidebarMenuButton asChild>
-                        <a href={item.url}>
-                          <item.icon />
-                          <span>{item.title}</span>
-                        </a>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-                </SidebarMenuItem>
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        </SidebarContent>
-        <SidebarRail />
-      </Sidebar>
-    </>
+    <Sidebar collapsible="icon" {...props}>
+      <SidebarHeader className="p-2">
+        <SidebarTrigger className="h-8 w-8" />
+      </SidebarHeader>
+      <SidebarContent className={cn("p-2")}>
+        <SidebarMenu>
+          {items.map((item) => (
+            <SidebarMenuItem key={item.title}>
+              <SidebarMenuButton asChild tooltip={item.title}>
+                <a href={item.url}>
+                  <item.icon className="h-4 w-4" />
+                  <span>{item.title}</span>
+                </a>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          ))}
+        </SidebarMenu>
+      </SidebarContent>
+      <SidebarRail />
+    </Sidebar>
   );
 }
 
@@ -85,7 +60,7 @@ export function SidebarWrapper({ children }: { children: React.ReactNode }) {
     <SidebarProvider>
       <div className="flex min-h-screen">
         <AppSidebar />
-        <div className="flex-1 p-2 pt-12">{children}</div>
+        <div className="flex-1 p-2">{children}</div>
       </div>
     </SidebarProvider>
   );
