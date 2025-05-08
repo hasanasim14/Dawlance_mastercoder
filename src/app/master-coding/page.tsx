@@ -1,15 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Search } from "lucide-react";
 import { AgGridReact } from "ag-grid-react";
 import type { ColDef } from "ag-grid-community";
 import { ClientSideRowModelModule, themeAlpine } from "ag-grid-community";
 import { ModuleRegistry } from "ag-grid-community";
 import { ValidationModule } from "ag-grid-community";
-import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RightSheet } from "@/components/RightSheet";
+import SearchComponent from "@/components/SearchComponent";
 
 // Register modules
 ModuleRegistry.registerModules([ClientSideRowModelModule, ValidationModule]);
@@ -38,14 +37,18 @@ const MasterCoding = () => {
   );
 
   // API to retrieve the main data
-  const fetchMasterData = async (search = "") => {
+  const fetchMasterData = async (search = "", field = "all") => {
     setLoading(true);
     try {
-      const endpoint = search
-        ? `http://192.168.1.10:3295/mastercoding/search?term=${encodeURIComponent(
-            search
-          )}`
-        : "http://192.168.1.10:3295/mastercoding";
+      let endpoint = "http://192.168.1.10:3295/mastercoding";
+
+      if (search) {
+        endpoint = `http://192.168.1.10:3295/mastercoding/search?term=${encodeURIComponent(
+          search
+        )}`;
+        // If your API supports field-specific searches, you could add the field parameter
+        // endpoint += `&field=${encodeURIComponent(field)}`;
+      }
 
       const res = await fetch(endpoint, {
         method: "GET",
@@ -200,19 +203,29 @@ const MasterCoding = () => {
 
   return (
     <div className="flex flex-col h-screen p-4 md:p-6 box-border">
-      <div className="flex flex-col flex-grow overflow-hidden h-[calc(100%-120px)]">
+      <div className="flex flex-col md:flex-row gap-4 flex-grow overflow-hidden h-[calc(100%-120px)]">
+        <div className="md:w-1/4 lg:w-1/5">
+          <SearchComponent
+            onSearch={(field, value) => {
+              // If field is "all", use the existing search functionality
+              if (field === "all") {
+                handleSearch(value);
+              } else {
+                // Here you would implement field-specific search
+                // For now, we'll use the general search as a fallback
+                handleSearch(value);
+
+                // In a real implementation, you might want to modify your API call
+                // to include the specific field to search in
+                console.log(`Searching in field: ${field} for value: ${value}`);
+              }
+            }}
+          />
+        </div>
         <div className="rounded-lg border bg-card flex-grow shadow-sm flex flex-col h-full">
           <div className="p-4 border-b flex justify-between items-center flex-shrink-0">
             <h3 className="font-semibold">Master Coding</h3>
-            <div className="relative w-64">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search..."
-                value={searchTerm}
-                onChange={(e) => handleSearch(e.target.value)}
-                className="pl-8 h-9"
-              />
-            </div>
+            {/* Removed the search input as it's now handled by the SearchComponent */}
           </div>
 
           {loading ? (
