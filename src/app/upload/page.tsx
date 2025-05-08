@@ -1,26 +1,22 @@
 "use client";
 
 import type React from "react";
-
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
+import { Card, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import {
   X,
   FileSpreadsheet,
   CloudUpload,
-  Upload,
   CheckCircle2,
   Clock,
   AlertCircle,
+  Users,
+  Package,
+  ShoppingCart,
+  BarChart3,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -37,8 +33,9 @@ interface UploadCardData {
   fileSize: string;
   status: UploadStatus;
   lastUploaded: string;
-  // inputRef: React.RefObject<HTMLInputElement>;
   inputRef: React.RefObject<HTMLInputElement>;
+  icon: React.ReactNode;
+  result: string | null;
 }
 
 function UploadCards() {
@@ -57,6 +54,18 @@ function UploadCards() {
     "Apr 25, 2025 - 2:30 PM",
   ];
 
+  // Dummy result data
+  const dummyResults = {
+    customer:
+      "All customer records processed successfully. 1,250 records processed: 320 new customers added, 930 updated.",
+    product:
+      "842 of 845 products processed. 3 products had invalid SKUs. 145 new products added, 697 updated.",
+    order:
+      "2,130 of 2,156 orders processed. 26 orders had missing customer IDs and were skipped.",
+    inventory:
+      "All 752 inventory records updated successfully. 52 items flagged as low in stock.",
+  };
+
   // Initial card data
   const [cards, setCards] = useState<UploadCardData[]>([
     {
@@ -69,6 +78,8 @@ function UploadCards() {
       status: "idle",
       lastUploaded: dummyDates[0],
       inputRef: customerInputRef,
+      icon: <Users className="h-5 w-5" />,
+      result: null,
     },
     {
       id: "product",
@@ -80,6 +91,8 @@ function UploadCards() {
       status: "success",
       lastUploaded: dummyDates[1],
       inputRef: productInputRef,
+      icon: <Package className="h-5 w-5" />,
+      result: dummyResults.product,
     },
     {
       id: "order",
@@ -91,6 +104,8 @@ function UploadCards() {
       status: "error",
       lastUploaded: dummyDates[2],
       inputRef: orderInputRef,
+      icon: <ShoppingCart className="h-5 w-5" />,
+      result: dummyResults.order,
     },
     {
       id: "inventory",
@@ -102,6 +117,8 @@ function UploadCards() {
       status: "success",
       lastUploaded: dummyDates[3],
       inputRef: inventoryInputRef,
+      icon: <BarChart3 className="h-5 w-5" />,
+      result: dummyResults.inventory,
     },
   ]);
 
@@ -142,6 +159,11 @@ function UploadCards() {
             : card
         )
       );
+
+      // Automatically trigger upload when file is selected
+      setTimeout(() => {
+        uploadFile(cardId);
+      }, 100);
     }
   };
 
@@ -169,6 +191,11 @@ function UploadCards() {
             : card
         )
       );
+
+      // Automatically trigger upload when file is dropped
+      setTimeout(() => {
+        uploadFile(cardId);
+      }, 100);
     }
   };
 
@@ -202,6 +229,7 @@ function UploadCards() {
           ? {
               ...c,
               status: "pending",
+              result: null,
             }
           : c
       )
@@ -209,7 +237,10 @@ function UploadCards() {
 
     try {
       // Simulate upload delay
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      // Get dummy result data for this card
+      const result = dummyResults[cardId as keyof typeof dummyResults];
 
       // Update status to success and update last uploaded time
       setCards(
@@ -229,13 +260,11 @@ function UploadCards() {
                 file: null,
                 fileName: "",
                 fileSize: "",
+                result: result,
               }
             : c
         )
       );
-
-      // Show success message
-      alert(`Successfully uploaded file to ${card.title} endpoint`);
     } catch (error) {
       // Update status to error
       setCards(
@@ -244,17 +273,15 @@ function UploadCards() {
             ? {
                 ...c,
                 status: "error",
+                result: `Error: ${
+                  error instanceof Error ? error.message : "Unknown error"
+                }`,
               }
             : c
         )
       );
 
       console.error("Upload error:", error);
-      alert(
-        `Error uploading file: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`
-      );
     }
   };
 
@@ -296,8 +323,8 @@ function UploadCards() {
   };
 
   return (
-    <div className="w-full max-w-3xl mx-auto p-4 space-y-4">
-      <div className="flex flex-col items-center justify-center mb-6">
+    <div className="w-full max-w-6xl mx-auto p-4 space-y-6">
+      <div className="flex flex-col items-center justify-center mb-8">
         <h2 className="text-2xl font-bold mb-2">Data Upload Center</h2>
         <p className="text-muted-foreground text-center max-w-md">
           Upload your Excel files to update your business data. Click on a card
@@ -305,7 +332,7 @@ function UploadCards() {
         </p>
       </div>
 
-      <div className="flex flex-col space-y-4">
+      <div className="flex flex-col space-y-6">
         {cards.map((card) => (
           <Card
             key={card.id}
@@ -321,118 +348,157 @@ function UploadCards() {
                   : "var(--border)",
             }}
           >
-            <div className="grid md:grid-cols-[1fr_auto]">
-              <div>
-                <CardHeader className="p-4 pb-2">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle className="text-lg font-medium">
-                        {card.title}
-                      </CardTitle>
-                      <CardDescription className="text-sm mt-1">
-                        {card.description}
-                      </CardDescription>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      {getStatusBadge(card.status)}
-                    </div>
+            <div className="grid md:grid-cols-[1fr_1fr]">
+              {/* Upload Section */}
+              <div className="p-5 border-r border-border/50">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 rounded-full bg-primary/10 text-primary">
+                    {card.icon}
                   </div>
-                </CardHeader>
-
-                <CardContent className="p-4 pt-2">
-                  <div className="flex items-center text-xs text-muted-foreground mb-3">
-                    <Clock className="h-3 w-3 mr-1" />
-                    <span>Last uploaded: {card.lastUploaded}</span>
+                  <div>
+                    <CardTitle className="text-lg font-medium">
+                      {card.title}
+                    </CardTitle>
+                    <CardDescription className="text-sm mt-1">
+                      {card.description}
+                    </CardDescription>
                   </div>
+                  <div className="ml-auto">{getStatusBadge(card.status)}</div>
+                </div>
 
-                  <div
-                    className={cn(
-                      "border-2 border-dashed rounded-lg p-4 text-center flex flex-col items-center justify-center min-h-[120px] transition-colors duration-200",
-                      "border-gray-300 dark:border-gray-600 hover:border-primary/50 cursor-pointer"
-                    )}
-                    onDragOver={handleDragOver}
-                    onDrop={(e) => handleFileDrop(card.id, e)}
-                    onClick={() => card.inputRef.current?.click()}
-                  >
-                    {!card.file ? (
-                      <>
-                        <CloudUpload className="h-8 w-8 mb-2 text-primary/80" />
-                        <p className="text-sm font-medium mb-1">
-                          Drop Excel file here or click to browse
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          (.xlsx files only)
-                        </p>
-                      </>
-                    ) : (
-                      <div className="w-full">
-                        <div className="flex items-center justify-between border rounded-md p-2 px-3 text-sm bg-background/50">
-                          <div className="flex items-center gap-2 truncate pr-2">
-                            <FileSpreadsheet className="h-4 w-4 flex-shrink-0 text-green-500" />
-                            <span className="truncate">
-                              {card.fileName} - {card.fileSize}
-                            </span>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              removeFile(card.id);
-                            }}
-                            className="h-6 w-6 rounded-full flex-shrink-0 hover:bg-destructive/10 hover:text-destructive"
-                          >
-                            <X className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-                    <input
-                      type="file"
-                      ref={card.inputRef}
-                      onChange={(e) => handleFileChange(card.id, e)}
-                      accept=".xlsx"
-                      className="hidden"
-                    />
-                  </div>
-                </CardContent>
-              </div>
+                <div className="flex items-center text-xs text-muted-foreground mb-4">
+                  <Clock className="h-3 w-3 mr-1" />
+                  <span>Last uploaded: {card.lastUploaded}</span>
+                </div>
 
-              <div className="flex items-center justify-center p-4 bg-muted/20">
-                <Button
-                  onClick={() => uploadFile(card.id)}
-                  disabled={!card.file || card.status === "pending"}
-                  className="h-10 px-4"
-                  variant={card.file ? "default" : "outline"}
+                <div
+                  className={cn(
+                    "border-2 border-dashed rounded-lg p-6 text-center flex flex-col items-center justify-center min-h-[180px] transition-colors duration-200",
+                    "border-gray-300 dark:border-gray-600 hover:border-primary/50 cursor-pointer",
+                    card.status === "pending"
+                      ? "opacity-50 pointer-events-none"
+                      : ""
+                  )}
+                  onDragOver={handleDragOver}
+                  onDrop={(e) => handleFileDrop(card.id, e)}
+                  onClick={() => card.inputRef.current?.click()}
                 >
-                  {card.status === "pending" ? (
+                  {!card.file ? (
                     <>
-                      <span className="animate-spin mr-2">
-                        <svg className="h-4 w-4" viewBox="0 0 24 24">
-                          <circle
-                            className="opacity-25"
-                            cx="12"
-                            cy="12"
-                            r="10"
-                            stroke="currentColor"
-                            strokeWidth="4"
-                            fill="none"
-                          />
-                          <path
-                            className="opacity-75"
-                            fill="currentColor"
-                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                          />
-                        </svg>
-                      </span>
-                      Processing
+                      <CloudUpload className="h-12 w-12 mb-3 text-primary/80" />
+                      <p className="text-base font-medium mb-2">
+                        Drop Excel file here or click to browse
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        (.xlsx files only)
+                      </p>
+                      {card.status === "idle" && (
+                        <p className="text-xs text-muted-foreground mt-4">
+                          Files will be uploaded automatically when selected
+                        </p>
+                      )}
                     </>
                   ) : (
-                    <>
-                      <Upload className="h-4 w-4 mr-2" /> Upload
-                    </>
+                    <div className="w-full">
+                      <div className="flex items-center justify-between border rounded-md p-3 px-4 text-sm bg-background/50">
+                        <div className="flex items-center gap-2 truncate pr-2">
+                          <FileSpreadsheet className="h-5 w-5 flex-shrink-0 text-green-500" />
+                          <span className="truncate">
+                            {card.fileName} - {card.fileSize}
+                          </span>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeFile(card.id);
+                          }}
+                          className="h-7 w-7 rounded-full flex-shrink-0 hover:bg-destructive/10 hover:text-destructive"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
                   )}
-                </Button>
+                  <input
+                    type="file"
+                    ref={card.inputRef}
+                    onChange={(e) => handleFileChange(card.id, e)}
+                    accept=".xlsx"
+                    className="hidden"
+                  />
+                </div>
+              </div>
+
+              {/* Results Section - Simplified */}
+              <div className="p-5 bg-muted/10">
+                <div className="flex items-center mb-4">
+                  <h3 className="text-base font-medium">Results</h3>
+                  {card.status === "pending" && (
+                    <Badge variant="outline" className="ml-auto animate-pulse">
+                      <Clock className="h-3 w-3 mr-1" />
+                      Processing...
+                    </Badge>
+                  )}
+                </div>
+
+                {card.status === "pending" ? (
+                  <div className="flex flex-col items-center justify-center h-[180px] text-center">
+                    <div className="animate-spin mb-4">
+                      <svg className="h-8 w-8 text-primary" viewBox="0 0 24 24">
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                          fill="none"
+                        />
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        />
+                      </svg>
+                    </div>
+                    <p className="text-sm font-medium">Processing your file</p>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      This may take a few moments...
+                    </p>
+                    <Progress value={45} className="h-1 w-full mt-4" />
+                  </div>
+                ) : card.result ? (
+                  <div className="p-4 bg-background rounded-lg border border-border/50 h-[180px] flex items-center">
+                    <div className="space-y-2">
+                      <div className="flex items-center">
+                        {card.status === "success" ? (
+                          <CheckCircle2 className="h-5 w-5 mr-2 text-green-500" />
+                        ) : (
+                          <AlertCircle className="h-5 w-5 mr-2 text-red-500" />
+                        )}
+                        <h4 className="font-medium">
+                          {card.status === "success"
+                            ? "Upload Successful"
+                            : "Upload Failed"}
+                        </h4>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        {card.result}
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-[180px] text-center border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-lg">
+                    <p className="text-sm font-medium text-muted-foreground">
+                      No results to display
+                    </p>
+                    <p className="text-xs text-muted-foreground/70 mt-1 max-w-xs">
+                      Upload a file to see processing results
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
 
