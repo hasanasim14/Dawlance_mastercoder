@@ -13,7 +13,7 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
-import { Atom, TrendingUp, Upload } from "lucide-react";
+import { Atom, Factory, Repeat, TrendingUp, Upload } from "lucide-react";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const items = [
@@ -23,14 +23,19 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       icon: Atom,
     },
     {
-      title: "Upload",
+      title: "Upload Files",
       url: "/upload",
       icon: Upload,
     },
     {
-      title: "Results",
-      url: "/results",
-      icon: TrendingUp,
+      title: "Phase In/Out",
+      url: "/phaseIO",
+      icon: Repeat,
+    },
+    {
+      title: "Production",
+      url: "/production",
+      icon: Factory,
     },
   ];
 
