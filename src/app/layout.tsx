@@ -26,7 +26,7 @@ export default function RootLayout({
           <AppSidebar />
           <SidebarInset>
             <div className="flex flex-col h-full">
-              <div className="w-full mb-2 flex-shrink-0">
+              <div className="w-full mb-2 flex-shrink-0 flex justify-between items-center">
                 <Image
                   src="/logo.png"
                   alt="Master Coding Header"
@@ -35,8 +35,16 @@ export default function RootLayout({
                   className="w-50 object-cover opacity-90"
                   priority
                 />
-                <main className="flex-1 overflow-auto">{children}</main>
+                <Image
+                  src="/aiSystemslogo.svg"
+                  alt="AI Systems Logo"
+                  width={1200}
+                  height={120}
+                  className="w-50 object-cover opacity-90"
+                  priority
+                />
               </div>
+              <main className="flex-1 overflow-auto">{children}</main>
             </div>
           </SidebarInset>
         </SidebarProvider>
