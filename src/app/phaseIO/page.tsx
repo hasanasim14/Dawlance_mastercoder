@@ -1,13 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Search } from "lucide-react";
 import { AgGridReact } from "ag-grid-react";
 import type { ColDef } from "ag-grid-community";
 import { ClientSideRowModelModule, themeAlpine } from "ag-grid-community";
 import { ModuleRegistry } from "ag-grid-community";
 import { ValidationModule } from "ag-grid-community";
-import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RightSheet } from "@/components/RightSheet";
 
@@ -31,12 +29,7 @@ const PhaseIO = () => {
   const [selectedRow, setSelectedRow] = useState<RowDataType | null>(null);
   const [rowData, setRowData] = useState<RowDataType[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(
-    null
-  );
 
-  // API to retrieve the main data
   const fetchMasterData = async (search = "") => {
     setLoading(true);
     try {
@@ -66,21 +59,6 @@ const PhaseIO = () => {
   useEffect(() => {
     fetchMasterData();
   }, []);
-
-  // Debouncing
-  const handleSearch = (value: string) => {
-    setSearchTerm(value);
-
-    if (searchTimeout) {
-      clearTimeout(searchTimeout);
-    }
-
-    const timeout = setTimeout(() => {
-      fetchMasterData(value);
-    }, 500); // 0.5 seconds
-
-    setSearchTimeout(timeout);
-  };
 
   // Column Definitions for Master Coding
   const columnDefs: ColDef<RowDataType>[] = useMemo(
@@ -183,19 +161,10 @@ const PhaseIO = () => {
 
   return (
     <div className="flex flex-col h-screen p-4 md:p-6 box-border">
-      <div className="flex flex-col flex-grow overflow-hidden h-[calc(100%-120px)]">
+      <div className="flex flex-col md:flex-row gap-4 flex-grow overflow-hidden h-[calc(100%-120px)]">
         <div className="rounded-lg border bg-card flex-grow shadow-sm flex flex-col h-full">
           <div className="p-4 border-b flex justify-between items-center flex-shrink-0">
             <h3 className="font-semibold">Phase In And Out</h3>
-            <div className="relative w-64">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search..."
-                value={searchTerm}
-                onChange={(e) => handleSearch(e.target.value)}
-                className="pl-8 h-9"
-              />
-            </div>
           </div>
 
           {loading ? (
