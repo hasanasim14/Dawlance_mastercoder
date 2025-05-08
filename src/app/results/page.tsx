@@ -1,13 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Search } from "lucide-react";
 import { AgGridReact } from "ag-grid-react";
 import type { ColDef } from "ag-grid-community";
 import { ClientSideRowModelModule, themeAlpine } from "ag-grid-community";
 import { ModuleRegistry } from "ag-grid-community";
 import { ValidationModule } from "ag-grid-community";
-import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RightSheet } from "@/components/RightSheet";
 
@@ -15,37 +13,27 @@ import { RightSheet } from "@/components/RightSheet";
 ModuleRegistry.registerModules([ClientSideRowModelModule, ValidationModule]);
 
 type RowDataType = {
-  "Master ID": number;
-  Product: string;
   Material: string;
   "Material Description": string;
-  "Measurement Instrument": string;
-  "Colour Similarity": string;
-  "Product type": string;
-  Function: string;
-  Series: string;
-  Colour: string;
-  "Key Feature": string;
+  Category: string;
+  PredYear: string;
+  PredMonth: string;
+  TYear: string;
+  TMonth: string;
+  Prediction: string;
+  Horizon: string;
 };
 
 const Results = () => {
   const [selectedRow, setSelectedRow] = useState<RowDataType | null>(null);
   const [rowData, setRowData] = useState<RowDataType[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(
-    null
-  );
 
   // API to retrieve the main data
-  const fetchMasterData = async (search = "") => {
+  const fetchMasterData = async () => {
     setLoading(true);
     try {
-      const endpoint = search
-        ? `http://192.168.1.10:3295/mastercoding/search?term=${encodeURIComponent(
-            search
-          )}`
-        : "http://192.168.1.10:3295/mastercoding";
+      const endpoint = "http://192.168.1.10:3295/aipredictions";
 
       const res = await fetch(endpoint, {
         method: "GET",
@@ -68,40 +56,9 @@ const Results = () => {
     fetchMasterData();
   }, []);
 
-  // Debouncing
-  const handleSearch = (value: string) => {
-    setSearchTerm(value);
-
-    if (searchTimeout) {
-      clearTimeout(searchTimeout);
-    }
-
-    const timeout = setTimeout(() => {
-      fetchMasterData(value);
-    }, 500); // 0.5 seconds
-
-    setSearchTimeout(timeout);
-  };
-
   // Column Definitions for Master Coding
   const columnDefs: ColDef<RowDataType>[] = useMemo(
     () => [
-      // Master ID
-      {
-        headerName: "Master ID",
-        field: "Master ID",
-        sortable: true,
-        filter: true,
-        minWidth: 120,
-      },
-      // Product
-      {
-        headerName: "Product",
-        field: "Product",
-        sortable: true,
-        filter: true,
-        minWidth: 150,
-      },
       // Material
       {
         headerName: "Material",
@@ -118,58 +75,58 @@ const Results = () => {
         filter: true,
         minWidth: 200,
       },
-      // Measurement Instrument
+      // Category
       {
-        headerName: "Measurement Instrument",
-        field: "Measurement Instrument",
+        headerName: "Category",
+        field: "Category",
         sortable: true,
         filter: true,
         minWidth: 180,
       },
-      // Colour Similarity
+      // PredYear
       {
-        headerName: "Colour Similarity",
-        field: "Colour Similarity",
+        headerName: "PredYear",
+        field: "PredYear",
         sortable: true,
         filter: true,
         minWidth: 150,
       },
-      // Product type
+      // PredMonth
       {
-        headerName: "Product type",
-        field: "Product type",
+        headerName: "PredMonth",
+        field: "PredMonth",
         sortable: true,
         filter: true,
         minWidth: 150,
       },
-      // Function
+      // TYear
       {
-        headerName: "Function",
-        field: "Function",
+        headerName: "TYear",
+        field: "TYear",
         sortable: true,
         filter: true,
         minWidth: 150,
       },
-      // Series
+      // TMonth
       {
-        headerName: "Series",
-        field: "Series",
+        headerName: "TMonth",
+        field: "TMonth",
         sortable: true,
         filter: true,
         minWidth: 120,
       },
-      // Colour
+      // Prediction
       {
-        headerName: "Colour",
-        field: "Colour",
+        headerName: "Prediction",
+        field: "Prediction",
         sortable: true,
         filter: true,
         minWidth: 120,
       },
       // Key Feature
       {
-        headerName: "Key Feature",
-        field: "Key Feature",
+        headerName: "Horizon",
+        field: "Horizon",
         sortable: true,
         filter: true,
         minWidth: 150,
@@ -204,15 +161,6 @@ const Results = () => {
         <div className="rounded-lg border bg-card flex-grow shadow-sm flex flex-col h-full">
           <div className="p-4 border-b flex justify-between items-center flex-shrink-0">
             <h3 className="font-semibold">Results</h3>
-            <div className="relative w-64">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search..."
-                value={searchTerm}
-                onChange={(e) => handleSearch(e.target.value)}
-                className="pl-8 h-9"
-              />
-            </div>
           </div>
 
           {loading ? (

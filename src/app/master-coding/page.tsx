@@ -46,7 +46,6 @@ const MasterCoding = () => {
 
       if (hasSearchParams) {
         // Convert the search parameters to a query string
-        // This is a simplified example - your actual API might require a different format
         const queryParams = new URLSearchParams();
 
         Object.entries(searchParams).forEach(([field, value]) => {
@@ -70,6 +69,58 @@ const MasterCoding = () => {
       console.error("Error fetching data", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // API to fetch suggestions for a specific field
+  const fetchSuggestions = async (
+    field: string,
+    query: string
+  ): Promise<string[]> => {
+    if (!query.trim()) return [];
+
+    try {
+      // Construct the API endpoint for suggestions
+      const endpoint = `http://192.168.1.10:3295/mastercoding/distinct/${field}?filt=${query}`;
+
+      const res = await fetch(endpoint, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!res.ok) {
+        throw new Error(`Failed to fetch suggestions: ${res.status}`);
+      }
+
+      const data = await res.json();
+
+      // Handle the specific response format where the field name is the key
+      // Example: {"colour": ["pearl white", "white"]} or {"series": ["aero design"]}
+      if (data && typeof data === "object") {
+        // Convert field to lowercase to match potential API response keys
+        const fieldKey = field.toLowerCase().replace(/\s+/g, " ").trim();
+
+        // Try to find the key in the response that matches our field
+        // This handles cases where the API response key might be slightly different
+        const matchingKey = Object.keys(data).find(
+          (key) =>
+            key.toLowerCase() === fieldKey ||
+            fieldKey.includes(key.toLowerCase()) ||
+            key.toLowerCase().includes(fieldKey)
+        );
+
+        if (matchingKey && Array.isArray(data[matchingKey])) {
+          return data[matchingKey];
+        }
+      }
+
+      // Fallback to empty array if we can't find matching data
+      return [];
+    } catch (error) {
+      console.error(`Error fetching suggestions for ${field}:`, error);
+      return [];
     }
   };
 
@@ -191,9 +242,9 @@ const MasterCoding = () => {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     event.api.forEachNode((node: any) => {
-      node.setSeleted(false);
+      node.setSelected(false);
     });
-    event.node.setSeleted(true);
+    event.node.setSelected(true);
   };
 
   const defaultColDef = useMemo(() => {
@@ -209,7 +260,10 @@ const MasterCoding = () => {
     <div className="flex flex-col h-screen p-4 md:p-6 box-border">
       <div className="flex flex-col md:flex-row gap-4 flex-grow overflow-hidden h-[calc(100%-120px)]">
         <div className="md:w-1/4 lg:w-1/5">
-          <SearchComponent onSearch={handleSearch} />
+          <SearchComponent
+            onSearch={handleSearch}
+            fetchSuggestions={fetchSuggestions}
+          />
         </div>
         <div className="rounded-lg border bg-card flex-grow shadow-sm flex flex-col h-full">
           <div className="p-4 border-b flex justify-between items-center flex-shrink-0">
