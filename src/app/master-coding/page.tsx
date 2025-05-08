@@ -31,23 +31,29 @@ const MasterCoding = () => {
   const [selectedRow, setSelectedRow] = useState<RowDataType | null>(null);
   const [rowData, setRowData] = useState<RowDataType[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
   const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(
     null
   );
 
   // API to retrieve the main data
-  const fetchMasterData = async (search = "", field = "all") => {
+  const fetchMasterData = async (searchParams: Record<string, string> = {}) => {
     setLoading(true);
     try {
       let endpoint = "http://192.168.1.10:3295/mastercoding";
 
-      if (search) {
-        endpoint = `http://192.168.1.10:3295/mastercoding/search?term=${encodeURIComponent(
-          search
-        )}`;
-        // If your API supports field-specific searches, you could add the field parameter
-        // endpoint += `&field=${encodeURIComponent(field)}`;
+      // Check if there are any search parameters
+      const hasSearchParams = Object.keys(searchParams).length > 0;
+
+      if (hasSearchParams) {
+        // Convert the search parameters to a query string
+        // This is a simplified example - your actual API might require a different format
+        const queryParams = new URLSearchParams();
+
+        Object.entries(searchParams).forEach(([field, value]) => {
+          queryParams.append(field, value);
+        });
+
+        endpoint = `http://192.168.1.10:3295/mastercoding/?${queryParams.toString()}`;
       }
 
       const res = await fetch(endpoint, {
@@ -71,16 +77,14 @@ const MasterCoding = () => {
     fetchMasterData();
   }, []);
 
-  // Debouncing
-  const handleSearch = (value: string) => {
-    setSearchTerm(value);
-
+  // Handle search with debouncing
+  const handleSearch = (searchParams: Record<string, string>) => {
     if (searchTimeout) {
       clearTimeout(searchTimeout);
     }
 
     const timeout = setTimeout(() => {
-      fetchMasterData(value);
+      fetchMasterData(searchParams);
     }, 500); // 0.5 seconds
 
     setSearchTimeout(timeout);
@@ -205,27 +209,11 @@ const MasterCoding = () => {
     <div className="flex flex-col h-screen p-4 md:p-6 box-border">
       <div className="flex flex-col md:flex-row gap-4 flex-grow overflow-hidden h-[calc(100%-120px)]">
         <div className="md:w-1/4 lg:w-1/5">
-          <SearchComponent
-            onSearch={(field, value) => {
-              // If field is "all", use the existing search functionality
-              if (field === "all") {
-                handleSearch(value);
-              } else {
-                // Here you would implement field-specific search
-                // For now, we'll use the general search as a fallback
-                handleSearch(value);
-
-                // In a real implementation, you might want to modify your API call
-                // to include the specific field to search in
-                console.log(`Searching in field: ${field} for value: ${value}`);
-              }
-            }}
-          />
+          <SearchComponent onSearch={handleSearch} />
         </div>
         <div className="rounded-lg border bg-card flex-grow shadow-sm flex flex-col h-full">
           <div className="p-4 border-b flex justify-between items-center flex-shrink-0">
             <h3 className="font-semibold">Master Coding</h3>
-            {/* Removed the search input as it's now handled by the SearchComponent */}
           </div>
 
           {loading ? (
@@ -242,18 +230,12 @@ const MasterCoding = () => {
                 theme={themeAlpine}
                 rowData={rowData}
                 columnDefs={columnDefs}
-                // pagination={true}
-                // paginationAutoPageSize={true}
                 onRowClicked={onRowClicked}
-                // getRowClass={getRowClass}
                 defaultColDef={defaultColDef}
-                // onGridReady={onGridReady}
                 animateRows={true}
                 rowHeight={30}
                 headerHeight={38}
                 suppressCellFocus={true}
-                // className="rounded-md"
-                // domLayout="normal"
               />
             </div>
           )}
