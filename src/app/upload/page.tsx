@@ -13,10 +13,10 @@ import {
   CheckCircle2,
   Clock,
   AlertCircle,
-  Users,
-  Package,
   ShoppingCart,
-  BarChart3,
+  Receipt,
+  Server,
+  GanttChart,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -40,11 +40,10 @@ interface UploadCardData {
 
 function UploadCards() {
   // Create refs outside of state
-  // const customerInputRef = useRef<HTMLInputElement>(null);
-  const customerInputRef = useRef<HTMLInputElement>(undefined!);
-  const productInputRef = useRef<HTMLInputElement>(undefined!);
-  const orderInputRef = useRef<HTMLInputElement>(undefined!);
-  const inventoryInputRef = useRef<HTMLInputElement>(undefined!);
+  const SalesInputRef = useRef<HTMLInputElement>(undefined!);
+  const InvoicesInputRef = useRef<HTMLInputElement>(undefined!);
+  const ProductionInputRef = useRef<HTMLInputElement>(undefined!);
+  const ProductionPlanInputRef = useRef<HTMLInputElement>(undefined!);
 
   // Dummy last uploaded dates
   const dummyDates = [
@@ -56,69 +55,69 @@ function UploadCards() {
 
   // Dummy result data
   const dummyResults = {
-    customer:
-      "All customer records processed successfully. 1,250 records processed: 320 new customers added, 930 updated.",
-    product:
-      "842 of 845 products processed. 3 products had invalid SKUs. 145 new products added, 697 updated.",
-    order:
-      "2,130 of 2,156 orders processed. 26 orders had missing customer IDs and were skipped.",
-    inventory:
-      "All 752 inventory records updated successfully. 52 items flagged as low in stock.",
+    sales:
+      "1,250 sales transactions processed: $85,430 in total revenue. Top products: Widget A ($12,200), Gadget B ($9,800). 15 returns processed.",
+    invoices:
+      "842 invoices generated this period. 3 invoices pending due to missing payment details. Average invoice amount: $102. 45 overdue invoices flagged.",
+    production:
+      "Produced 2,130 units this week (98% of target). 26 units failed quality checks. Current output rate: 145 units/hour. Top product: Model X (780 units).",
+    production_plan:
+      "Next week's plan: 1,850 units across 12 products. Priority items: Model Y (600 units), Component Z (450 units). 52 parts need reordering to meet targets.",
   };
 
   // Initial card data
   const [cards, setCards] = useState<UploadCardData[]>([
     {
-      id: "customer",
-      title: "Customer Data",
-      description: "Upload customer information spreadsheet",
+      id: "sales",
+      title: "Sales",
+      description: "Upload Sales information spreadsheet",
       file: null,
       fileName: "",
       fileSize: "",
       status: "idle",
       lastUploaded: dummyDates[0],
-      inputRef: customerInputRef,
-      icon: <Users className="h-5 w-5" />,
+      inputRef: SalesInputRef,
+      icon: <ShoppingCart className="h-5 w-5" />,
       result: null,
     },
     {
-      id: "product",
-      title: "Product Catalog",
-      description: "Upload product inventory and details",
+      id: "invoices",
+      title: "Invoices",
+      description: "Upload Invoices information spreadsheet",
       file: null,
       fileName: "",
       fileSize: "",
       status: "success",
       lastUploaded: dummyDates[1],
-      inputRef: productInputRef,
-      icon: <Package className="h-5 w-5" />,
-      result: dummyResults.product,
+      inputRef: InvoicesInputRef,
+      icon: <Receipt className="h-5 w-5" />,
+      result: dummyResults.invoices,
     },
     {
-      id: "order",
-      title: "Order History",
-      description: "Upload order data and transactions",
+      id: "production",
+      title: "Production",
+      description: "Upload Production information spreadsheet",
       file: null,
       fileName: "",
       fileSize: "",
       status: "error",
       lastUploaded: dummyDates[2],
-      inputRef: orderInputRef,
-      icon: <ShoppingCart className="h-5 w-5" />,
-      result: dummyResults.order,
+      inputRef: ProductionInputRef,
+      icon: <Server className="h-5 w-5" />,
+      result: dummyResults.production,
     },
     {
-      id: "inventory",
-      title: "Inventory Status",
-      description: "Upload current inventory levels",
+      id: "production_plan",
+      title: "Production Plan",
+      description: "Upload Production Plans information spreadsheet",
       file: null,
       fileName: "",
       fileSize: "",
       status: "success",
       lastUploaded: dummyDates[3],
-      inputRef: inventoryInputRef,
-      icon: <BarChart3 className="h-5 w-5" />,
-      result: dummyResults.inventory,
+      inputRef: ProductionPlanInputRef,
+      icon: <GanttChart className="h-5 w-5" />,
+      result: dummyResults.production_plan,
     },
   ]);
 
@@ -434,7 +433,7 @@ function UploadCards() {
               {/* Results Section - Simplified */}
               <div className="p-5 bg-muted/10">
                 <div className="flex items-center mb-4">
-                  <h3 className="text-base font-medium">Results</h3>
+                  <h3 className="text-base font-medium">File Validations</h3>
                   {card.status === "pending" && (
                     <Badge variant="outline" className="ml-auto animate-pulse">
                       <Clock className="h-3 w-3 mr-1" />

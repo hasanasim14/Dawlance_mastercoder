@@ -7,7 +7,7 @@ import { ClientSideRowModelModule, themeAlpine } from "ag-grid-community";
 import { ModuleRegistry } from "ag-grid-community";
 import { ValidationModule } from "ag-grid-community";
 import { Skeleton } from "@/components/ui/skeleton";
-import { RightSheet } from "@/components/RightSheet";
+// import { RightSheet } from "@/components/RightSheet";
 
 // Register modules
 ModuleRegistry.registerModules([ClientSideRowModelModule, ValidationModule]);
@@ -25,7 +25,7 @@ type RowDataType = {
 };
 
 const Results = () => {
-  const [selectedRow, setSelectedRow] = useState<RowDataType | null>(null);
+  // const [selectedRow, setSelectedRow] = useState<RowDataType | null>(null);
   const [rowData, setRowData] = useState<RowDataType[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -136,15 +136,15 @@ const Results = () => {
   );
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const onRowClicked = (event: any) => {
-    setSelectedRow(event.data);
+  // const onRowClicked = (event: any) => {
+  //   setSelectedRow(event.data);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    event.api.forEachNode((node: any) => {
-      node.setSeleted(false);
-    });
-    event.node.setSeleted(true);
-  };
+  //   // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  //   event.api.forEachNode((node: any) => {
+  //     node.setSeleted(false);
+  //   });
+  //   event.node.setSeleted(true);
+  // };
 
   const defaultColDef = useMemo(() => {
     return {
@@ -179,7 +179,7 @@ const Results = () => {
                 columnDefs={columnDefs}
                 // pagination={true}
                 // paginationAutoPageSize={true}
-                onRowClicked={onRowClicked}
+                // onRowClicked={onRowClicked}
                 // getRowClass={getRowClass}
                 defaultColDef={defaultColDef}
                 // onGridReady={onGridReady}
@@ -194,7 +194,7 @@ const Results = () => {
           )}
         </div>
 
-        <RightSheet selectedRow={selectedRow} />
+        {/* <RightSheet selectedRow={selectedRow} /> */}
       </div>
     </div>
   );
