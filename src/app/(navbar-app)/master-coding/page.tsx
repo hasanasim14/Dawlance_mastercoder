@@ -242,9 +242,9 @@ const MasterCoding = () => {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     event.api.forEachNode((node: any) => {
-      node.setSelected(false);
+      node.setSeleted(false);
     });
-    event.node.setSelected(true);
+    event.node.setSeleted(true);
   };
 
   const defaultColDef = useMemo(() => {
@@ -257,7 +257,7 @@ const MasterCoding = () => {
   }, []);
 
   return (
-    <div className="flex flex-col h-[calc(100%-80px)] p-4 md:px-3 md:py-2 box-border">
+    <div className="flex flex-col h-[calc(100vh-90px)] p-4">
       <div className="flex flex-col md:flex-row gap-4 flex-grow overflow-hidden h-[calc(100%-120px)]">
         <div className="md:w-1/4 lg:w-1/5">
           <SearchComponent
