@@ -1,39 +1,45 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { Search } from "lucide-react";
 import { AgGridReact } from "ag-grid-react";
 import type { ColDef } from "ag-grid-community";
 import { ClientSideRowModelModule, themeAlpine } from "ag-grid-community";
 import { ModuleRegistry } from "ag-grid-community";
 import { ValidationModule } from "ag-grid-community";
+import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-// import { RightSheet } from "@/components/RightSheet";
+import { RightSheet } from "@/components/RightSheet";
 
 // Register modules
 ModuleRegistry.registerModules([ClientSideRowModelModule, ValidationModule]);
 
 type RowDataType = {
+  Tyear: string;
+  TMonth: string;
   Material: string;
   "Material Description": string;
-  Category: string;
-  PredYear: string;
-  PredMonth: string;
-  TYear: string;
-  TMonth: string;
-  Prediction: string;
-  Horizon: string;
+  Quantity: string;
 };
 
-const Results = () => {
-  // const [selectedRow, setSelectedRow] = useState<RowDataType | null>(null);
+const Production = () => {
+  const [selectedRow, setSelectedRow] = useState<RowDataType | null>(null);
   const [rowData, setRowData] = useState<RowDataType[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(
+    null
+  );
 
   // API to retrieve the main data
-  const fetchMasterData = async () => {
+  const fetchMasterData = async (search = "") => {
     setLoading(true);
     try {
-      const endpoint = "http://192.168.1.10:3295/aipredictions";
+      const endpoint = search
+        ? `http://192.168.1.10:3295/production/search?term=${encodeURIComponent(
+            search
+          )}`
+        : "http://192.168.1.10:3295/production";
 
       const res = await fetch(endpoint, {
         method: "GET",
@@ -56,9 +62,41 @@ const Results = () => {
     fetchMasterData();
   }, []);
 
+  // Debouncing
+  const handleSearch = (value: string) => {
+    setSearchTerm(value);
+
+    if (searchTimeout) {
+      clearTimeout(searchTimeout);
+    }
+
+    const timeout = setTimeout(() => {
+      fetchMasterData(value);
+    }, 500); // 0.5 seconds
+
+    setSearchTimeout(timeout);
+  };
+
   // Column Definitions for Master Coding
   const columnDefs: ColDef<RowDataType>[] = useMemo(
     () => [
+      // TYear
+      {
+        headerName: "Tyear",
+        field: "Tyear",
+        sortable: true,
+        filter: true,
+        minWidth: 150,
+      },
+      // TMonth
+      {
+        headerName: "TMonth",
+        field: "TMonth",
+        sortable: true,
+        filter: true,
+        minWidth: 120,
+      },
+
       // Material
       {
         headerName: "Material",
@@ -75,76 +113,28 @@ const Results = () => {
         filter: true,
         minWidth: 200,
       },
-      // Category
+      // "Quantity"
       {
-        headerName: "Category",
-        field: "Category",
+        headerName: "Quantity",
+        field: "Quantity",
         sortable: true,
         filter: true,
-        minWidth: 180,
-      },
-      // PredYear
-      {
-        headerName: "PredYear",
-        field: "PredYear",
-        sortable: true,
-        filter: true,
-        minWidth: 150,
-      },
-      // PredMonth
-      {
-        headerName: "PredMonth",
-        field: "PredMonth",
-        sortable: true,
-        filter: true,
-        minWidth: 150,
-      },
-      // TYear
-      {
-        headerName: "TYear",
-        field: "TYear",
-        sortable: true,
-        filter: true,
-        minWidth: 150,
-      },
-      // TMonth
-      {
-        headerName: "TMonth",
-        field: "TMonth",
-        sortable: true,
-        filter: true,
-        minWidth: 120,
-      },
-      // Prediction
-      {
-        headerName: "Prediction",
-        field: "Prediction",
-        sortable: true,
-        filter: true,
-        minWidth: 120,
-      },
-      // Key Feature
-      {
-        headerName: "Horizon",
-        field: "Horizon",
-        sortable: true,
-        filter: true,
-        minWidth: 150,
+        minWidth: 200,
       },
     ],
     []
   );
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  // const onRowClicked = (event: any) => {
-  //   setSelectedRow(event.data);
+  const onRowClicked = (event: any) => {
+    setSelectedRow(event.data);
 
-  //   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  //   event.api.forEachNode((node: any) => {
-  //     node.setSeleted(false);
-  //   });
-  //   event.node.setSeleted(true);
-  // };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    event.api.forEachNode((node: any) => {
+      node.setSeleted(false);
+    });
+    event.node.setSeleted(true);
+  };
 
   const defaultColDef = useMemo(() => {
     return {
@@ -156,11 +146,20 @@ const Results = () => {
   }, []);
 
   return (
-    <div className="flex flex-col h-screen p-4 md:p-6 box-border">
+    <div className="flex flex-col h-screen p-4 md:px-3 md:py-2 box-border">
       <div className="flex flex-col flex-grow overflow-hidden h-[calc(100%-120px)]">
         <div className="rounded-lg border bg-card flex-grow shadow-sm flex flex-col h-full">
           <div className="p-4 border-b flex justify-between items-center flex-shrink-0">
-            <h3 className="font-semibold">Results</h3>
+            <h3 className="font-semibold">Production</h3>
+            <div className="relative w-64">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search..."
+                value={searchTerm}
+                onChange={(e) => handleSearch(e.target.value)}
+                className="pl-8 h-9"
+              />
+            </div>
           </div>
 
           {loading ? (
@@ -179,7 +178,7 @@ const Results = () => {
                 columnDefs={columnDefs}
                 // pagination={true}
                 // paginationAutoPageSize={true}
-                // onRowClicked={onRowClicked}
+                onRowClicked={onRowClicked}
                 // getRowClass={getRowClass}
                 defaultColDef={defaultColDef}
                 // onGridReady={onGridReady}
@@ -194,10 +193,10 @@ const Results = () => {
           )}
         </div>
 
-        {/* <RightSheet selectedRow={selectedRow} /> */}
+        <RightSheet selectedRow={selectedRow} />
       </div>
     </div>
   );
 };
 
-export default Results;
+export default Production;

@@ -7,37 +7,33 @@ import { ClientSideRowModelModule, themeAlpine } from "ag-grid-community";
 import { ModuleRegistry } from "ag-grid-community";
 import { ValidationModule } from "ag-grid-community";
 import { Skeleton } from "@/components/ui/skeleton";
-import { RightSheet } from "@/components/RightSheet";
+// import { RightSheet } from "@/components/RightSheet";
 
 // Register modules
 ModuleRegistry.registerModules([ClientSideRowModelModule, ValidationModule]);
 
 type RowDataType = {
-  Product: string;
   Material: string;
   "Material Description": string;
-  "Measurement Instrument": string;
-  "Phase Out-(revised)": string;
-  "Phase In Date-Revised": string;
-  "Sales Group": string;
-  "Price Group": string;
+  Category: string;
+  PredYear: string;
+  PredMonth: string;
   TYear: string;
   TMonth: string;
+  Prediction: string;
+  Horizon: string;
 };
 
-const PhaseIO = () => {
-  const [selectedRow, setSelectedRow] = useState<RowDataType | null>(null);
+const Results = () => {
+  // const [selectedRow, setSelectedRow] = useState<RowDataType | null>(null);
   const [rowData, setRowData] = useState<RowDataType[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchMasterData = async (search = "") => {
+  // API to retrieve the main data
+  const fetchMasterData = async () => {
     setLoading(true);
     try {
-      const endpoint = search
-        ? `http://192.168.1.10:3295/phaseio/search?term=${encodeURIComponent(
-            search
-          )}`
-        : "http://192.168.1.10:3295/phaseio";
+      const endpoint = "http://192.168.1.10:3295/aipredictions";
 
       const res = await fetch(endpoint, {
         method: "GET",
@@ -63,14 +59,6 @@ const PhaseIO = () => {
   // Column Definitions for Master Coding
   const columnDefs: ColDef<RowDataType>[] = useMemo(
     () => [
-      // Product
-      {
-        headerName: "Product",
-        field: "Product",
-        sortable: true,
-        filter: true,
-        minWidth: 150,
-      },
       // Material
       {
         headerName: "Material",
@@ -87,34 +75,26 @@ const PhaseIO = () => {
         filter: true,
         minWidth: 200,
       },
-      // Phase Out-(revised)
+      // Category
       {
-        headerName: "Phase Out-(revised)",
-        field: "Phase Out-(revised)",
-        sortable: true,
-        filter: true,
-        minWidth: 200,
-      },
-      // Phase In Date-Revised
-      {
-        headerName: "Phase In Date-Revised",
-        field: "Phase In Date-Revised",
+        headerName: "Category",
+        field: "Category",
         sortable: true,
         filter: true,
         minWidth: 180,
       },
-      //  Sales Group
+      // PredYear
       {
-        headerName: "Sales Group",
-        field: "Sales Group",
+        headerName: "PredYear",
+        field: "PredYear",
         sortable: true,
         filter: true,
         minWidth: 150,
       },
-      // Price Group
+      // PredMonth
       {
-        headerName: "Price Group",
-        field: "Price Group",
+        headerName: "PredMonth",
+        field: "PredMonth",
         sortable: true,
         filter: true,
         minWidth: 150,
@@ -135,20 +115,36 @@ const PhaseIO = () => {
         filter: true,
         minWidth: 120,
       },
+      // Prediction
+      {
+        headerName: "Prediction",
+        field: "Prediction",
+        sortable: true,
+        filter: true,
+        minWidth: 120,
+      },
+      // Key Feature
+      {
+        headerName: "Horizon",
+        field: "Horizon",
+        sortable: true,
+        filter: true,
+        minWidth: 150,
+      },
     ],
     []
   );
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const onRowClicked = (event: any) => {
-    setSelectedRow(event.data);
+  // const onRowClicked = (event: any) => {
+  //   setSelectedRow(event.data);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    event.api.forEachNode((node: any) => {
-      node.setSeleted(false);
-    });
-    event.node.setSeleted(true);
-  };
+  //   // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  //   event.api.forEachNode((node: any) => {
+  //     node.setSeleted(false);
+  //   });
+  //   event.node.setSeleted(true);
+  // };
 
   const defaultColDef = useMemo(() => {
     return {
@@ -160,11 +156,11 @@ const PhaseIO = () => {
   }, []);
 
   return (
-    <div className="flex flex-col h-screen p-4 md:p-6 box-border">
-      <div className="flex flex-col md:flex-row gap-4 flex-grow overflow-hidden h-[calc(100%-120px)]">
+    <div className="flex flex-col h-screen p-4 md:px-3 md:py-2 box-border">
+      <div className="flex flex-col flex-grow overflow-hidden h-[calc(100%-120px)]">
         <div className="rounded-lg border bg-card flex-grow shadow-sm flex flex-col h-full">
           <div className="p-4 border-b flex justify-between items-center flex-shrink-0">
-            <h3 className="font-semibold">Phase In And Out</h3>
+            <h3 className="font-semibold">Results</h3>
           </div>
 
           {loading ? (
@@ -183,7 +179,7 @@ const PhaseIO = () => {
                 columnDefs={columnDefs}
                 // pagination={true}
                 // paginationAutoPageSize={true}
-                onRowClicked={onRowClicked}
+                // onRowClicked={onRowClicked}
                 // getRowClass={getRowClass}
                 defaultColDef={defaultColDef}
                 // onGridReady={onGridReady}
@@ -198,10 +194,10 @@ const PhaseIO = () => {
           )}
         </div>
 
-        <RightSheet selectedRow={selectedRow} />
+        {/* <RightSheet selectedRow={selectedRow} /> */}
       </div>
     </div>
   );
 };
 
-export default PhaseIO;
+export default Results;

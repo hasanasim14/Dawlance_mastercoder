@@ -257,7 +257,7 @@ const MasterCoding = () => {
   }, []);
 
   return (
-    <div className="flex flex-col h-screen p-4 md:p-6 box-border">
+    <div className="flex flex-col h-[calc(100%-80px)] p-4 md:px-3 md:py-2 box-border">
       <div className="flex flex-col md:flex-row gap-4 flex-grow overflow-hidden h-[calc(100%-120px)]">
         <div className="md:w-1/4 lg:w-1/5">
           <SearchComponent

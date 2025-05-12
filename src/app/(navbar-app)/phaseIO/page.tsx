@@ -1,13 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Search } from "lucide-react";
 import { AgGridReact } from "ag-grid-react";
 import type { ColDef } from "ag-grid-community";
 import { ClientSideRowModelModule, themeAlpine } from "ag-grid-community";
 import { ModuleRegistry } from "ag-grid-community";
 import { ValidationModule } from "ag-grid-community";
-import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RightSheet } from "@/components/RightSheet";
 
@@ -15,31 +13,31 @@ import { RightSheet } from "@/components/RightSheet";
 ModuleRegistry.registerModules([ClientSideRowModelModule, ValidationModule]);
 
 type RowDataType = {
-  Tyear: string;
-  TMonth: string;
+  Product: string;
   Material: string;
   "Material Description": string;
-  Quantity: string;
+  "Measurement Instrument": string;
+  "Phase Out-(revised)": string;
+  "Phase In Date-Revised": string;
+  "Sales Group": string;
+  "Price Group": string;
+  TYear: string;
+  TMonth: string;
 };
 
-const Production = () => {
+const PhaseIO = () => {
   const [selectedRow, setSelectedRow] = useState<RowDataType | null>(null);
   const [rowData, setRowData] = useState<RowDataType[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(
-    null
-  );
 
-  // API to retrieve the main data
   const fetchMasterData = async (search = "") => {
     setLoading(true);
     try {
       const endpoint = search
-        ? `http://192.168.1.10:3295/production/search?term=${encodeURIComponent(
+        ? `http://192.168.1.10:3295/phaseio/search?term=${encodeURIComponent(
             search
           )}`
-        : "http://192.168.1.10:3295/production";
+        : "http://192.168.1.10:3295/phaseio";
 
       const res = await fetch(endpoint, {
         method: "GET",
@@ -62,41 +60,17 @@ const Production = () => {
     fetchMasterData();
   }, []);
 
-  // Debouncing
-  const handleSearch = (value: string) => {
-    setSearchTerm(value);
-
-    if (searchTimeout) {
-      clearTimeout(searchTimeout);
-    }
-
-    const timeout = setTimeout(() => {
-      fetchMasterData(value);
-    }, 500); // 0.5 seconds
-
-    setSearchTimeout(timeout);
-  };
-
   // Column Definitions for Master Coding
   const columnDefs: ColDef<RowDataType>[] = useMemo(
     () => [
-      // TYear
+      // Product
       {
-        headerName: "Tyear",
-        field: "Tyear",
+        headerName: "Product",
+        field: "Product",
         sortable: true,
         filter: true,
         minWidth: 150,
       },
-      // TMonth
-      {
-        headerName: "TMonth",
-        field: "TMonth",
-        sortable: true,
-        filter: true,
-        minWidth: 120,
-      },
-
       // Material
       {
         headerName: "Material",
@@ -113,13 +87,53 @@ const Production = () => {
         filter: true,
         minWidth: 200,
       },
-      // "Quantity"
+      // Phase Out-(revised)
       {
-        headerName: "Quantity",
-        field: "Quantity",
+        headerName: "Phase Out-(revised)",
+        field: "Phase Out-(revised)",
         sortable: true,
         filter: true,
         minWidth: 200,
+      },
+      // Phase In Date-Revised
+      {
+        headerName: "Phase In Date-Revised",
+        field: "Phase In Date-Revised",
+        sortable: true,
+        filter: true,
+        minWidth: 180,
+      },
+      //  Sales Group
+      {
+        headerName: "Sales Group",
+        field: "Sales Group",
+        sortable: true,
+        filter: true,
+        minWidth: 150,
+      },
+      // Price Group
+      {
+        headerName: "Price Group",
+        field: "Price Group",
+        sortable: true,
+        filter: true,
+        minWidth: 150,
+      },
+      // TYear
+      {
+        headerName: "TYear",
+        field: "TYear",
+        sortable: true,
+        filter: true,
+        minWidth: 150,
+      },
+      // TMonth
+      {
+        headerName: "TMonth",
+        field: "TMonth",
+        sortable: true,
+        filter: true,
+        minWidth: 120,
       },
     ],
     []
@@ -146,20 +160,11 @@ const Production = () => {
   }, []);
 
   return (
-    <div className="flex flex-col h-screen p-4 md:p-6 box-border">
-      <div className="flex flex-col flex-grow overflow-hidden h-[calc(100%-120px)]">
+    <div className="flex flex-col h-screen p-4 md:px-3 md:py-2 box-border">
+      <div className="flex flex-col md:flex-row gap-4 flex-grow overflow-hidden h-[calc(100%-120px)]">
         <div className="rounded-lg border bg-card flex-grow shadow-sm flex flex-col h-full">
           <div className="p-4 border-b flex justify-between items-center flex-shrink-0">
-            <h3 className="font-semibold">Production</h3>
-            <div className="relative w-64">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search..."
-                value={searchTerm}
-                onChange={(e) => handleSearch(e.target.value)}
-                className="pl-8 h-9"
-              />
-            </div>
+            <h3 className="font-semibold">Phase In And Out</h3>
           </div>
 
           {loading ? (
@@ -199,4 +204,4 @@ const Production = () => {
   );
 };
 
-export default Production;
+export default PhaseIO;
