@@ -1,73 +1,45 @@
-// import { SidebarProvider } from "@/components/ui/sidebar";
-// import { AppSidebar } from "@/components/AppSidebar";
+import { AppSidebar } from "@/components/AppSidebar";
+import { SidebarProvider } from "@/components/ui/sidebar";
 import Image from "next/image";
-import { Inter } from "next/font/google";
 
-const inter = Inter({ subsets: ["latin"] });
-
-export default function SidebarLayout({
+export default function AppLayout({
   children,
-}: {
+}: Readonly<{
   children: React.ReactNode;
-}) {
+}>) {
   return (
-    // <SidebarProvider>
-    //   <div className="flex h-full">
-    //     <AppSidebar />
-    //     <div className="flex-1 flex flex-col h-full">
-    // <div className="w-full mb-2 flex-shrink-0 flex justify-between items-center">
-    //   <Image
-    //     src="/logo.png"
-    //     alt="Master Coding Header"
-    //     width={1200}
-    //     height={120}
-    //     className="w-50 object-cover opacity-90"
-    //     priority
-    //   />
-    //   <Image
-    //     src="/aiSystemslogo.svg"
-    //     alt="AI Systems Logo"
-    //     width={1200}
-    //     height={120}
-    //     className="w-50 object-cover opacity-90"
-    //     priority
-    //   />
-    // </div>
-    //       <main className="flex-1 w-full h-full overflow-auto">{children}</main>
-    //     </div>
-    //   </div>
-    // </SidebarProvider>
+    <SidebarProvider>
+      <div className="flex flex-1">
+        <AppSidebar />
+        <main className="flex-1 overflow-auto">
+          <div className="flex justify-between items-center p-4 sticky top-0 z-10 bg-background border-b">
+            {/* Top left image */}
+            <div className="relative h-10 w-32">
+              <Image
+                src="/logo.png"
+                alt="Dawlance logo"
+                fill
+                className="object-contain object-left"
+                priority
+              />
+            </div>
 
-    // <div className="w-full">
-    // <SidebarProvider>
+            {/* Top right image */}
+            <div className="relative h-10 w-32">
+              {" "}
+              <Image
+                src="aiSystemslogo.svg"
+                alt="Right header logo"
+                fill
+                className="object-contain object-right"
+                priority
+              />
+            </div>
+          </div>
 
-    <html lang="en" className="h-full">
-      <body className={`${inter.className} h-full`}>
-        {/* <SidebarProvider> */}
-        <div className="w-full mb-2 flex-shrink-0 flex justify-between items-center">
-          <Image
-            src="/logo.png"
-            alt="Master Coding Header"
-            width={1200}
-            height={120}
-            className="w-50 object-cover opacity-90"
-            priority
-          />
-          <Image
-            src="/aiSystemslogo.svg"
-            alt="AI Systems Logo"
-            width={1200}
-            height={120}
-            className="w-50 object-cover opacity-90"
-            priority
-          />
-        </div>
-        <main className="flex-1 w-full h-full overflow-auto">{children}</main>
-
-        {/* </SidebarProvider> */}
-      </body>
-    </html>
-    // </SidebarProvider>
-    // </div>
+          <div className="p-2">{children}</div>
+        </main>
+      </div>
+    </SidebarProvider>
   );
 }
