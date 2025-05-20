@@ -37,21 +37,21 @@ const customData: IOlympicData[] = [
     age: 23,
     country: "USA",
     year: 2008,
-    total: 8,
+    total: null,
   },
   {
     athlete: "Usain Bolt",
     age: 22,
     country: "Jamaica",
     year: 2008,
-    total: 3,
+    total: null,
   },
   {
     athlete: "Simone Biles",
     age: 19,
     country: "USA",
     year: 2016,
-    total: 4,
+    total: null,
   },
 ];
 
@@ -269,9 +269,9 @@ export default function DashboardBranch() {
 
       <div className="flex flex-col h-screen p-4 md:px-3 md:py-2 box-border">
         <div className="flex flex-col md:flex-row gap-4 flex-grow overflow-hidden h-[calc(100%-120px)]">
-          <div className="rounded-lg border bg-card flex-grow shadow-sm flex flex-col h-full">
+          <div className="border bg-card flex-grow flex flex-col h-full rounded-t-lg">
             <div className="p-4 border-b flex justify-between items-center flex-shrink-0">
-              <h3 className="font-semibold">Dashboard - Branches</h3>
+              <h3 className="font-semibold">Dashboard - Branch</h3>
               <div className="flex items-center gap-2">
                 {/* Save Button */}
                 <Button
@@ -298,12 +298,9 @@ export default function DashboardBranch() {
 
             <div
               ref={gridRef}
-              className="ag-theme-alpine w-full"
+              className="ag-theme-alpine w-full flex-grow min-h-[500px]"
               style={
                 {
-                  height: "calc(100vh - 220px)",
-                  minHeight: "500px",
-                  width: "100%",
                   "--ag-border-radius": "0",
                   "--ag-grid-size": "6px",
                   "--ag-list-item-height": "28px",

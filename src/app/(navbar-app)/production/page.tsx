@@ -146,7 +146,7 @@ const Production = () => {
   }, []);
 
   return (
-    <div className="flex flex-col h-screen p-4 md:px-3 md:py-2 box-border">
+    <div className="flex flex-col h-[calc(100vh-90px)] p-4">
       <div className="flex flex-col flex-grow overflow-hidden h-[calc(100%-120px)]">
         <div className="rounded-lg border bg-card flex-grow shadow-sm flex flex-col h-full">
           <div className="p-4 border-b flex justify-between items-center flex-shrink-0">

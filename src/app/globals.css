@@ -165,10 +165,28 @@
 }
 
 .ag-theme-alpine .ag-row-selected {
-  /* background-color: var(--ag-selected-row-background-color); */
   background-color: green;
 }
 
 .ag-theme-alpine .ag-row:nth-child(even) {
   background-color: #f2f3f4;
+}
+
+.ag-theme-alpine .ag-cell-editor {
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.ag-theme-alpine .ag-cell:focus {
+  outline: none !important;
+}
+
+.ag-theme-alpine .ag-cell.ag-cell-inline-editing {
+  padding: 10px 2px !important;
+}
+
+.ag-theme-alpine .ag-cell-editor input {
+  border: none !important;
+  box-shadow: none !important;
+  padding: 10px 8px !important;
 }

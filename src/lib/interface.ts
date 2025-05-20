@@ -8,5 +8,5 @@ export interface IOlympicData {
   // gold: number;
   // silver: number;
   // bronze: number;
-  total: number;
+  total: number | null;
 }
