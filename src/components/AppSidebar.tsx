@@ -1,6 +1,6 @@
 "use client";
 
-import type React from "react";
+import React from "react";
 import {
   Sidebar,
   SidebarContent,
@@ -8,15 +8,49 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarProvider,
   SidebarRail,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
-import { Atom, Factory, Repeat, TrendingUp, Upload } from "lucide-react";
+import {
+  Atom,
+  Factory,
+  Repeat,
+  TrendingUp,
+  Upload,
+  LayoutDashboard,
+  LogOut,
+} from "lucide-react";
+import { mockUser } from "@/lib/mockUser";
+import { rolePages } from "@/lib/rolePages";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const items = [
+type Role = keyof typeof rolePages;
+
+export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
+  const router = useRouter();
+  const role = mockUser.role;
+
+  const allowedPages: string[] =
+    role in rolePages ? rolePages[role as Role] : [];
+
+  const allItems = [
+    {
+      title: "Main Dashboard",
+      url: "/dashboard",
+      icon: LayoutDashboard,
+    },
+    {
+      title: "Dashboard",
+      url: "/dashboard-branch",
+      icon: LayoutDashboard,
+    },
+    {
+      title: "Dashboard",
+      url: "/dashboard-marketing",
+      icon: LayoutDashboard,
+    },
     {
       title: "Master Coding",
       url: "/master-coding",
@@ -44,37 +78,48 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     },
   ];
 
+  const filteredItems = allItems.filter((item) =>
+    allowedPages.includes(item.url)
+  );
+
+  const handleLogout = () => {
+    localStorage.clear();
+    router.push("/login");
+  };
+
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader className="p-2">
         <SidebarTrigger className="h-8 w-8" />
       </SidebarHeader>
-      <SidebarContent className={cn("p-2")}>
+
+      <SidebarContent className={cn("p-2 flex flex-col h-full")}>
         <SidebarMenu>
-          {items.map((item) => (
+          {filteredItems.map((item) => (
             <SidebarMenuItem key={item.title}>
               <SidebarMenuButton asChild tooltip={item.title}>
-                <a href={item.url}>
+                <Link href={item.url}>
                   <item.icon className="h-4 w-4" />
                   <span>{item.title}</span>
-                </a>
+                </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
           ))}
         </SidebarMenu>
+
+        <div className="mt-auto">
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton tooltip="Logout" onClick={handleLogout}>
+                <LogOut className="h-4 w-4" />
+                <span>Logout</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </div>
       </SidebarContent>
+
       <SidebarRail />
     </Sidebar>
-  );
-}
-
-export function SidebarWrapper({ children }: { children: React.ReactNode }) {
-  return (
-    <SidebarProvider>
-      <div className="flex min-h-screen">
-        <AppSidebar />
-        <div className="flex-1 p-2">{children}</div>
-      </div>
-    </SidebarProvider>
   );
 }

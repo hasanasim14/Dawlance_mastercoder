@@ -5,8 +5,8 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Next.js App with Shadcn Sidebar",
-  description: "A simple application with a shadcn sidebar",
+  title: "Dawlance MasterCoder Application",
+  description: "",
   generator: "v0.dev",
 };
 

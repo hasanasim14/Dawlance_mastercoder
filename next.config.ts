@@ -1,11 +1,7 @@
-module.exports = {
-  async redirects() {
-    return [
-      {
-        source: "/",
-        destination: "/master-coding",
-        permanent: false,
-      },
-    ];
-  },
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  reactStrictMode: true,
+  // Add other config options here if needed
 };
+
+module.exports = nextConfig;

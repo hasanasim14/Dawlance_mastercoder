@@ -135,17 +135,6 @@ const Results = () => {
     []
   );
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  // const onRowClicked = (event: any) => {
-  //   setSelectedRow(event.data);
-
-  //   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  //   event.api.forEachNode((node: any) => {
-  //     node.setSeleted(false);
-  //   });
-  //   event.node.setSeleted(true);
-  // };
-
   const defaultColDef = useMemo(() => {
     return {
       flex: 1,
