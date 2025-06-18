@@ -20,6 +20,9 @@ import {
   Upload,
   LayoutDashboard,
   LogOut,
+  Workflow,
+  UserCog,
+  Users,
 } from "lucide-react";
 import { mockUser } from "@/lib/mockUser";
 import { rolePages } from "@/lib/rolePages";
@@ -75,6 +78,21 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
       title: "Upload Files",
       url: "/upload",
       icon: Upload,
+    },
+    {
+      title: "Branch Master",
+      url: "/branch-master",
+      icon: Workflow,
+    },
+    {
+      title: "Roles",
+      url: "/roles",
+      icon: UserCog,
+    },
+    {
+      title: "Users",
+      url: "/users",
+      icon: Users,
     },
   ];
 

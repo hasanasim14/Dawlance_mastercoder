@@ -6,26 +6,30 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { ChevronRight, X } from "lucide-react";
+import { ChevronRight, X, Loader2 } from "lucide-react";
+import { transformToApiFormat } from "@/lib/data-transformers";
+// import { useToast } from "@/hooks/use-toast";
+// import { transformToApiFormat } from "@/lib/data-transformers";
+
+interface FieldConfig {
+  key: string;
+  label: string;
+  type?: "text" | "number" | "email" | "tel";
+  required?: boolean;
+  readOnly?: boolean;
+}
 
 interface RightSheetProps {
   children?: React.ReactNode;
   className?: string;
-  selectedRow?: {
-    "Master ID"?: number;
-    Product?: string;
-    Material?: string;
-    "Material Description"?: string;
-    "Measurement Instrument"?: string;
-    "Colour Similarity"?: string;
-    "Product type"?: string;
-    Function?: string;
-    Series?: string;
-    Colour?: string;
-    "Key Feature"?: string;
-  } | null;
+  selectedRow?: Record<string, any> | null;
   onReset?: () => void;
-  onSave?: () => void;
+  onSave?: (data: Record<string, any>) => Promise<void>;
+  title?: string;
+  fields?: FieldConfig[];
+  apiEndpoint?: string;
+  isOpen?: boolean;
+  onClose?: () => void;
 }
 
 export function RightSheet({
@@ -34,18 +38,48 @@ export function RightSheet({
   selectedRow,
   onReset,
   onSave,
+  title = "Details",
+  fields,
+  apiEndpoint = "/api/save",
+  isOpen,
+  onClose,
 }: RightSheetProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [formData, setFormData] = useState<Record<string, any>>({});
+  const [isSaving, setIsSaving] = useState(false);
+  const [hasChanges, setHasChanges] = useState(false);
   const sheetRef = useRef<HTMLDivElement>(null);
+  // const { toast } = useToast();
+
+  // Auto-generate fields from selectedRow if not provided
+  const effectiveFields =
+    fields ||
+    (selectedRow
+      ? Object.keys(selectedRow).map((key) => ({
+          key,
+          label: key,
+          type: "text" as const,
+          required: false,
+          readOnly: false,
+        }))
+      : []);
 
   // Effect to expand sheet when a row is selected
   useEffect(() => {
-    if (selectedRow) {
+    const shouldBeOpen = isOpen !== undefined ? isOpen : !!selectedRow;
+    if (shouldBeOpen) {
       setIsExpanded(true);
+      // Initialize form data with selected row data
+      if (selectedRow) {
+        setFormData({ ...selectedRow });
+        setHasChanges(false);
+      }
     } else {
       setIsExpanded(false);
+      setFormData({});
+      setHasChanges(false);
     }
-  }, [selectedRow]);
+  }, [selectedRow, isOpen]);
 
   const toggleExpand = () => {
     const newExpandedState = !isExpanded;
@@ -53,9 +87,95 @@ export function RightSheet({
 
     // If collapsing, also clear the selected row
     if (!newExpandedState) {
-      onReset?.();
+      handleClose();
     }
   };
+
+  const handleClose = () => {
+    setFormData({});
+    setHasChanges(false);
+    onClose?.();
+    onReset?.();
+  };
+
+  const handleInputChange = (key: string, value: string) => {
+    setFormData((prev) => {
+      const newData = { ...prev, [key]: value };
+      // Check if there are changes compared to original data
+      const hasDataChanges = selectedRow
+        ? Object.keys(newData).some((k) => newData[k] !== selectedRow[k])
+        : Object.values(newData).some((v) => v !== "");
+      setHasChanges(hasDataChanges);
+      return newData;
+    });
+  };
+
+  const handleSave = async () => {
+    if (!hasChanges) {
+      // toast({
+      //   title: "No changes",
+      //   description: "No changes were made to save.",
+      //   variant: "default",
+      // });
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      // Transform data to API format before sending
+      const apiFormattedData = transformToApiFormat(formData);
+
+      if (onSave) {
+        // Use custom save handler if provided
+        await onSave(apiFormattedData);
+      } else {
+        // Default API call
+        const response = await fetch(apiEndpoint, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(apiFormattedData),
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const result = await response.json();
+        console.log("Save successful:", result);
+      }
+
+      // toast({
+      //   title: "Success",
+      //   description: "Changes saved successfully!",
+      //   variant: "default",
+      // });
+
+      setHasChanges(false);
+    } catch (error) {
+      console.error("Error saving data:", error);
+      // toast({
+      //   title: "Error",
+      //   description: "Failed to save changes. Please try again.",
+      //   variant: "destructive",
+      // });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleReset = () => {
+    if (selectedRow) {
+      setFormData({ ...selectedRow });
+    } else {
+      setFormData({});
+    }
+    setHasChanges(false);
+    onReset?.();
+  };
+
+  const isVisible = isOpen !== undefined ? isOpen : !!selectedRow;
 
   return (
     <div
@@ -66,9 +186,9 @@ export function RightSheet({
         className
       )}
       style={{
-        transform: selectedRow ? "translateX(0)" : "translateX(100%)",
-        opacity: selectedRow ? 1 : 0,
-        pointerEvents: selectedRow ? "auto" : "none",
+        transform: isVisible ? "translateX(0)" : "translateX(100%)",
+        opacity: isVisible ? 1 : 0,
+        pointerEvents: isVisible ? "auto" : "none",
       }}
     >
       {/* Handle and header */}
@@ -79,10 +199,24 @@ export function RightSheet({
         <div className="flex items-center gap-3">
           <div className="h-10 w-1 bg-muted-foreground/30 rounded-full" />
           <h2 className="text-lg font-semibold truncate">
-            {selectedRow ? `Master ID: ${selectedRow["Master ID"]}` : "Details"}
+            {selectedRow && selectedRow["Master ID"]
+              ? `Master ID: ${selectedRow["Master ID"]}`
+              : title}
           </h2>
+          {hasChanges && <div className="h-2 w-2 bg-orange-500 rounded-full" />}
         </div>
         <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleClose();
+            }}
+            className="h-8 w-8"
+          >
+            <X className="h-4 w-4" />
+          </Button>
           <Button
             variant="ghost"
             size="icon"
@@ -109,22 +243,35 @@ export function RightSheet({
           isExpanded ? "opacity-100" : "opacity-0"
         )}
       >
-        {selectedRow ? (
+        {isVisible && effectiveFields.length > 0 ? (
           <div className="grid grid-cols-1 gap-4">
-            {Object.entries(selectedRow).map(([key, value]) => {
-              if (key === "Master ID") return null; // Skip Master ID as it's in the header
+            {effectiveFields.map((field) => {
+              if (field.key === "Master ID" && selectedRow) return null; // Skip Master ID as it's in the header
 
               return (
-                <div key={key} className="space-y-2">
-                  <Label htmlFor={key.toLowerCase().replace(/\s+/g, "_")}>
-                    {key}
+                <div key={field.key} className="space-y-2">
+                  <Label htmlFor={field.key.toLowerCase().replace(/\s+/g, "_")}>
+                    {field.label}
+                    {field.required && (
+                      <span className="text-red-500 ml-1">*</span>
+                    )}
                   </Label>
                   <Input
-                    id={key.toLowerCase().replace(/\s+/g, "_")}
-                    placeholder={key}
-                    value={value?.toString() || ""}
-                    readOnly
-                    className="bg-muted/40"
+                    id={field.key.toLowerCase().replace(/\s+/g, "_")}
+                    type={field.type || "text"}
+                    placeholder={field.label}
+                    value={formData[field.key]?.toString() || ""}
+                    onChange={(e) =>
+                      handleInputChange(field.key, e.target.value)
+                    }
+                    readOnly={field.readOnly}
+                    required={field.required}
+                    className={cn(
+                      field.readOnly && "bg-muted/40",
+                      hasChanges &&
+                        formData[field.key] !== selectedRow?.[field.key] &&
+                        "border-orange-300"
+                    )}
                   />
                 </div>
               );
@@ -151,14 +298,25 @@ export function RightSheet({
       >
         <Button
           variant="outline"
-          disabled={!selectedRow}
-          onClick={onReset}
+          disabled={!isVisible || isSaving}
+          onClick={handleReset}
           className="flex-1"
         >
           Reset
         </Button>
-        <Button disabled={!selectedRow} onClick={onSave} className="flex-1">
-          Save Changes
+        <Button
+          disabled={!isVisible || !hasChanges || isSaving}
+          onClick={handleSave}
+          className="flex-1"
+        >
+          {isSaving ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Saving...
+            </>
+          ) : (
+            "Save Changes"
+          )}
         </Button>
       </div>
     </div>
