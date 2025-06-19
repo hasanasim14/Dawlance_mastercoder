@@ -8,8 +8,6 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ChevronRight, X, Loader2 } from "lucide-react";
 import { transformToApiFormat } from "@/lib/data-transformers";
-// import { useToast } from "@/hooks/use-toast";
-// import { transformToApiFormat } from "@/lib/data-transformers";
 
 interface FieldConfig {
   key: string;
@@ -115,11 +113,6 @@ export function RightSheet({
 
   const handleSave = async () => {
     if (!hasChanges) {
-      // toast({
-      //   title: "No changes",
-      //   description: "No changes were made to save.",
-      //   variant: "default",
-      // });
       return;
     }
 
@@ -149,20 +142,9 @@ export function RightSheet({
         console.log("Save successful:", result);
       }
 
-      // toast({
-      //   title: "Success",
-      //   description: "Changes saved successfully!",
-      //   variant: "default",
-      // });
-
       setHasChanges(false);
     } catch (error) {
       console.error("Error saving data:", error);
-      // toast({
-      //   title: "Error",
-      //   description: "Failed to save changes. Please try again.",
-      //   variant: "destructive",
-      // });
     } finally {
       setIsSaving(false);
     }

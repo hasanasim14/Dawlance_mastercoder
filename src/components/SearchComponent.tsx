@@ -69,6 +69,8 @@ export default function SearchComponent({
 
   // Default implementation if fetchSuggestions is not provided
   const defaultFetchSuggestions = async (query: string): Promise<string[]> => {
+    // This is a placeholder - in a real app, you'd call your API
+    console.log("Fetching suggestions for:", query);
     return [];
   };
 

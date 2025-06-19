@@ -31,6 +31,7 @@ const MasterCoding = () => {
     null
   );
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
 
   // Pagination states
   const [pagination, setPagination] = useState<PaginationData>({
@@ -305,6 +306,7 @@ const MasterCoding = () => {
 
   // Handle row click
   const handleRowClick = (row: RowDataType) => {
+    setIsSheetOpen(true);
     const clickedRowId = row["Master ID"];
 
     // If clicking the same row, toggle the sheet
@@ -355,15 +357,20 @@ const MasterCoding = () => {
     }
   };
 
-  const handleReset = () => {
-    setSelectedRow(null);
-    setSelectedRowId(null);
-  };
+  // const handleReset = () => {
+  //   setSelectedRow(null);
+  //   setSelectedRowId(null);
+  // };
 
   const handleAddClick = () => {
-    // TODO: Implement add new record functionality
-    console.log("Add new record clicked");
+    setIsSheetOpen(true);
   };
+
+  const excludedKeys = ["Master ID"];
+
+  const filteredFieldConfig = fieldConfig.filter(
+    (field) => !excludedKeys.includes(field.key)
+  );
 
   return (
     <div className="w-full h-[85vh] p-4 overflow-hidden">
@@ -405,10 +412,16 @@ const MasterCoding = () => {
 
         <RightSheet
           selectedRow={selectedRow}
-          onReset={handleReset}
+          onReset={() => {
+            setSelectedRow(null);
+            setIsSheetOpen(false);
+          }}
           onSave={handleSave}
-          fields={fieldConfig}
-          title="Master Coding Details"
+          // fields={fieldConfig}
+          fields={selectedRow ? fieldConfig : filteredFieldConfig}
+          title={selectedRow ? "Edit Entry" : "Create New Entry"}
+          isOpen={isSheetOpen}
+          onClose={() => setIsSheetOpen(false)}
         />
       </div>
 

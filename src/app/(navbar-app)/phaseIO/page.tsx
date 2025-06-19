@@ -31,6 +31,7 @@ const PhaseIO = () => {
     null
   );
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
 
   // Pagination states
   const [pagination, setPagination] = useState<PaginationData>({
@@ -296,6 +297,7 @@ const PhaseIO = () => {
 
   // Handle row click
   const handleRowClick = (row: RowDataType) => {
+    setIsSheetOpen(true);
     const clickedRowId = row["Material"];
 
     // If clicking the same row, toggle the sheet
@@ -346,14 +348,15 @@ const PhaseIO = () => {
     }
   };
 
-  const handleReset = () => {
-    setSelectedRow(null);
-    setSelectedRowId(null);
-  };
+  // const handleReset = () => {
+  //   setSelectedRow(null);
+  //   setSelectedRowId(null);
+  // };
 
   const handleAddClick = () => {
     // TODO: Implement add new record functionality
-    console.log("Add new record clicked");
+    // console.log("Add new record clicked");
+    setIsSheetOpen(true);
   };
 
   return (
@@ -393,12 +396,26 @@ const PhaseIO = () => {
           />
         </div>
 
-        <RightSheet
+        {/* <RightSheet
           selectedRow={selectedRow}
           onReset={handleReset}
           onSave={handleSave}
           fields={fieldConfig}
           title="Phase In/Out Details"
+        /> */}
+
+        <RightSheet
+          selectedRow={selectedRow}
+          onReset={() => {
+            setSelectedRow(null);
+            setIsSheetOpen(false);
+          }}
+          onSave={handleSave}
+          fields={fieldConfig}
+          // fields={selectedRow ? fieldConfig : filteredFieldConfig}
+          title={selectedRow ? "Edit Entry" : "Create New Entry"}
+          isOpen={isSheetOpen}
+          onClose={() => setIsSheetOpen(false)}
         />
       </div>
 
