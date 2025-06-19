@@ -15,7 +15,6 @@ ModuleRegistry.registerModules([ClientSideRowModelModule, ValidationModule]);
 type RowDataType = {
   ID: number;
   "Branch Name": string;
-  //   Material: string;
   Province: string;
   Time: string;
 };
@@ -24,15 +23,12 @@ const MasterCoding = () => {
   const [selectedRow, setSelectedRow] = useState<RowDataType | null>(null);
   const [rowData, setRowData] = useState<RowDataType[]>([]);
   const [loading, setLoading] = useState(true);
-  // const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(
-  // null
-  // );
 
   // API to retrieve the main data
   const fetchMasterData = async (searchParams: Record<string, string> = {}) => {
     setLoading(true);
     try {
-      let endpoint = `${process.env}/mastercoding`;
+      let endpoint = `${process.env}/branchmaster`;
 
       // Check if there are any search parameters
       const hasSearchParams = Object.keys(searchParams).length > 0;
@@ -133,7 +129,7 @@ const MasterCoding = () => {
       <div className="flex flex-col md:flex-row gap-4 flex-grow overflow-hidden h-[calc(100%-120px)]">
         <div className="rounded-lg border bg-card flex-grow shadow-sm flex flex-col h-full">
           <div className="p-4 border-b flex justify-between items-center flex-shrink-0">
-            <h3 className="font-semibold">Master Coding</h3>
+            <h3 className="font-semibold">Branch Master</h3>
           </div>
 
           {loading ? (

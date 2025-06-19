@@ -67,14 +67,12 @@ export function DataTable({
 
       {loading ? (
         <div className="flex-1 p-4 space-y-3 overflow-hidden">
-          {/* Create consistent skeleton rows that match the actual table height */}
           {Array.from({ length: 12 }, (_, i) => (
             <Skeleton key={i} className="h-12 w-full" />
           ))}
         </div>
       ) : (
         <>
-          {/* Table container with strict height constraints */}
           <div className="flex-1 overflow-hidden relative">
             <div
               className="absolute inset-0 overflow-auto pb-2"

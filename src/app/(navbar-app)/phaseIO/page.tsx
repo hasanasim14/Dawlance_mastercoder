@@ -16,7 +16,6 @@ import type {
 } from "@/lib/types";
 import { DataTable } from "@/components/DataTable";
 import SearchComponent from "@/components/SearchComponent";
-// import { DataTable } from "@/components/mastercoding/DataTable";
 
 const PhaseIO = () => {
   const [selectedRow, setSelectedRow] = useState<RowDataType | null>(null);
@@ -43,7 +42,6 @@ const PhaseIO = () => {
   const [pageSize, setPageSize] = useState(50);
   const [currentPage, setCurrentPage] = useState(1);
 
-  // Define field configuration for the RightSheet
   const fieldConfig: FieldConfig[] = [
     {
       key: "Product",
@@ -63,20 +61,19 @@ const PhaseIO = () => {
       type: "text",
     },
     {
-      key: "Phase In",
-      label: "Phase In",
+      key: "Phase Out",
+      label: "Phase Out",
       type: "text",
     },
     {
-      key: "Phase Out",
-      label: "Phase Out",
+      key: "Phase In",
+      label: "Phase In",
       type: "text",
     },
     { key: "Price Group", label: "Price Group", type: "text" },
     { key: "Sales Group", label: "Sales Group", type: "text" },
   ];
 
-  // Column definitions (removed sortable and filterable properties)
   const columns: readonly ColumnConfig[] = [
     { key: "Product", label: "Product" },
     { key: "Material", label: "Material" },
@@ -87,7 +84,6 @@ const PhaseIO = () => {
     { key: "Sales Group", label: "Sales Group" },
   ];
 
-  // API to retrieve the main data
   const fetchPhaseIOData = async (
     searchParams: Record<string, string> = {},
     page = 1,
@@ -97,18 +93,14 @@ const PhaseIO = () => {
     try {
       let endpoint = `${process.env.NEXT_PUBLIC_BASE_URL}/phaseinout`;
 
-      // Build query parameters
       const queryParams = new URLSearchParams();
 
-      // Add pagination parameters
       queryParams.append("page", page.toString());
       queryParams.append("limit", recordsPerPage.toString());
 
-      // Check if there are any search parameters
       const hasSearchParams = Object.keys(searchParams).length > 0;
 
       if (hasSearchParams) {
-        // Transform search parameters to API format
         const apiSearchParams = transformToApiFormat(searchParams);
         Object.entries(apiSearchParams).forEach(([field, value]) => {
           queryParams.append(field, value);
@@ -158,7 +150,6 @@ const PhaseIO = () => {
     if (!query.trim()) return [];
 
     try {
-      // Construct the API endpoint for suggestions
       const endpoint = `${process.env.NEXT_PUBLIC_BASE_URL}/phaseinout/distinct/${field}?filt=${query}`;
 
       const res = await fetch(endpoint, {
@@ -174,12 +165,9 @@ const PhaseIO = () => {
 
       const data = await res.json();
 
-      // Handle the specific response format where the field name is the key
       if (data && typeof data === "object") {
-        // Convert field to lowercase to match potential API response keys
         const fieldKey = field.toLowerCase().replace(/\s+/g, " ").trim();
 
-        // Try to find the key in the response that matches our field
         const matchingKey = Object.keys(data).find(
           (key) =>
             key.toLowerCase() === fieldKey ||
@@ -206,10 +194,8 @@ const PhaseIO = () => {
 
     setDeleting(true);
     try {
-      // Extract Master IDs from selected rows
       const productsIds = extractFields(selectedRows, "Material");
 
-      // Transform to API format for delete request
       const deletePayload = {
         material: productsIds,
       };
@@ -311,23 +297,26 @@ const PhaseIO = () => {
     }
   };
 
-  // Handle save operation
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleSave = async (data: Record<string, any>): Promise<void> => {
     try {
       // Transform data to API format before sending
       const apiFormattedData = transformToApiFormat(data);
+      const isUpdate = !!selectedRowId;
 
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/phaseinout/update/${selectedRowId}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(apiFormattedData),
-        }
-      );
+      const endpoint = isUpdate
+        ? `${process.env.NEXT_PUBLIC_BASE_URL}/phaseinout/update/${selectedRowId}`
+        : `${process.env.NEXT_PUBLIC_BASE_URL}/phaseinout/add`;
+
+      const method = isUpdate ? "PUT" : "POST";
+
+      const response = await fetch(endpoint, {
+        method: method,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(apiFormattedData),
+      });
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -354,8 +343,6 @@ const PhaseIO = () => {
   // };
 
   const handleAddClick = () => {
-    // TODO: Implement add new record functionality
-    // console.log("Add new record clicked");
     setIsSheetOpen(true);
   };
 
@@ -372,7 +359,6 @@ const PhaseIO = () => {
           </div>
         </div>
 
-        {/* Table Component - Takes remaining space with strict constraints */}
         <div className="flex-1 h-full overflow-hidden min-w-0">
           <DataTable
             tableName="Phase In/Out"
@@ -412,14 +398,12 @@ const PhaseIO = () => {
           }}
           onSave={handleSave}
           fields={fieldConfig}
-          // fields={selectedRow ? fieldConfig : filteredFieldConfig}
           title={selectedRow ? "Edit Entry" : "Create New Entry"}
           isOpen={isSheetOpen}
           onClose={() => setIsSheetOpen(false)}
         />
       </div>
 
-      {/* Delete Confirmation Dialog */}
       <ConfirmDialog
         open={showDeleteDialog}
         onOpenChange={setShowDeleteDialog}

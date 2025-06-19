@@ -2,14 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { RightSheet } from "@/components/RightSheet";
-import SearchComponent from "@/components/SearchComponent";
-// import { DataTable } from "@/components/master-coding/data-table";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
-import {
-  transformToApiFormat,
-  transformArrayFromApiFormat,
-  extractFields,
-} from "@/lib/data-transformers";
 import type {
   RowDataType,
   PaginationData,
@@ -17,8 +10,12 @@ import type {
   ColumnConfig,
 } from "@/lib/types";
 import { DataTable } from "@/components/DataTable";
-// import { DataTable } from "@/components/mastercoding/DataTable";
-// import { DataTable } from "@/components/mastercoding/DataTable";
+import {
+  transformToApiFormat,
+  transformArrayFromApiFormat,
+  extractFields,
+} from "@/lib/data-transformers";
+import SearchComponent from "@/components/SearchComponent";
 
 const MasterCoding = () => {
   const [selectedRow, setSelectedRow] = useState<RowDataType | null>(null);
@@ -80,7 +77,6 @@ const MasterCoding = () => {
     { key: "Key Feature", label: "Key Feature", type: "text" },
   ];
 
-  // Column definitions (removed sortable and filterable properties)
   const columns: readonly ColumnConfig[] = [
     { key: "Master ID", label: "Master ID" },
     { key: "Product", label: "Product" },
@@ -95,7 +91,6 @@ const MasterCoding = () => {
     { key: "Key Feature", label: "Key Feature" },
   ];
 
-  // API to retrieve the main data
   const fetchMasterData = async (
     searchParams: Record<string, string> = {},
     page = 1,
@@ -105,18 +100,14 @@ const MasterCoding = () => {
     try {
       let endpoint = `${process.env.NEXT_PUBLIC_BASE_URL}/mastercoding`;
 
-      // Build query parameters
       const queryParams = new URLSearchParams();
 
-      // Add pagination parameters
       queryParams.append("page", page.toString());
       queryParams.append("limit", recordsPerPage.toString());
 
-      // Check if there are any search parameters
       const hasSearchParams = Object.keys(searchParams).length > 0;
 
       if (hasSearchParams) {
-        // Transform search parameters to API format
         const apiSearchParams = transformToApiFormat(searchParams);
         Object.entries(apiSearchParams).forEach(([field, value]) => {
           queryParams.append(field, value);
@@ -135,15 +126,12 @@ const MasterCoding = () => {
 
       const parsedData = typeof data === "string" ? JSON.parse(data) : data;
 
-      // Fix: Access the data array from the response
       if (parsedData && parsedData.data && Array.isArray(parsedData.data)) {
-        // Transform the received data from API format to display format
         const transformedData = transformArrayFromApiFormat(
           parsedData.data
         ) as RowDataType[];
         setRowData(transformedData);
 
-        // Update pagination info
         if (parsedData.pagination) {
           setPagination(parsedData.pagination);
         }
@@ -159,7 +147,6 @@ const MasterCoding = () => {
     }
   };
 
-  // API to fetch suggestions for a specific field
   const fetchSuggestions = async (
     field: string,
     query: string
@@ -167,7 +154,6 @@ const MasterCoding = () => {
     if (!query.trim()) return [];
 
     try {
-      // Construct the API endpoint for suggestions
       const endpoint = `${process.env.NEXT_PUBLIC_BASE_URL}/mastercoding/distinct/${field}?filt=${query}`;
 
       const res = await fetch(endpoint, {
@@ -183,9 +169,7 @@ const MasterCoding = () => {
 
       const data = await res.json();
 
-      // Handle the specific response format where the field name is the key
       if (data && typeof data === "object") {
-        // Convert field to lowercase to match potential API response keys
         const fieldKey = field.toLowerCase().replace(/\s+/g, " ").trim();
 
         // Try to find the key in the response that matches our field
@@ -201,7 +185,6 @@ const MasterCoding = () => {
         }
       }
 
-      // Fallback to empty array if we can't find matching data
       return [];
     } catch (error) {
       console.error(`Error fetching suggestions for ${field}:`, error);
@@ -209,16 +192,13 @@ const MasterCoding = () => {
     }
   };
 
-  // Bulk delete function
   const handleBulkDelete = async () => {
     if (selectedRows.length === 0) return;
 
     setDeleting(true);
     try {
-      // Extract Master IDs from selected rows
       const masterIds = extractFields(selectedRows, "Master ID");
 
-      // Transform to API format for delete request
       const deletePayload = {
         master_id: masterIds,
       };
@@ -320,29 +300,31 @@ const MasterCoding = () => {
     }
   };
 
-  // Handle save operation
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleSave = async (data: Record<string, any>): Promise<void> => {
     try {
       // Transform data to API format before sending
       const apiFormattedData = transformToApiFormat(data);
+      const isUpdate = !!selectedRowId;
 
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/mastercoding/update/${selectedRowId}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(apiFormattedData),
-        }
-      );
+      const endpoint = isUpdate
+        ? `${process.env.NEXT_PUBLIC_BASE_URL}/mastercoding/update/${selectedRowId}`
+        : `${process.env.NEXT_PUBLIC_BASE_URL}/mastercoding/add`;
+
+      const method = isUpdate ? "PUT" : "POST";
+
+      const response = await fetch(endpoint, {
+        method: method,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(apiFormattedData),
+      });
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      // Update the local data if the save was successful
       setRowData((prevData) =>
         prevData.map((row) =>
           row["Master ID"] === data["Master ID"] ? { ...row, ...data } : row
@@ -375,7 +357,6 @@ const MasterCoding = () => {
   return (
     <div className="w-full h-[85vh] p-4 overflow-hidden">
       <div className="w-full h-full flex flex-col lg:flex-row gap-4 overflow-hidden">
-        {/* Search Component - Fixed width and height */}
         <div className="w-full lg:w-[300px] flex-shrink-0 h-full overflow-hidden">
           <div className="h-full overflow-auto">
             <SearchComponent
@@ -386,7 +367,6 @@ const MasterCoding = () => {
           </div>
         </div>
 
-        {/* Table Component - Takes remaining space with strict constraints */}
         <div className="flex-1 h-full overflow-hidden min-w-0">
           <DataTable
             tableName="Master Coding"
@@ -417,7 +397,6 @@ const MasterCoding = () => {
             setIsSheetOpen(false);
           }}
           onSave={handleSave}
-          // fields={fieldConfig}
           fields={selectedRow ? fieldConfig : filteredFieldConfig}
           title={selectedRow ? "Edit Entry" : "Create New Entry"}
           isOpen={isSheetOpen}
@@ -425,7 +404,6 @@ const MasterCoding = () => {
         />
       </div>
 
-      {/* Delete Confirmation Dialog */}
       <ConfirmDialog
         open={showDeleteDialog}
         onOpenChange={setShowDeleteDialog}
