@@ -4,19 +4,19 @@ import { TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ColumnConfig } from "@/lib/types";
 
-interface MasterCodingTableHeaderProps {
+interface DataTableHeaderProps {
   columns: readonly ColumnConfig[];
   isAllSelected: boolean;
   isIndeterminate: boolean;
   onSelectAll: (checked: boolean) => void;
 }
 
-export function MasterCodingTableHeader({
+export function DataTableHeader({
   columns,
   isAllSelected,
   isIndeterminate,
   onSelectAll,
-}: MasterCodingTableHeaderProps) {
+}: DataTableHeaderProps) {
   return (
     <TableHeader className="sticky top-0 bg-background z-10">
       <TableRow>

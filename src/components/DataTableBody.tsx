@@ -3,19 +3,20 @@
 import { TableBody, TableCell, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ColumnConfig, RowDataType } from "@/lib/types";
-// import type { RowDataType, ColumnConfig } from "@/types/master-coding";
 
-interface MasterCodingTableBodyProps {
+interface DataTableBodyProps {
+  selectionValue: keyof RowDataType;
   data: RowDataType[];
   columns: readonly ColumnConfig[];
   selectedRows: RowDataType[];
-  selectedRowId: number | null;
+  selectedRowId: string | number | null;
   onRowSelect: (row: RowDataType, checked: boolean) => void;
   onRowClick: (row: RowDataType) => void;
   loading: boolean;
 }
 
-export function MasterCodingTableBody({
+export function DataTableBody({
+  selectionValue,
   data,
   columns,
   selectedRows,
@@ -23,7 +24,7 @@ export function MasterCodingTableBody({
   onRowSelect,
   onRowClick,
   loading,
-}: MasterCodingTableBodyProps) {
+}: DataTableBodyProps) {
   if (data.length === 0 && !loading) {
     return (
       <TableBody>
@@ -40,13 +41,13 @@ export function MasterCodingTableBody({
     <TableBody>
       {data.map((row) => {
         const isSelected = selectedRows.some(
-          (r) => r["Master ID"] === row["Master ID"]
+          (r) => r[selectionValue] === row[selectionValue]
         );
-        const isRowSelected = selectedRowId === row["Master ID"];
+        const isRowSelected = selectedRowId === row[selectionValue];
 
         return (
           <TableRow
-            key={row["Master ID"]}
+            key={row[selectionValue]}
             className={`cursor-pointer hover:bg-muted/50 ${
               isRowSelected ? "bg-muted" : ""
             }`}
@@ -61,7 +62,7 @@ export function MasterCodingTableBody({
                 onCheckedChange={(checked) =>
                   onRowSelect(row, checked as boolean)
                 }
-                aria-label={`Select row ${row["Master ID"]}`}
+                aria-label={`Select row ${row[selectionValue]}`}
               />
             </TableCell>
             {columns.map((column, index) => (

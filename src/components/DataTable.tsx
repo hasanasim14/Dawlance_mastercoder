@@ -2,23 +2,20 @@
 
 import { Table } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import type {
-  RowDataType,
-  SortConfig,
-  PaginationData,
-  ColumnConfig,
-} from "@/lib/types";
+import type { RowDataType, PaginationData, ColumnConfig } from "@/lib/types";
 import { TableActions } from "./TableActions";
-import { MasterCodingTableBody } from "./TableBody";
 import { Pagination } from "./Pagination";
-import { MasterCodingTableHeader } from "./TableHeader";
+import { DataTableHeader } from "./TableHeader";
+import { DataTableBody } from "./DataTableBody";
 
 interface DataTableProps {
+  tableName: string;
+  selectionValue: keyof RowDataType;
   loading: boolean;
   deleting: boolean;
   data: RowDataType[];
   selectedRows: RowDataType[];
-  selectedRowId: number | null;
+  selectedRowId: string | number | null;
   pagination: PaginationData;
   currentPage: number;
   pageSize: number;
@@ -33,6 +30,8 @@ interface DataTableProps {
 }
 
 export function DataTable({
+  tableName,
+  selectionValue,
   loading,
   deleting,
   data,
@@ -58,6 +57,7 @@ export function DataTable({
     <div className="rounded-lg border bg-card shadow-sm h-full w-full flex flex-col overflow-hidden">
       {/* Fixed header section */}
       <TableActions
+        tableName={tableName}
         selectedRowsCount={selectedRows.length}
         deleting={deleting}
         onDeleteClick={onDeleteClick}
@@ -76,7 +76,7 @@ export function DataTable({
           {/* Table container with strict height constraints */}
           <div className="flex-1 overflow-hidden relative">
             <div
-              className="absolute inset-0 overflow-auto pb-2" // Added pb-2 for scrollbar space
+              className="absolute inset-0 overflow-auto pb-2"
               style={{
                 scrollbarWidth: "thin",
                 scrollbarGutter: "stable",
@@ -102,15 +102,14 @@ export function DataTable({
               `}</style>
               <div className="min-w-[500px]">
                 <Table>
-                  <MasterCodingTableHeader
+                  <DataTableHeader
                     columns={columns}
                     isAllSelected={isAllSelected}
                     isIndeterminate={isIndeterminate}
-                    // sortConfig={sortConfig}
                     onSelectAll={onSelectAll}
-                    // onSort={onSort}
                   />
-                  <MasterCodingTableBody
+                  <DataTableBody
+                    selectionValue={selectionValue}
                     data={data}
                     columns={columns}
                     selectedRows={selectedRows}
