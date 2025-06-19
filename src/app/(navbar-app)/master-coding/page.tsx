@@ -12,8 +12,6 @@ import {
 } from "@/lib/data-transformers";
 import type {
   RowDataType,
-  SortConfig,
-  FilterConfig,
   PaginationData,
   FieldConfig,
   ColumnConfig,
@@ -26,15 +24,12 @@ const MasterCoding = () => {
   const [selectedRowId, setSelectedRowId] = useState<number | null>(null);
   const [selectedRows, setSelectedRows] = useState<RowDataType[]>([]);
   const [rowData, setRowData] = useState<RowDataType[]>([]);
-  const [filteredData, setFilteredData] = useState<RowDataType[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
   const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(
     null
   );
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [sortConfig, setSortConfig] = useState<SortConfig>(null);
-  const [columnFilters, setColumnFilters] = useState<FilterConfig>({});
 
   // Pagination states
   const [pagination, setPagination] = useState<PaginationData>({
@@ -83,44 +78,19 @@ const MasterCoding = () => {
     { key: "Key Feature", label: "Key Feature", type: "text" },
   ];
 
-  // Column definitions
+  // Column definitions (removed sortable and filterable properties)
   const columns: readonly ColumnConfig[] = [
-    { key: "Master ID", label: "Master ID", sortable: true, filterable: true },
-    { key: "Product", label: "Product", sortable: true, filterable: true },
-    { key: "Material", label: "Material", sortable: true, filterable: true },
-    {
-      key: "Material Description",
-      label: "Material Description",
-      sortable: true,
-      filterable: true,
-    },
-    {
-      key: "Measurement Instrument",
-      label: "Measurement Instrument",
-      sortable: true,
-      filterable: true,
-    },
-    {
-      key: "Colour Similarity",
-      label: "Colour Similarity",
-      sortable: true,
-      filterable: true,
-    },
-    {
-      key: "Product type",
-      label: "Product type",
-      sortable: true,
-      filterable: true,
-    },
-    { key: "Function", label: "Function", sortable: true, filterable: true },
-    { key: "Series", label: "Series", sortable: true, filterable: true },
-    { key: "Colour", label: "Colour", sortable: true, filterable: true },
-    {
-      key: "Key Feature",
-      label: "Key Feature",
-      sortable: true,
-      filterable: true,
-    },
+    { key: "Master ID", label: "Master ID" },
+    { key: "Product", label: "Product" },
+    { key: "Material", label: "Material" },
+    { key: "Material Description", label: "Material Description" },
+    { key: "Measurement Instrument", label: "Measurement Instrument" },
+    { key: "Colour Similarity", label: "Colour Similarity" },
+    { key: "Product type", label: "Product type" },
+    { key: "Function", label: "Function" },
+    { key: "Series", label: "Series" },
+    { key: "Colour", label: "Colour" },
+    { key: "Key Feature", label: "Key Feature" },
   ];
 
   // API to retrieve the main data
@@ -237,63 +207,6 @@ const MasterCoding = () => {
     }
   };
 
-  // Sorting function
-  const handleSort = (key: keyof RowDataType) => {
-    let direction: "asc" | "desc" = "asc";
-    if (
-      sortConfig &&
-      sortConfig.key === key &&
-      sortConfig.direction === "asc"
-    ) {
-      direction = "desc";
-    }
-    setSortConfig({ key, direction });
-  };
-
-  // Filter function
-  const handleColumnFilter = (column: string, value: string) => {
-    setColumnFilters((prev) => ({
-      ...prev,
-      [column]: value,
-    }));
-  };
-
-  // Apply sorting and filtering
-  useEffect(() => {
-    let processedData = [...rowData];
-
-    // Apply column filters
-    Object.entries(columnFilters).forEach(([column, filterValue]) => {
-      if (filterValue.trim()) {
-        processedData = processedData.filter((row) => {
-          const cellValue = row[column as keyof RowDataType];
-          return cellValue
-            ?.toString()
-            .toLowerCase()
-            .includes(filterValue.toLowerCase());
-        });
-      }
-    });
-
-    // Apply sorting
-    if (sortConfig) {
-      processedData.sort((a, b) => {
-        const aValue = a[sortConfig.key];
-        const bValue = b[sortConfig.key];
-
-        if (aValue < bValue) {
-          return sortConfig.direction === "asc" ? -1 : 1;
-        }
-        if (aValue > bValue) {
-          return sortConfig.direction === "asc" ? 1 : -1;
-        }
-        return 0;
-      });
-    }
-
-    setFilteredData(processedData);
-  }, [rowData, sortConfig, columnFilters]);
-
   // Bulk delete function
   const handleBulkDelete = async () => {
     if (selectedRows.length === 0) return;
@@ -385,7 +298,7 @@ const MasterCoding = () => {
   // Handle select all
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedRows([...filteredData]);
+      setSelectedRows([...rowData]);
     } else {
       setSelectedRows([]);
     }
@@ -406,7 +319,7 @@ const MasterCoding = () => {
     }
   };
 
-  // Handle save operation - Fixed return type
+  // Handle save operation
   const handleSave = async (data: Record<string, any>): Promise<void> => {
     try {
       // Transform data to API format before sending
@@ -426,8 +339,6 @@ const MasterCoding = () => {
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-
-      const result = await response.json();
 
       // Update the local data if the save was successful
       setRowData((prevData) =>
@@ -455,10 +366,10 @@ const MasterCoding = () => {
   };
 
   return (
-    <div className="flex flex-col p-1 sm:p-2 overflow-hidden h-[85vh] ">
-      <div className="flex flex-col xl:flex-row gap-4 h-full">
-        {/* Search Component - Responsive width */}
-        <div className="xl:w-1/4 xl:max-w-[300px] xl:min-w-[250px] flex-shrink-0 h-full">
+    <div className="w-full h-[85vh] p-4 overflow-hidden">
+      <div className="w-full h-full flex flex-col lg:flex-row gap-4 overflow-hidden">
+        {/* Search Component - Fixed width and height */}
+        <div className="w-full lg:w-[300px] flex-shrink-0 h-full overflow-hidden">
           <div className="h-full overflow-auto">
             <SearchComponent
               onSearch={handleSearch}
@@ -467,15 +378,14 @@ const MasterCoding = () => {
           </div>
         </div>
 
-        {/* Table Component - Takes remaining space */}
-        <div className="flex-1 h-full min-w-0">
+        {/* Table Component - Takes remaining space with strict constraints */}
+        <div className="flex-1 h-full overflow-hidden min-w-0">
           <DataTable
             loading={loading}
             deleting={deleting}
-            filteredData={filteredData}
+            data={rowData}
             selectedRows={selectedRows}
             selectedRowId={selectedRowId}
-            sortConfig={sortConfig}
             pagination={pagination}
             currentPage={currentPage}
             pageSize={pageSize}
@@ -483,7 +393,6 @@ const MasterCoding = () => {
             onRowSelect={handleRowSelect}
             onSelectAll={handleSelectAll}
             onRowClick={handleRowClick}
-            onSort={handleSort}
             onPageSizeChange={handlePageSizeChange}
             onPageChange={handlePageChange}
             onDeleteClick={() => setShowDeleteDialog(true)}

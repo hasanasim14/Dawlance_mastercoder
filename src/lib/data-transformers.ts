@@ -33,8 +33,11 @@ const REVERSE_KEY_MAPPING = Object.entries(KEY_MAPPING).reduce(
  * @returns Data object with API format keys
  */
 export function transformToApiFormat(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   data: Record<string, any>
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): Record<string, any> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const transformed: Record<string, any> = {};
 
   Object.entries(data).forEach(([key, value]) => {
@@ -53,8 +56,11 @@ export function transformToApiFormat(
  * @returns Data object with display format keys
  */
 export function transformFromApiFormat(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   data: Record<string, any>
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): Record<string, any> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const transformed: Record<string, any> = {};
 
   Object.entries(data).forEach(([key, value]) => {
@@ -73,7 +79,9 @@ export function transformFromApiFormat(
  * @returns Array of data objects with display format keys
  */
 export function transformArrayFromApiFormat(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   dataArray: Record<string, any>[]
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): Record<string, any>[] {
   return dataArray.map(transformFromApiFormat);
 }
@@ -84,7 +92,9 @@ export function transformArrayFromApiFormat(
  * @returns Array of data objects with API format keys
  */
 export function transformArrayToApiFormat(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   dataArray: Record<string, any>[]
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): Record<string, any>[] {
   return dataArray.map(transformToApiFormat);
 }
@@ -132,6 +142,7 @@ export function transformMasterIdsForDelete(masterIds: number[]): {
  * @returns Array of Master ID values
  */
 export function extractMasterIds(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   selectedRows: Record<string, any>[]
 ): number[] {
   return selectedRows

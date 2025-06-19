@@ -2,24 +2,20 @@
 
 import { TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ColumnConfig, RowDataType, SortConfig } from "@/lib/types";
+import { ColumnConfig } from "@/lib/types";
 
 interface MasterCodingTableHeaderProps {
   columns: readonly ColumnConfig[];
   isAllSelected: boolean;
   isIndeterminate: boolean;
-  sortConfig: SortConfig;
   onSelectAll: (checked: boolean) => void;
-  onSort: (key: keyof RowDataType) => void;
 }
 
 export function MasterCodingTableHeader({
   columns,
   isAllSelected,
   isIndeterminate,
-  sortConfig,
   onSelectAll,
-  onSort,
 }: MasterCodingTableHeaderProps) {
   return (
     <TableHeader className="sticky top-0 bg-background z-10">
@@ -40,7 +36,9 @@ export function MasterCodingTableHeader({
           <TableHead
             key={column.key}
             className={`
-            select-none min-w-[150px]`}
+              select-none min-w-[150px] ${
+                index === 0 ? "sticky left-12 bg-background z-20" : ""
+              }`}
           >
             <div className="flex items-center gap-2">{column.label}</div>
           </TableHead>

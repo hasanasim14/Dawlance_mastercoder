@@ -2,11 +2,6 @@
 
 import { Table } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-// import { RowDataType } from "@/lib/types";
-// import { MasterCodingTableHeader } from "./table-header";
-// import { MasterCodingTableBody } from "./table-body";
-// import { Pagination } from "./pagination";
-// import { TableActions } from "./table-actions";
 import type {
   RowDataType,
   SortConfig,
@@ -21,10 +16,9 @@ import { MasterCodingTableHeader } from "./TableHeader";
 interface DataTableProps {
   loading: boolean;
   deleting: boolean;
-  filteredData: RowDataType[];
+  data: RowDataType[];
   selectedRows: RowDataType[];
   selectedRowId: number | null;
-  sortConfig: SortConfig;
   pagination: PaginationData;
   currentPage: number;
   pageSize: number;
@@ -32,7 +26,6 @@ interface DataTableProps {
   onRowSelect: (row: RowDataType, checked: boolean) => void;
   onSelectAll: (checked: boolean) => void;
   onRowClick: (row: RowDataType) => void;
-  onSort: (key: keyof RowDataType) => void;
   onPageSizeChange: (newPageSize: string) => void;
   onPageChange: (newPage: number) => void;
   onDeleteClick: () => void;
@@ -42,10 +35,9 @@ interface DataTableProps {
 export function DataTable({
   loading,
   deleting,
-  filteredData,
+  data,
   selectedRows,
   selectedRowId,
-  sortConfig,
   pagination,
   currentPage,
   pageSize,
@@ -53,19 +45,18 @@ export function DataTable({
   onRowSelect,
   onSelectAll,
   onRowClick,
-  onSort,
   onPageSizeChange,
   onPageChange,
   onDeleteClick,
   onAddClick,
 }: DataTableProps) {
-  const isAllSelected =
-    filteredData.length > 0 && selectedRows.length === filteredData.length;
+  const isAllSelected = data.length > 0 && selectedRows.length === data.length;
   const isIndeterminate =
-    selectedRows.length > 0 && selectedRows.length < filteredData.length;
+    selectedRows.length > 0 && selectedRows.length < data.length;
 
   return (
-    <div className="rounded-lg border bg-card shadow-sm flex flex-col h-full w-full overflow-hidden">
+    <div className="rounded-lg border bg-card shadow-sm h-full w-full flex flex-col overflow-hidden">
+      {/* Fixed header section */}
       <TableActions
         selectedRowsCount={selectedRows.length}
         deleting={deleting}
@@ -74,26 +65,28 @@ export function DataTable({
       />
 
       {loading ? (
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 p-4 space-y-3 overflow-hidden">
           {/* Create consistent skeleton rows that match the actual table height */}
-          {Array.from({ length: 15 }, (_, i) => (
+          {Array.from({ length: 12 }, (_, i) => (
             <Skeleton key={i} className="h-12 w-full" />
           ))}
         </div>
       ) : (
         <>
-          {/* Table with horizontal scroll and visible scrollbar */}
-          <div className="flex-1 overflow-auto">
+          {/* Table container with strict height constraints */}
+          <div className="flex-1 overflow-hidden relative">
             <div
-              className="overflow-x-auto h-full"
+              className="absolute inset-0 overflow-auto pb-2" // Added pb-2 for scrollbar space
               style={{
                 scrollbarWidth: "thin",
+                scrollbarGutter: "stable",
                 scrollbarColor: "rgb(203 213 225) transparent",
               }}
             >
               <style jsx>{`
                 div::-webkit-scrollbar {
                   height: 8px;
+                  width: 8px;
                 }
                 div::-webkit-scrollbar-track {
                   background: rgb(248 250 252);
@@ -107,28 +100,31 @@ export function DataTable({
                   background: rgb(148 163 184);
                 }
               `}</style>
-              <Table className="min-w-[100px] h-full">
-                <MasterCodingTableHeader
-                  columns={columns}
-                  isAllSelected={isAllSelected}
-                  isIndeterminate={isIndeterminate}
-                  sortConfig={sortConfig}
-                  onSelectAll={onSelectAll}
-                  onSort={onSort}
-                />
-                <MasterCodingTableBody
-                  filteredData={filteredData}
-                  columns={columns}
-                  selectedRows={selectedRows}
-                  selectedRowId={selectedRowId}
-                  onRowSelect={onRowSelect}
-                  onRowClick={onRowClick}
-                  loading={loading}
-                />
-              </Table>
+              <div className="min-w-[500px]">
+                <Table>
+                  <MasterCodingTableHeader
+                    columns={columns}
+                    isAllSelected={isAllSelected}
+                    isIndeterminate={isIndeterminate}
+                    // sortConfig={sortConfig}
+                    onSelectAll={onSelectAll}
+                    // onSort={onSort}
+                  />
+                  <MasterCodingTableBody
+                    data={data}
+                    columns={columns}
+                    selectedRows={selectedRows}
+                    selectedRowId={selectedRowId}
+                    onRowSelect={onRowSelect}
+                    onRowClick={onRowClick}
+                    loading={loading}
+                  />
+                </Table>
+              </div>
             </div>
           </div>
 
+          {/* Fixed footer section */}
           <Pagination
             pagination={pagination}
             currentPage={currentPage}

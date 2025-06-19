@@ -6,7 +6,7 @@ import { ColumnConfig, RowDataType } from "@/lib/types";
 // import type { RowDataType, ColumnConfig } from "@/types/master-coding";
 
 interface MasterCodingTableBodyProps {
-  filteredData: RowDataType[];
+  data: RowDataType[];
   columns: readonly ColumnConfig[];
   selectedRows: RowDataType[];
   selectedRowId: number | null;
@@ -16,7 +16,7 @@ interface MasterCodingTableBodyProps {
 }
 
 export function MasterCodingTableBody({
-  filteredData,
+  data,
   columns,
   selectedRows,
   selectedRowId,
@@ -24,7 +24,7 @@ export function MasterCodingTableBody({
   onRowClick,
   loading,
 }: MasterCodingTableBodyProps) {
-  if (filteredData.length === 0 && !loading) {
+  if (data.length === 0 && !loading) {
     return (
       <TableBody>
         <TableRow>
@@ -38,7 +38,7 @@ export function MasterCodingTableBody({
 
   return (
     <TableBody>
-      {filteredData.map((row) => {
+      {data.map((row) => {
         const isSelected = selectedRows.some(
           (r) => r["Master ID"] === row["Master ID"]
         );

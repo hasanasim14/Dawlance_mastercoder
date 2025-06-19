@@ -39,6 +39,4 @@ export type FieldConfig = {
 export type ColumnConfig = {
   key: string;
   label: string;
-  sortable: boolean;
-  filterable: boolean;
 };
