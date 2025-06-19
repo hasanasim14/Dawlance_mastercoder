@@ -136,16 +136,12 @@ export function transformMasterIdsForDelete(masterIds: number[]): {
   };
 }
 
-/**
- * Extract Master IDs from selected rows
- * @param selectedRows - Array of selected row data
- * @returns Array of Master ID values
- */
-export function extractMasterIds(
+export function extractFields(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  selectedRows: Record<string, any>[]
-): number[] {
+  selectedRows: Record<string, any>[],
+  fieldName: string
+) {
   return selectedRows
-    .map((row) => row["Master ID"])
+    .map((row) => row[fieldName])
     .filter((id) => id !== undefined && id !== null);
 }

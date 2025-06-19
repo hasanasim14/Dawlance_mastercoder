@@ -7,33 +7,46 @@ import { ClientSideRowModelModule, themeAlpine } from "ag-grid-community";
 import { ModuleRegistry } from "ag-grid-community";
 import { ValidationModule } from "ag-grid-community";
 import { Skeleton } from "@/components/ui/skeleton";
-// import { RightSheet } from "@/components/RightSheet";
+import { RightSheet } from "@/components/RightSheet";
 
 // Register modules
 ModuleRegistry.registerModules([ClientSideRowModelModule, ValidationModule]);
 
 type RowDataType = {
-  Material: string;
-  "Material Description": string;
-  Category: string;
-  PredYear: string;
-  PredMonth: string;
-  TYear: string;
-  TMonth: string;
-  Prediction: string;
-  Horizon: string;
+  ID: number;
+  "Branch Name": string;
+  //   Material: string;
+  Province: string;
+  Time: string;
 };
 
-const Results = () => {
-  // const [selectedRow, setSelectedRow] = useState<RowDataType | null>(null);
+const MasterCoding = () => {
+  const [selectedRow, setSelectedRow] = useState<RowDataType | null>(null);
   const [rowData, setRowData] = useState<RowDataType[]>([]);
   const [loading, setLoading] = useState(true);
+  // const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(
+  // null
+  // );
 
   // API to retrieve the main data
-  const fetchMasterData = async () => {
+  const fetchMasterData = async (searchParams: Record<string, string> = {}) => {
     setLoading(true);
     try {
-      const endpoint = `${process.env.NEXT_PUBLIC_BASE_URL}/aipredictions`;
+      let endpoint = `${process.env}/mastercoding`;
+
+      // Check if there are any search parameters
+      const hasSearchParams = Object.keys(searchParams).length > 0;
+
+      if (hasSearchParams) {
+        // Convert the search parameters to a query string
+        const queryParams = new URLSearchParams();
+
+        Object.entries(searchParams).forEach(([field, value]) => {
+          queryParams.append(field, value);
+        });
+
+        endpoint = `${process.env}/mastercoding/?${queryParams.toString()}`;
+      }
 
       const res = await fetch(endpoint, {
         method: "GET",
@@ -59,81 +72,52 @@ const Results = () => {
   // Column Definitions for Master Coding
   const columnDefs: ColDef<RowDataType>[] = useMemo(
     () => [
-      // Material
+      // ID
       {
-        headerName: "Material",
-        field: "Material",
+        headerName: "ID",
+        field: "ID",
+        sortable: true,
+        filter: true,
+        minWidth: 120,
+      },
+      // Branch Name
+      {
+        headerName: "Branch Name",
+        field: "Branch Name",
         sortable: true,
         filter: true,
         minWidth: 150,
       },
-      // Material Description
+      // Province
       {
-        headerName: "Material Description",
-        field: "Material Description",
+        headerName: "Province",
+        field: "Province",
+        sortable: true,
+        filter: true,
+        minWidth: 150,
+      },
+      // Time
+      {
+        headerName: "Time",
+        field: "Time",
         sortable: true,
         filter: true,
         minWidth: 200,
       },
-      // Category
-      {
-        headerName: "Category",
-        field: "Category",
-        sortable: true,
-        filter: true,
-        minWidth: 180,
-      },
-      // PredYear
-      {
-        headerName: "PredYear",
-        field: "PredYear",
-        sortable: true,
-        filter: true,
-        minWidth: 150,
-      },
-      // PredMonth
-      {
-        headerName: "PredMonth",
-        field: "PredMonth",
-        sortable: true,
-        filter: true,
-        minWidth: 150,
-      },
-      // TYear
-      {
-        headerName: "TYear",
-        field: "TYear",
-        sortable: true,
-        filter: true,
-        minWidth: 150,
-      },
-      // TMonth
-      {
-        headerName: "TMonth",
-        field: "TMonth",
-        sortable: true,
-        filter: true,
-        minWidth: 120,
-      },
-      // Prediction
-      {
-        headerName: "Prediction",
-        field: "Prediction",
-        sortable: true,
-        filter: true,
-        minWidth: 120,
-      },
-      // Key Feature
-      {
-        headerName: "Horizon",
-        field: "Horizon",
-        sortable: true,
-        filter: true,
-        minWidth: 150,
-      },
     ],
     []
   );
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const onRowClicked = (event: any) => {
+    setSelectedRow(event.data);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    event.api.forEachNode((node: any) => {
+      node.setSeleted(false);
+    });
+    event.node.setSeleted(true);
+  };
 
   const defaultColDef = useMemo(() => {
     return {
@@ -146,10 +130,10 @@ const Results = () => {
 
   return (
     <div className="flex flex-col h-[calc(100vh-90px)] p-4">
-      <div className="flex flex-col flex-grow overflow-hidden h-[calc(100%-120px)]">
+      <div className="flex flex-col md:flex-row gap-4 flex-grow overflow-hidden h-[calc(100%-120px)]">
         <div className="rounded-lg border bg-card flex-grow shadow-sm flex flex-col h-full">
           <div className="p-4 border-b flex justify-between items-center flex-shrink-0">
-            <h3 className="font-semibold">Results</h3>
+            <h3 className="font-semibold">Master Coding</h3>
           </div>
 
           {loading ? (
@@ -166,27 +150,21 @@ const Results = () => {
                 theme={themeAlpine}
                 rowData={rowData}
                 columnDefs={columnDefs}
-                // pagination={true}
-                // paginationAutoPageSize={true}
-                // onRowClicked={onRowClicked}
-                // getRowClass={getRowClass}
+                onRowClicked={onRowClicked}
                 defaultColDef={defaultColDef}
-                // onGridReady={onGridReady}
                 animateRows={true}
                 rowHeight={30}
                 headerHeight={38}
                 suppressCellFocus={true}
-                // className="rounded-md"
-                // domLayout="normal"
               />
             </div>
           )}
         </div>
 
-        {/* <RightSheet selectedRow={selectedRow} /> */}
+        <RightSheet selectedRow={selectedRow} />
       </div>
     </div>
   );
 };
 
-export default Results;
+export default MasterCoding;

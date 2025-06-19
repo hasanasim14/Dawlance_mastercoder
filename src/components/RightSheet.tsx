@@ -22,8 +22,10 @@ interface FieldConfig {
 interface RightSheetProps {
   children?: React.ReactNode;
   className?: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   selectedRow?: Record<string, any> | null;
   onReset?: () => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onSave?: (data: Record<string, any>) => Promise<void>;
   title?: string;
   fields?: FieldConfig[];
@@ -45,6 +47,7 @@ export function RightSheet({
   onClose,
 }: RightSheetProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [formData, setFormData] = useState<Record<string, any>>({});
   const [isSaving, setIsSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);

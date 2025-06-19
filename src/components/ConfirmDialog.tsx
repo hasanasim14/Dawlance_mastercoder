@@ -27,8 +27,8 @@ export function ConfirmDialog({
   onOpenChange,
   title,
   description,
-  confirmText = "Confirm",
-  cancelText = "Cancel",
+  confirmText,
+  cancelText,
   onConfirm,
   variant = "default",
 }: ConfirmDialogProps) {
@@ -45,7 +45,7 @@ export function ConfirmDialog({
             onClick={onConfirm}
             className={
               variant === "destructive"
-                ? "bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                ? "bg-destructive text-destructive-foreground hover:bg-destructive/90 text-white"
                 : ""
             }
           >

@@ -7,33 +7,30 @@ import { ClientSideRowModelModule, themeAlpine } from "ag-grid-community";
 import { ModuleRegistry } from "ag-grid-community";
 import { ValidationModule } from "ag-grid-community";
 import { Skeleton } from "@/components/ui/skeleton";
-// import { RightSheet } from "@/components/RightSheet";
+import { RightSheet } from "@/components/RightSheet";
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
 
 // Register modules
 ModuleRegistry.registerModules([ClientSideRowModelModule, ValidationModule]);
 
 type RowDataType = {
-  Material: string;
-  "Material Description": string;
-  Category: string;
-  PredYear: string;
-  PredMonth: string;
-  TYear: string;
-  TMonth: string;
-  Prediction: string;
-  Horizon: string;
+  Account: string;
+  Role: string;
 };
 
-const Results = () => {
-  // const [selectedRow, setSelectedRow] = useState<RowDataType | null>(null);
+const Users = () => {
+  const [selectedRow, setSelectedRow] = useState<RowDataType | null>(null);
   const [rowData, setRowData] = useState<RowDataType[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isAddingNew, setIsAddingNew] = useState(false);
 
-  // API to retrieve the main data
-  const fetchMasterData = async () => {
+  const fetchMasterData = async (search = "") => {
     setLoading(true);
     try {
-      const endpoint = `${process.env.NEXT_PUBLIC_BASE_URL}/aipredictions`;
+      const endpoint = search
+        ? `${process.env}/phaseio/search?term=${encodeURIComponent(search)}`
+        : `${process.env}/phaseio`;
 
       const res = await fetch(endpoint, {
         method: "GET",
@@ -59,74 +56,18 @@ const Results = () => {
   // Column Definitions for Master Coding
   const columnDefs: ColDef<RowDataType>[] = useMemo(
     () => [
-      // Material
+      // Account
       {
-        headerName: "Material",
-        field: "Material",
+        headerName: "Account",
+        field: "Account",
         sortable: true,
         filter: true,
         minWidth: 150,
       },
-      // Material Description
+      // Role
       {
-        headerName: "Material Description",
-        field: "Material Description",
-        sortable: true,
-        filter: true,
-        minWidth: 200,
-      },
-      // Category
-      {
-        headerName: "Category",
-        field: "Category",
-        sortable: true,
-        filter: true,
-        minWidth: 180,
-      },
-      // PredYear
-      {
-        headerName: "PredYear",
-        field: "PredYear",
-        sortable: true,
-        filter: true,
-        minWidth: 150,
-      },
-      // PredMonth
-      {
-        headerName: "PredMonth",
-        field: "PredMonth",
-        sortable: true,
-        filter: true,
-        minWidth: 150,
-      },
-      // TYear
-      {
-        headerName: "TYear",
-        field: "TYear",
-        sortable: true,
-        filter: true,
-        minWidth: 150,
-      },
-      // TMonth
-      {
-        headerName: "TMonth",
-        field: "TMonth",
-        sortable: true,
-        filter: true,
-        minWidth: 120,
-      },
-      // Prediction
-      {
-        headerName: "Prediction",
-        field: "Prediction",
-        sortable: true,
-        filter: true,
-        minWidth: 120,
-      },
-      // Key Feature
-      {
-        headerName: "Horizon",
-        field: "Horizon",
+        headerName: "Role",
+        field: "Role",
         sortable: true,
         filter: true,
         minWidth: 150,
@@ -134,6 +75,29 @@ const Results = () => {
     ],
     []
   );
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const onRowClicked = (event: any) => {
+    setSelectedRow(event.data);
+    setIsAddingNew(false); // Reset adding new state when a row is selected
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    event.api.forEachNode((node: any) => {
+      node.setSeleted(false);
+    });
+    event.node.setSeleted(true);
+  };
+
+  const handleAddNewUser = () => {
+    // Create an empty row with the same structure as RowDataType
+    const emptyRow: RowDataType = {
+      Account: "",
+      Role: "",
+    };
+
+    setSelectedRow(emptyRow);
+    setIsAddingNew(true);
+  };
 
   const defaultColDef = useMemo(() => {
     return {
@@ -144,12 +108,22 @@ const Results = () => {
     };
   }, []);
 
+  // Determine what to pass to RightSheet
+  const rightSheetData = isAddingNew ? { Account: "", Role: "" } : selectedRow;
+
   return (
     <div className="flex flex-col h-[calc(100vh-90px)] p-4">
-      <div className="flex flex-col flex-grow overflow-hidden h-[calc(100%-120px)]">
+      <div className="flex flex-col md:flex-row gap-4 flex-grow overflow-hidden h-[calc(100%-120px)]">
         <div className="rounded-lg border bg-card flex-grow shadow-sm flex flex-col h-full">
           <div className="p-4 border-b flex justify-between items-center flex-shrink-0">
-            <h3 className="font-semibold">Results</h3>
+            <h3 className="font-semibold">Users</h3>
+            <Button
+              className="px-4 py-2 text-white rounded-md transition-colors"
+              onClick={handleAddNewUser}
+            >
+              <Plus />
+              Add a new role
+            </Button>
           </div>
 
           {loading ? (
@@ -168,7 +142,7 @@ const Results = () => {
                 columnDefs={columnDefs}
                 // pagination={true}
                 // paginationAutoPageSize={true}
-                // onRowClicked={onRowClicked}
+                onRowClicked={onRowClicked}
                 // getRowClass={getRowClass}
                 defaultColDef={defaultColDef}
                 // onGridReady={onGridReady}
@@ -183,10 +157,10 @@ const Results = () => {
           )}
         </div>
 
-        {/* <RightSheet selectedRow={selectedRow} /> */}
+        <RightSheet selectedRow={rightSheetData} />
       </div>
     </div>
   );
 };
 
-export default Results;
+export default Users;

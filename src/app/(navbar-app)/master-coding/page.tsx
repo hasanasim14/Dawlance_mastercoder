@@ -8,7 +8,7 @@ import { ConfirmDialog } from "@/components/ConfirmDialog";
 import {
   transformToApiFormat,
   transformArrayFromApiFormat,
-  extractMasterIds,
+  extractFields,
 } from "@/lib/data-transformers";
 import type {
   RowDataType,
@@ -16,7 +16,8 @@ import type {
   FieldConfig,
   ColumnConfig,
 } from "@/lib/types";
-import { DataTable } from "@/components/mastercoding/DataTable";
+import { DataTable } from "@/components/DataTable";
+// import { DataTable } from "@/components/mastercoding/DataTable";
 // import { DataTable } from "@/components/mastercoding/DataTable";
 
 const MasterCoding = () => {
@@ -214,7 +215,7 @@ const MasterCoding = () => {
     setDeleting(true);
     try {
       // Extract Master IDs from selected rows
-      const masterIds = extractMasterIds(selectedRows);
+      const masterIds = extractFields(selectedRows, "Master ID");
 
       // Transform to API format for delete request
       const deletePayload = {
@@ -235,8 +236,6 @@ const MasterCoding = () => {
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-
-      const result = await response.json();
 
       // Refresh data after deletion
       fetchMasterData({}, currentPage, pageSize);
@@ -320,6 +319,7 @@ const MasterCoding = () => {
   };
 
   // Handle save operation
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleSave = async (data: Record<string, any>): Promise<void> => {
     try {
       // Transform data to API format before sending
@@ -381,6 +381,8 @@ const MasterCoding = () => {
         {/* Table Component - Takes remaining space with strict constraints */}
         <div className="flex-1 h-full overflow-hidden min-w-0">
           <DataTable
+            tableName="Master Coding"
+            selectionValue="Master ID"
             loading={loading}
             deleting={deleting}
             data={rowData}

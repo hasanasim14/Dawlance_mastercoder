@@ -36,10 +36,10 @@ const Production = () => {
     setLoading(true);
     try {
       const endpoint = search
-        ? `http://192.168.1.10:3295/production/search?term=${encodeURIComponent(
-            search
-          )}`
-        : "http://192.168.1.10:3295/production";
+        ? `${
+            process.env.NEXT_PUBLIC_BASE_URL
+          }/production/search?term=${encodeURIComponent(search)}`
+        : `${process.env.NEXT_PUBLIC_BASE_URL}/production`;
 
       const res = await fetch(endpoint, {
         method: "GET",
