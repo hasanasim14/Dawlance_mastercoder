@@ -65,7 +65,7 @@ export function DataTable({
     selectedRows.length > 0 && selectedRows.length < filteredData.length;
 
   return (
-    <div className="lg:w-3/4 lg:max-w-[75%] rounded-lg border bg-card shadow-sm flex flex-col overflow-hidden min-h-[600px]">
+    <div className="rounded-lg border bg-card shadow-sm flex flex-col h-full w-full overflow-hidden">
       <TableActions
         selectedRowsCount={selectedRows.length}
         deleting={deleting}
@@ -74,19 +74,18 @@ export function DataTable({
       />
 
       {loading ? (
-        <div className="p-4 space-y-3 flex-grow">
-          <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-10 w-full" />
+        <div className="flex-1 overflow-hidden">
+          {/* Create consistent skeleton rows that match the actual table height */}
+          {Array.from({ length: 15 }, (_, i) => (
+            <Skeleton key={i} className="h-12 w-full" />
+          ))}
         </div>
       ) : (
         <>
           {/* Table with horizontal scroll and visible scrollbar */}
-          <div className="flex-grow overflow-auto">
+          <div className="flex-1 overflow-auto">
             <div
-              className="overflow-x-auto"
+              className="overflow-x-auto h-full"
               style={{
                 scrollbarWidth: "thin",
                 scrollbarColor: "rgb(203 213 225) transparent",
@@ -108,7 +107,7 @@ export function DataTable({
                   background: rgb(148 163 184);
                 }
               `}</style>
-              <Table className="min-w-[1200px]">
+              <Table className="min-w-[100px] h-full">
                 <MasterCodingTableHeader
                   columns={columns}
                   isAllSelected={isAllSelected}

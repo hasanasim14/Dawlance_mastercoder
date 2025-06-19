@@ -19,6 +19,7 @@ import type {
   ColumnConfig,
 } from "@/lib/types";
 import { DataTable } from "@/components/mastercoding/DataTable";
+// import { DataTable } from "@/components/mastercoding/DataTable";
 
 const MasterCoding = () => {
   const [selectedRow, setSelectedRow] = useState<RowDataType | null>(null);
@@ -454,37 +455,41 @@ const MasterCoding = () => {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-90px)] p-4">
-      <div className="flex flex-col lg:flex-row gap-4 flex-grow overflow-hidden">
-        {/* Search Component - Fixed width with min-height to prevent layout shift */}
-        <div className="lg:w-1/4 lg:max-w-[15%] lg:min-w-[150px] flex-shrink-0 min-h-[600px]">
-          <SearchComponent
-            onSearch={handleSearch}
-            fetchSuggestions={fetchSuggestions}
-          />
+    <div className="flex flex-col p-1 sm:p-2 overflow-hidden h-[85vh] ">
+      <div className="flex flex-col xl:flex-row gap-4 h-full">
+        {/* Search Component - Responsive width */}
+        <div className="xl:w-1/4 xl:max-w-[300px] xl:min-w-[250px] flex-shrink-0 h-full">
+          <div className="h-full overflow-auto">
+            <SearchComponent
+              onSearch={handleSearch}
+              fetchSuggestions={fetchSuggestions}
+            />
+          </div>
         </div>
 
-        {/* Table Component */}
-        <DataTable
-          loading={loading}
-          deleting={deleting}
-          filteredData={filteredData}
-          selectedRows={selectedRows}
-          selectedRowId={selectedRowId}
-          sortConfig={sortConfig}
-          pagination={pagination}
-          currentPage={currentPage}
-          pageSize={pageSize}
-          columns={columns}
-          onRowSelect={handleRowSelect}
-          onSelectAll={handleSelectAll}
-          onRowClick={handleRowClick}
-          onSort={handleSort}
-          onPageSizeChange={handlePageSizeChange}
-          onPageChange={handlePageChange}
-          onDeleteClick={() => setShowDeleteDialog(true)}
-          onAddClick={handleAddClick}
-        />
+        {/* Table Component - Takes remaining space */}
+        <div className="flex-1 h-full min-w-0">
+          <DataTable
+            loading={loading}
+            deleting={deleting}
+            filteredData={filteredData}
+            selectedRows={selectedRows}
+            selectedRowId={selectedRowId}
+            sortConfig={sortConfig}
+            pagination={pagination}
+            currentPage={currentPage}
+            pageSize={pageSize}
+            columns={columns}
+            onRowSelect={handleRowSelect}
+            onSelectAll={handleSelectAll}
+            onRowClick={handleRowClick}
+            onSort={handleSort}
+            onPageSizeChange={handlePageSizeChange}
+            onPageChange={handlePageChange}
+            onDeleteClick={() => setShowDeleteDialog(true)}
+            onAddClick={handleAddClick}
+          />
+        </div>
 
         <RightSheet
           selectedRow={selectedRow}
