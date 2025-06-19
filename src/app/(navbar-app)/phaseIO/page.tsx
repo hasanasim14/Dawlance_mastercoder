@@ -158,7 +158,7 @@ const PhaseIO = () => {
 
     try {
       // Construct the API endpoint for suggestions
-      const endpoint = `${process.env.NEXT_PUBLIC_BASE_URL}/mastercoding/distinct/${field}?filt=${query}`;
+      const endpoint = `${process.env.NEXT_PUBLIC_BASE_URL}/phaseinout/distinct/${field}?filt=${query}`;
 
       const res = await fetch(endpoint, {
         method: "GET",
@@ -362,6 +362,7 @@ const PhaseIO = () => {
         <div className="w-full lg:w-[300px] flex-shrink-0 h-full overflow-hidden">
           <div className="h-full overflow-auto">
             <SearchComponent
+              fields={columns}
               onSearch={handleSearch}
               fetchSuggestions={fetchSuggestions}
             />

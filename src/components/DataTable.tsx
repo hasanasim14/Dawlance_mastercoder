@@ -58,6 +58,7 @@ export function DataTable({
       {/* Fixed header section */}
       <TableActions
         tableName={tableName}
+        btnName={selectionValue}
         selectedRowsCount={selectedRows.length}
         deleting={deleting}
         onDeleteClick={onDeleteClick}

@@ -5,6 +5,7 @@ import { Plus, Trash2, Loader2 } from "lucide-react";
 
 interface TableActionsProps {
   tableName: string;
+  btnName: string;
   selectedRowsCount: number;
   deleting: boolean;
   onDeleteClick: () => void;
@@ -13,6 +14,7 @@ interface TableActionsProps {
 
 export function TableActions({
   tableName,
+  btnName,
   selectedRowsCount,
   deleting,
   onDeleteClick,
@@ -55,7 +57,7 @@ export function TableActions({
           className="px-4 py-2 text-white rounded-md transition-colors"
         >
           <Plus className="mr-2 h-4 w-4" />
-          Add New Generic Id
+          Add New {btnName}
         </Button>
       </div>
     </div>

@@ -27,19 +27,13 @@ export function DataTableHeader({
             aria-label="Select all rows"
             className={
               isIndeterminate
-                ? "data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground opacity-50"
-                : ""
+                ? "data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground opacity-50 mr-4"
+                : "mr-4"
             }
           />
         </TableHead>
-        {columns.map((column, index) => (
-          <TableHead
-            key={column.key}
-            className={`
-              select-none min-w-[150px] ${
-                index === 0 ? "sticky left-12 bg-background z-20" : ""
-              }`}
-          >
+        {columns.map((column) => (
+          <TableHead key={column.key} className="select-none min-w-[150px]">
             <div className="flex items-center gap-2">{column.label}</div>
           </TableHead>
         ))}

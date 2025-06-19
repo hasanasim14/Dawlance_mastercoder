@@ -372,6 +372,7 @@ const MasterCoding = () => {
         <div className="w-full lg:w-[300px] flex-shrink-0 h-full overflow-hidden">
           <div className="h-full overflow-auto">
             <SearchComponent
+              fields={columns}
               onSearch={handleSearch}
               fetchSuggestions={fetchSuggestions}
             />

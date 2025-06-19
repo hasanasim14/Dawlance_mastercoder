@@ -65,13 +65,8 @@ export function DataTableBody({
                 aria-label={`Select row ${row[selectionValue]}`}
               />
             </TableCell>
-            {columns.map((column, index) => (
-              <TableCell
-                key={column.key}
-                className={`max-w-[200px] truncate ${
-                  index === 0 ? "sticky left-12 bg-background z-10" : ""
-                }`}
-              >
+            {columns.map((column) => (
+              <TableCell key={column.key} className="max-w-[200px] truncate">
                 {row[column.key as keyof RowDataType]}
               </TableCell>
             ))}
