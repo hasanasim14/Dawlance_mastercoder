@@ -157,7 +157,7 @@ const MasterCoding = () => {
           )}
         </div>
 
-        <RightSheet selectedRow={selectedRow} />
+        <RightSheet selectedRow={selectedRow} parent={"branch-master"} />
       </div>
     </div>
   );

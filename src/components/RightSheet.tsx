@@ -1,13 +1,23 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
 import type React from "react";
+import { useState, useRef, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ChevronRight, X, Loader2 } from "lucide-react";
 import { transformToApiFormat } from "@/lib/data-transformers";
+
+interface MaterialOption {
+  material: string;
+}
+
+interface MaterialDetails {
+  material: string;
+  material_description: string;
+  product: string;
+}
 
 interface FieldConfig {
   key: string;
@@ -18,6 +28,7 @@ interface FieldConfig {
 }
 
 interface RightSheetProps {
+  parent: string;
   children?: React.ReactNode;
   className?: string;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -33,6 +44,7 @@ interface RightSheetProps {
 }
 
 export function RightSheet({
+  parent,
   children,
   className,
   selectedRow,
@@ -51,6 +63,11 @@ export function RightSheet({
   const [hasChanges, setHasChanges] = useState(false);
   const sheetRef = useRef<HTMLDivElement>(null);
   // const { toast } = useToast();
+
+  const [materialOptions, setMaterialOptions] = useState<MaterialOption[]>([]);
+  const [isSearchingMaterials, setIsSearchingMaterials] = useState(false);
+  const [materialDropdownOpen, setMaterialDropdownOpen] = useState(false);
+  const [materialError, setMaterialError] = useState("");
 
   // Auto-generate fields from selectedRow if not provided
   const effectiveFields =
@@ -102,7 +119,6 @@ export function RightSheet({
   const handleInputChange = (key: string, value: string) => {
     setFormData((prev) => {
       const newData = { ...prev, [key]: value };
-      // Check if there are changes compared to original data
       const hasDataChanges = selectedRow
         ? Object.keys(newData).some((k) => newData[k] !== selectedRow[k])
         : Object.values(newData).some((v) => v !== "");
@@ -138,8 +154,7 @@ export function RightSheet({
           throw new Error(`HTTP error! status: ${response.status}`);
         }
 
-        const result = await response.json();
-        console.log("Save successful:", result);
+        // const result = await response.json();
       }
 
       setHasChanges(false);
@@ -161,6 +176,155 @@ export function RightSheet({
   };
 
   const isVisible = isOpen !== undefined ? isOpen : !!selectedRow;
+
+  useEffect(() => {
+    if (selectedRow || parent === "mastercoding") {
+      setMaterialOptions([]);
+      setMaterialDropdownOpen(false);
+      return;
+    }
+
+    // Check both possible field keys
+    const materialValue = formData.Material || formData.material || "";
+
+    const searchMaterials = async () => {
+      const query = materialValue.toString();
+
+      if (!query.trim()) {
+        setMaterialOptions([]);
+        setMaterialError("");
+        setMaterialDropdownOpen(false);
+        return;
+      }
+
+      if (query.trim().length < 2) {
+        setMaterialOptions([]);
+        setMaterialDropdownOpen(false);
+        return;
+      }
+
+      setIsSearchingMaterials(true);
+      setMaterialError("");
+
+      try {
+        const endpoint = `${
+          process.env.NEXT_PUBLIC_BASE_URL
+        }/mastercoding/distinct/material?filt=${encodeURIComponent(query)}`;
+
+        const response = await fetch(endpoint);
+        if (!response.ok) throw new Error("Failed to fetch materials");
+        const data = await response.json();
+
+        const materialOptions =
+          data.material?.map((material: string) => ({ material })) || [];
+
+        setMaterialOptions(materialOptions);
+
+        if (materialOptions.length > 0) {
+          setMaterialDropdownOpen(true);
+        } else {
+          setMaterialDropdownOpen(false);
+          setMaterialError("Please add material in mastercoding first");
+        }
+      } catch (error) {
+        console.error("Error searching materials:", error);
+        setMaterialError("Failed to search materials");
+        setMaterialOptions([]);
+        setMaterialDropdownOpen(false);
+      } finally {
+        setIsSearchingMaterials(false);
+      }
+    };
+
+    const debounceTimer = setTimeout(searchMaterials, 300);
+    return () => clearTimeout(debounceTimer);
+  }, [formData.Material, formData.material, selectedRow, selectedRow]);
+
+  // Handle clicking outside to close material dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      const materialContainer = target.closest("[data-material-container]");
+      if (!materialContainer && materialDropdownOpen) {
+        setMaterialDropdownOpen(false);
+      }
+    };
+
+    if (materialDropdownOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () =>
+        document.removeEventListener("mousedown", handleClickOutside);
+    }
+  }, [materialDropdownOpen]);
+
+  const fetchMaterialDetails = async (
+    materialCode: string
+  ): Promise<MaterialDetails | null> => {
+    try {
+      const endpoint = `${
+        process.env.NEXT_PUBLIC_BASE_URL
+      }/mastercoding?page=1&limit=50&material=${encodeURIComponent(
+        materialCode
+      )}`;
+      const response = await fetch(endpoint);
+
+      if (!response.ok) throw new Error("Failed to fetch material details");
+
+      const result = await response.json();
+
+      // Extract the first item from the data array
+      if (result.data && result.data.length > 0) {
+        const item = result.data[0];
+        return {
+          material: item.Material || materialCode,
+          material_description: item["Material Description"] || "",
+          product: item.Product || "",
+        };
+      }
+
+      return null;
+    } catch (error) {
+      console.error("Error fetching material details:", error);
+      setMaterialError("Failed to fetch material details");
+      return null;
+    }
+  };
+
+  const handleMaterialSelect = async (material: MaterialOption) => {
+    // Close dropdown and clear error immediately
+    setMaterialDropdownOpen(false);
+    setMaterialError("");
+
+    // Determine which field key to use
+    const materialFieldKey = formData.hasOwnProperty("Material")
+      ? "Material"
+      : "material";
+
+    // Update form data with selected material
+    setFormData((prev) => ({
+      ...prev,
+      [materialFieldKey]: material.material,
+    }));
+    setHasChanges(true);
+
+    // Fetch and populate material details
+    try {
+      const details = await fetchMaterialDetails(material.material);
+      if (details) {
+        setFormData((prev) => ({
+          ...prev,
+          [materialFieldKey]: material.material,
+          "Material Description": details.material_description,
+          Product: details.product,
+          // Also try lowercase versions in case field keys are different
+          material_description: details.material_description,
+          product: details.product,
+        }));
+      }
+    } catch (error) {
+      console.error("Error fetching material details:", error);
+    }
+  };
 
   return (
     <div
@@ -228,18 +392,96 @@ export function RightSheet({
           isExpanded ? "opacity-100" : "opacity-0"
         )}
       >
+        {materialError && (
+          <div className="bg-red-200 mb-4 p-2 text-xs text-red-500 rounded">
+            {materialError}
+          </div>
+        )}
         {isVisible && effectiveFields.length > 0 ? (
           <div className="grid grid-cols-1 gap-4">
             {effectiveFields.map((field) => {
               if (field.key === "Master ID" && selectedRow) return null; // Skip Master ID as it's in the header
 
+              if (field.key === "Material" || field.key === "material") {
+                const isEditMode = !!selectedRow;
+
+                return (
+                  <div key={field.key} className="space-y-2">
+                    <Label
+                      htmlFor={field.key.toLowerCase().replace(/\s+/g, "_")}
+                    >
+                      {field.label}
+                    </Label>
+                    <div className="relative" data-material-container>
+                      <Input
+                        id={field.key.toLowerCase().replace(/\s+/g, "_")}
+                        type={field.type || "text"}
+                        placeholder={
+                          isEditMode ? field.label : `Search ${field.label}...`
+                        }
+                        value={formData[field.key]?.toString() || ""}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          handleInputChange(field.key, value);
+                        }}
+                        onFocus={() => {
+                          if (!isEditMode) {
+                            const currentValue =
+                              formData[field.key]?.toString() || "";
+                            if (
+                              currentValue.trim().length >= 2 &&
+                              materialOptions.length > 0
+                            ) {
+                              setMaterialDropdownOpen(true);
+                            }
+                          }
+                        }}
+                        readOnly={field.readOnly}
+                        required={field.required}
+                        className={cn(
+                          field.readOnly && "bg-muted/40",
+                          hasChanges &&
+                            formData[field.key] !== selectedRow?.[field.key] &&
+                            "border-orange-300"
+                        )}
+                      />
+                      {isSearchingMaterials && !isEditMode && (
+                        <div className="absolute right-3 top-3">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <span className="sr-only">Loading...</span>
+                        </div>
+                      )}
+
+                      {materialDropdownOpen &&
+                        materialOptions.length > 0 &&
+                        !isEditMode && (
+                          <div className="absolute z-50 mt-1 w-full bg-background border rounded-md shadow-lg max-h-60 overflow-auto">
+                            {materialOptions.map((option, index) => (
+                              <div
+                                key={`${option.material}-${index}`}
+                                className="cursor-pointer rounded px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  handleMaterialSelect(option);
+                                }}
+                              >
+                                <span className="font-medium">
+                                  {option.material}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                    </div>
+                  </div>
+                );
+              }
+
               return (
                 <div key={field.key} className="space-y-2">
                   <Label htmlFor={field.key.toLowerCase().replace(/\s+/g, "_")}>
                     {field.label}
-                    {field.required && (
-                      <span className="text-red-500 ml-1">*</span>
-                    )}
                   </Label>
                   <Input
                     id={field.key.toLowerCase().replace(/\s+/g, "_")}
@@ -249,10 +491,21 @@ export function RightSheet({
                     onChange={(e) =>
                       handleInputChange(field.key, e.target.value)
                     }
-                    readOnly={field.readOnly}
+                    readOnly={
+                      field.readOnly ||
+                      (field.key.toLowerCase() === "material_description" &&
+                        formData["material"]) ||
+                      (field.key.toLowerCase() === "product" &&
+                        formData["material"])
+                    }
                     required={field.required}
                     className={cn(
-                      field.readOnly && "bg-muted/40",
+                      (field.readOnly ||
+                        (field.key.toLowerCase() === "material_description" &&
+                          formData["material"]) ||
+                        (field.key.toLowerCase() === "product" &&
+                          formData["material"])) &&
+                        "bg-muted/40",
                       hasChanges &&
                         formData[field.key] !== selectedRow?.[field.key] &&
                         "border-orange-300"
@@ -290,7 +543,20 @@ export function RightSheet({
           Reset
         </Button>
         <Button
-          disabled={!isVisible || !hasChanges || isSaving}
+          disabled={
+            !isVisible ||
+            !hasChanges ||
+            isSaving ||
+            // Check if any required fields are empty
+            effectiveFields.some(
+              (field) =>
+                field.required &&
+                (!formData[field.key] ||
+                  formData[field.key].toString().trim() === "")
+            ) ||
+            // Check if there's a material error
+            !!materialError
+          }
           onClick={handleSave}
           className="flex-1"
         >

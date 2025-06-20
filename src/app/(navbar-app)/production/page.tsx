@@ -193,7 +193,7 @@ const Production = () => {
           )}
         </div>
 
-        <RightSheet selectedRow={selectedRow} />
+        <RightSheet selectedRow={selectedRow} parent={"production"} />
       </div>
     </div>
   );

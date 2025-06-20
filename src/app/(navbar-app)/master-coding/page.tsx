@@ -391,6 +391,7 @@ const MasterCoding = () => {
         </div>
 
         <RightSheet
+          parent={"mastercoding"}
           selectedRow={selectedRow}
           onReset={() => {
             setSelectedRow(null);

@@ -44,34 +44,39 @@ const PhaseIO = () => {
 
   const fieldConfig: FieldConfig[] = [
     {
-      key: "Product",
-      label: "Product",
-      type: "text",
-      readOnly: true,
-    },
-    {
       key: "Material",
       label: "Material",
       type: "text",
       required: true,
     },
     {
+      key: "Product",
+      label: "Product",
+      type: "text",
+      required: true,
+      readOnly: true,
+    },
+    {
       key: "Material Description",
       label: "Material Description",
       type: "text",
+      required: true,
+      readOnly: true,
     },
     {
       key: "Phase Out",
       label: "Phase Out",
       type: "text",
+      required: true,
     },
     {
       key: "Phase In",
       label: "Phase In",
       type: "text",
+      required: true,
     },
-    { key: "Price Group", label: "Price Group", type: "text" },
-    { key: "Sales Group", label: "Sales Group", type: "text" },
+    { key: "Price Group", label: "Price Group", type: "text", required: true },
+    { key: "Sales Group", label: "Sales Group", type: "text", required: true },
   ];
 
   const columns: readonly ColumnConfig[] = [
@@ -391,6 +396,7 @@ const PhaseIO = () => {
         /> */}
 
         <RightSheet
+          parent={"phaseio"}
           selectedRow={selectedRow}
           onReset={() => {
             setSelectedRow(null);

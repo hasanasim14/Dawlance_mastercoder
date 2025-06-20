@@ -154,7 +154,7 @@ const Roles = () => {
           )}
         </div>
 
-        <RightSheet selectedRow={rightSheetData} />
+        <RightSheet selectedRow={rightSheetData} parent={"roles"} />
       </div>
     </div>
   );
