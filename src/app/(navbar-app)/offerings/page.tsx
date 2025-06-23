@@ -3,7 +3,7 @@
 import type React from "react";
 
 import { useState, useRef, useCallback, useEffect } from "react";
-import { Upload, Clock, CheckCircle, XCircle } from "lucide-react";
+import { Upload, Clock, CheckCircle, XCircle, AlertCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -60,7 +60,6 @@ export default function FileUploadDataViewer() {
               "Content-Type": "application/json",
               Authorization: `Bearer ${authToken}`,
             },
-            // body: JSON.stringify(requestBody),
           }
         );
 
@@ -134,7 +133,7 @@ export default function FileUploadDataViewer() {
 
       // Send file to API
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/offerings/`,
+        `${process.env.NEXT_PUBLIC_BASE_URL}/offerings`,
         {
           method: "POST",
           headers: {
@@ -211,7 +210,7 @@ export default function FileUploadDataViewer() {
       case "success":
         return <CheckCircle className="w-4 h-4 text-green-600" />;
       case "error":
-        return <XCircle className="w-4 h-4 text-red-600" />;
+        return <AlertCircle className="w-4 h-4 text-red-600" />;
       default:
         return <Upload className="w-8 h-8 text-gray-400" />;
     }
@@ -226,7 +225,7 @@ export default function FileUploadDataViewer() {
       case "success":
         return "Upload completed successfully";
       case "error":
-        return uploadStatus.error || "Upload failed";
+        return "Upload failed";
       default:
         return "Drop Excel file here or click to browse";
     }
@@ -369,9 +368,11 @@ export default function FileUploadDataViewer() {
                     </div>
                   </div>
                 ) : uploadStatus.status === "error" ? (
-                  <div className="text-center text-red-600">
-                    <XCircle className="w-8 h-8 mx-auto mb-2" />
-                    <div className="text-sm font-medium">Upload failed</div>
+                  <div className="border rounded-lg p-8">
+                    <div className="flex items-center mb-2">
+                      <AlertCircle className="w-5 h-5 mr-2 text-red-600" />
+                      <div className="text-sm font-medium">Upload failed</div>
+                    </div>
                     <div className="text-xs mt-1">{uploadStatus.error}</div>
                   </div>
                 ) : (
