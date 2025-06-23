@@ -15,6 +15,7 @@ import type {
   ColumnConfig,
 } from "@/lib/types";
 import { DataTable } from "@/components/DataTable";
+import { cn } from "@/lib/utils";
 import SearchComponent from "@/components/SearchComponent";
 
 const PhaseIO = () => {
@@ -31,6 +32,7 @@ const PhaseIO = () => {
   );
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   // Pagination states
   const [pagination, setPagination] = useState<PaginationData>({
@@ -354,12 +356,20 @@ const PhaseIO = () => {
   return (
     <div className="w-full h-[85vh] p-4 overflow-hidden">
       <div className="w-full h-full flex flex-col lg:flex-row gap-4 overflow-hidden">
-        <div className="w-full lg:w-[300px] flex-shrink-0 h-full overflow-hidden">
+        <div
+          className={cn(
+            "w-full flex-shrink-0 h-full overflow-hidden",
+            "transition-all duration-300 ease-in-out",
+            isCollapsed ? "lg:w-[300px]" : "lg:w-[70px]"
+          )}
+        >
           <div className="h-full overflow-auto">
             <SearchComponent
               fields={columns}
               onSearch={handleSearch}
               fetchSuggestions={fetchSuggestions}
+              setIsCollapsed={setIsCollapsed}
+              isCollapsed={isCollapsed}
             />
           </div>
         </div>

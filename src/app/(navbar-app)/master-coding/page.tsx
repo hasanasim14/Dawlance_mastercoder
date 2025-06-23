@@ -15,6 +15,7 @@ import {
   transformArrayFromApiFormat,
   extractFields,
 } from "@/lib/data-transformers";
+import { cn } from "@/lib/utils";
 import SearchComponent from "@/components/SearchComponent";
 
 const MasterCoding = () => {
@@ -29,6 +30,7 @@ const MasterCoding = () => {
   );
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   // Pagination states
   const [pagination, setPagination] = useState<PaginationData>({
@@ -84,7 +86,7 @@ const MasterCoding = () => {
     { key: "Material Description", label: "Material Description" },
     { key: "Measurement Instrument", label: "Measurement Instrument" },
     { key: "Colour Similarity", label: "Colour Similarity" },
-    { key: "Product type", label: "Product type" },
+    { key: "Product type", label: "Product Type" },
     { key: "Function", label: "Function" },
     { key: "Series", label: "Series" },
     { key: "Colour", label: "Colour" },
@@ -357,12 +359,20 @@ const MasterCoding = () => {
   return (
     <div className="w-full h-[85vh] p-4 overflow-hidden">
       <div className="w-full h-full flex flex-col lg:flex-row gap-4 overflow-hidden">
-        <div className="w-full lg:w-[300px] flex-shrink-0 h-full overflow-hidden">
+        <div
+          className={cn(
+            "w-full flex-shrink-0 h-full overflow-hidden",
+            "transition-all duration-300 ease-in-out",
+            isCollapsed ? "lg:w-[300px]" : "lg:w-[70px]"
+          )}
+        >
           <div className="h-full overflow-auto">
             <SearchComponent
               fields={columns}
               onSearch={handleSearch}
               fetchSuggestions={fetchSuggestions}
+              setIsCollapsed={setIsCollapsed}
+              isCollapsed={isCollapsed}
             />
           </div>
         </div>
@@ -371,6 +381,7 @@ const MasterCoding = () => {
           <DataTable
             tableName="Master Coding"
             selectionValue="Master ID"
+            isCollapsed={isCollapsed}
             loading={loading}
             deleting={deleting}
             data={rowData}
