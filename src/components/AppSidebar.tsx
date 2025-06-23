@@ -23,6 +23,7 @@ import {
   Workflow,
   UserCog,
   Users,
+  Gift,
 } from "lucide-react";
 import { mockUser } from "@/lib/mockUser";
 import { rolePages } from "@/lib/rolePages";
@@ -63,6 +64,11 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
       title: "Phase In/Out",
       url: "/phaseIO",
       icon: Repeat,
+    },
+    {
+      title: "Offerings",
+      url: "/offerings",
+      icon: Gift,
     },
     {
       title: "Production",

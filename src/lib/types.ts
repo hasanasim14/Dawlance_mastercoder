@@ -28,13 +28,20 @@ export type PaginationData = {
   total_pages: number;
 };
 
-export type FieldConfig = {
+export interface FieldConfig {
   key: string;
   label: string;
-  type: "text" | "number";
+  type?: "text" | "number" | "email" | "tel" | "select";
   required?: boolean;
   readOnly?: boolean;
-};
+  selectOptions?: SelectOption[];
+  apiEndpoint?: string;
+}
+
+interface SelectOption {
+  value: string;
+  label: string;
+}
 
 export type ColumnConfig = {
   key: string;

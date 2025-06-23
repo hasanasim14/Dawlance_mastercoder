@@ -3,6 +3,7 @@ export const rolePages = {
     "/master-coding",
     "/dashboard-admin",
     "/production",
+    "/offerings",
     "/results",
     "/upload",
     "/phaseIO",

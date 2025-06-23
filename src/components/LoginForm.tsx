@@ -115,7 +115,7 @@ export function LoginForm({
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute inset-y-0 right-2 flex items-center text-gray-500 hover:text-black"
+              className="absolute inset-y-0 right-2 flex items-center text-gray-500 hover:text-black cursor-pointer"
             >
               {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
             </button>
@@ -132,12 +132,6 @@ export function LoginForm({
         >
           Login
         </Button>
-      </div>
-      <div className="text-center text-sm">
-        Don&apos;t have an account?{" "}
-        <Link href="/signup" className="underline underline-offset-4">
-          Sign up
-        </Link>
       </div>
     </form>
   );

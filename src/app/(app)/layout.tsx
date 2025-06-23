@@ -4,11 +4,7 @@ import { Inter } from "next/font/google";
 
 const inter = Inter({ subsets: ["latin"] });
 
-export const metadata: Metadata = {
-  title: "Next.js App with Shadcn Sidebar",
-  description: "A simple application with a shadcn sidebar",
-  generator: "v0.dev",
-};
+export const metadata: Metadata = {};
 
 export default function AppLayout({
   children,

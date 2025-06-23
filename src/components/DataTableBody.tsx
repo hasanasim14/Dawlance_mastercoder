@@ -2,7 +2,7 @@
 
 import { TableBody, TableCell, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ColumnConfig, RowDataType } from "@/lib/types";
+import type { ColumnConfig, RowDataType } from "@/lib/types";
 
 interface DataTableBodyProps {
   selectionValue: keyof RowDataType;
@@ -55,7 +55,7 @@ export function DataTableBody({
           >
             <TableCell
               onClick={(e) => e.stopPropagation()}
-              className="sticky left-0 bg-background z-10"
+              className="sticky left-0 bg-background z-10 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]"
             >
               <Checkbox
                 checked={isSelected}
