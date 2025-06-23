@@ -1,17 +1,76 @@
 "use client";
 
 import type React from "react";
+import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useRouter } from "next/navigation";
+import { Eye, EyeOff } from "lucide-react";
+import { toast } from "sonner";
 
 export function LoginForm({
   className,
   ...props
 }: React.ComponentPropsWithoutRef<"form">) {
-  const router = useRouter();
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+  });
+  const [errors, setErrors] = useState({
+    email: "",
+    password: "",
+  });
+  const [showPassword, setShowPassword] = useState(false);
+
+  const isValidEmail = (email: string) => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { id, value } = e.target;
+    setFormData((prev) => ({ ...prev, [id]: value }));
+
+    setErrors((prev) => ({
+      ...prev,
+      [id]: value.trim() === "" ? "This field is required" : "",
+    }));
+
+    if (id === "email" && value.trim() !== "") {
+      setErrors((prev) => ({
+        ...prev,
+        email: isValidEmail(value) ? "" : "Invalid email format",
+      }));
+    }
+  };
+
+  const handleLogin = async () => {
+    console.log("Inside the login method");
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+        }),
+      });
+
+      if (res.ok) {
+        toast.success("Login Successful");
+      }
+
+      if (!res.ok) {
+        toast.error("Incorrect email or password");
+      }
+    } catch (error) {
+      console.error("Login API failed, the error = ", error);
+      toast.error("Login Failed. Please try again");
+    }
+  };
+
   return (
     <form className={cn("flex flex-col gap-6", className)} {...props}>
       <div className="flex flex-col items-center gap-2 text-center">
@@ -23,23 +82,52 @@ export function LoginForm({
       <div className="grid gap-6">
         <div className="grid gap-2">
           <Label htmlFor="email">Email</Label>
-          <Input id="email" type="email" placeholder="m@example.com" required />
+          <Input
+            id="email"
+            type="email"
+            placeholder="m@example.com"
+            autoComplete="email"
+            required
+            value={formData.email}
+            onChange={handleChange}
+            className={errors.email ? "border-red-500" : ""}
+          />
+
+          {errors.email && (
+            <p className="text-red-500 text-sm mt-1">{errors.email}</p>
+          )}
         </div>
         <div className="grid gap-2">
           <div className="flex items-center">
             <Label htmlFor="password">Password</Label>
-            <a
-              href="#"
-              className="ml-auto text-sm underline-offset-4 hover:underline"
-            >
-              Forgot your password?
-            </a>
           </div>
-          <Input id="password" type="password" required />
+          <div className="relative">
+            <Input
+              id="password"
+              type={showPassword ? "text" : "password"}
+              autoComplete="current-password"
+              required
+              className={`pr-10 ${errors.password ? "border-red-500" : ""}`}
+              value={formData.password}
+              onChange={handleChange}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute inset-y-0 right-2 flex items-center text-gray-500 hover:text-black"
+            >
+              {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+            </button>
+            {errors.password && (
+              <p className="text-red-500 text-sm">{errors.password}</p>
+            )}
+          </div>
         </div>
         <Button
-          onClick={() => router.push("/master-coding")}
+          type="button"
+          onClick={handleLogin}
           className="w-full"
+          disabled={!formData.email || !formData.password || !!errors.email}
         >
           Login
         </Button>
