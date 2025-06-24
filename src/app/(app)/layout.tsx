@@ -12,7 +12,7 @@ export default function AppLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="h-full">
+    <html lang="en">
       <body className={`${inter.className} h-full`}>{children}</body>
     </html>
   );

@@ -26,7 +26,6 @@ export default function AppLayout({
 
             {/* Top right image */}
             <div className="relative h-10 w-32">
-              {" "}
               <Image
                 src="aiSystemslogo.svg"
                 alt="Right header logo"

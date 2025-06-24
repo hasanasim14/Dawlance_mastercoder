@@ -8,7 +8,6 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "Dawlance MasterCoder Application",
   description: "",
-  generator: "v0.dev",
 };
 
 export default function RootLayout({
