@@ -42,7 +42,7 @@ export default function Branchmaster() {
       key: "Branch Code",
       label: "Branch Code",
       type: "text",
-      readOnly: true,
+      required: true,
     },
     {
       key: "Sales Branch",
@@ -60,6 +60,7 @@ export default function Branchmaster() {
       key: "Branch Manager",
       label: "Branch Manager",
       type: "text",
+      required: true,
     },
   ];
 
@@ -135,7 +136,7 @@ export default function Branchmaster() {
       const branchcodes = extractFields(selectedRows, "Branch Code");
 
       const deletePayload = {
-        branchcode: branchcodes,
+        branch_code: branchcodes,
       };
 
       const response = await fetch(
@@ -208,16 +209,14 @@ export default function Branchmaster() {
   // Handle row click
   const handleRowClick = (row: RowDataType) => {
     setIsSheetOpen(true);
-    const clickedRowId = String(row["Branch Code"]); // Ensure it's a string
+    const clickedRowId = String(row["Branch Code"]);
 
-    // If clicking the same row, toggle the sheet
     if (String(selectedRowId) === clickedRowId) {
       setSelectedRow(null);
       setSelectedRowId(null);
     } else {
-      // Select new row
       setSelectedRow(row);
-      setSelectedRowId(clickedRowId); // Store as string
+      setSelectedRowId(clickedRowId);
     }
   };
 
@@ -229,7 +228,7 @@ export default function Branchmaster() {
       const isUpdate = !!selectedRowId;
 
       const endpoint = isUpdate
-        ? `${process.env.NEXT_PUBLIC_BASE_URL}/branches/update/${selectedRowId}`
+        ? `${process.env.NEXT_PUBLIC_BASE_URL}/branches/update`
         : `${process.env.NEXT_PUBLIC_BASE_URL}/branches`;
 
       const method = isUpdate ? "PUT" : "POST";
@@ -259,11 +258,6 @@ export default function Branchmaster() {
       throw error;
     }
   };
-
-  // const handleReset = () => {
-  //   setSelectedRow(null);
-  //   setSelectedRowId(null);
-  // };
 
   const handleAddClick = () => {
     setIsSheetOpen(true);
