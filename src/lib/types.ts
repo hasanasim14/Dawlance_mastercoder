@@ -10,6 +10,10 @@ export type RowDataType = {
   Series: string;
   Colour: string;
   "Key Feature": string;
+  "Branch Code": string;
+  "Sales Branch": string;
+  "Sales Office": string;
+  "Branch Manager": string;
 };
 
 export type SortConfig = {

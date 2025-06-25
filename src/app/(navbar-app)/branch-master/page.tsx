@@ -15,22 +15,16 @@ import {
   transformArrayFromApiFormat,
   extractFields,
 } from "@/lib/data-transformers";
-import { cn } from "@/lib/utils";
-import SearchComponent from "@/components/SearchComponent";
 
 export default function Branchmaster() {
   const [selectedRow, setSelectedRow] = useState<RowDataType | null>(null);
-  const [selectedRowId, setSelectedRowId] = useState<number | null>(null);
+  const [selectedRowId, setSelectedRowId] = useState<string | null>(null);
   const [selectedRows, setSelectedRows] = useState<RowDataType[]>([]);
   const [rowData, setRowData] = useState<RowDataType[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
-  const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(
-    null
-  );
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
-  const [isCollapsed, setIsCollapsed] = useState(false);
 
   // Pagination states
   const [pagination, setPagination] = useState<PaginationData>({
@@ -45,62 +39,45 @@ export default function Branchmaster() {
   // Define field configuration for the RightSheet
   const fieldConfig: FieldConfig[] = [
     {
-      key: "Master ID",
-      label: "Master ID",
-      type: "number",
+      key: "Branch Code",
+      label: "Branch Code",
+      type: "text",
       readOnly: true,
     },
-    { key: "Product", label: "Product", type: "text", required: true },
     {
-      key: "Material",
-      label: "Material",
+      key: "Sales Branch",
+      label: "Sales Branch",
       type: "text",
       required: true,
     },
     {
-      key: "Material Description",
-      label: "Material Description",
+      key: "Sales Office",
+      label: "Sales Office",
       type: "text",
+      required: true,
     },
     {
-      key: "Measurement Instrument",
-      label: "Measurement Instrument",
+      key: "Branch Manager",
+      label: "Branch Manager",
       type: "text",
     },
-    {
-      key: "Colour Similarity",
-      label: "Colour Similarity",
-      type: "text",
-    },
-    { key: "Product type", label: "Product Type", type: "text" },
-    { key: "Function", label: "Function", type: "text" },
-    { key: "Series", label: "Series", type: "text" },
-    { key: "Colour", label: "Colour", type: "text" },
-    { key: "Key Feature", label: "Key Feature", type: "text" },
   ];
 
   const columns: readonly ColumnConfig[] = [
-    { key: "Master ID", label: "Master ID" },
-    { key: "Product", label: "Product" },
-    { key: "Material", label: "Material" },
-    { key: "Material Description", label: "Material Description" },
-    { key: "Measurement Instrument", label: "Measurement Instrument" },
-    { key: "Colour Similarity", label: "Colour Similarity" },
-    { key: "Product type", label: "Product Type" },
-    { key: "Function", label: "Function" },
-    { key: "Series", label: "Series" },
-    { key: "Colour", label: "Colour" },
-    { key: "Key Feature", label: "Key Feature" },
+    { key: "Branch Code", label: "Branch Code" },
+    { key: "Sales Branch", label: "Sales Branch" },
+    { key: "Sales Office", label: "Sales Office" },
+    { key: "Branch Manager", label: "Branch Manager" },
   ];
 
-  const fetchMasterData = async (
+  const fetchBranchData = async (
     searchParams: Record<string, string> = {},
     page = 1,
     recordsPerPage = 50
   ) => {
     setLoading(true);
     try {
-      let endpoint = `${process.env.NEXT_PUBLIC_BASE_URL}/mastercoding`;
+      let endpoint = `${process.env.NEXT_PUBLIC_BASE_URL}/branches`;
 
       const queryParams = new URLSearchParams();
 
@@ -150,64 +127,19 @@ export default function Branchmaster() {
     }
   };
 
-  const fetchSuggestions = async (
-    field: string,
-    query: string
-  ): Promise<string[]> => {
-    if (!query.trim()) return [];
-
-    try {
-      const endpoint = `${process.env.NEXT_PUBLIC_BASE_URL}/mastercoding/distinct/${field}?filt=${query}`;
-
-      const res = await fetch(endpoint, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!res.ok) {
-        throw new Error(`Failed to fetch suggestions: ${res.status}`);
-      }
-
-      const data = await res.json();
-
-      if (data && typeof data === "object") {
-        const fieldKey = field.toLowerCase().replace(/\s+/g, " ").trim();
-
-        // Try to find the key in the response that matches our field
-        const matchingKey = Object.keys(data).find(
-          (key) =>
-            key.toLowerCase() === fieldKey ||
-            fieldKey.includes(key.toLowerCase()) ||
-            key.toLowerCase().includes(fieldKey)
-        );
-
-        if (matchingKey && Array.isArray(data[matchingKey])) {
-          return data[matchingKey];
-        }
-      }
-
-      return [];
-    } catch (error) {
-      console.error(`Error fetching suggestions for ${field}:`, error);
-      return [];
-    }
-  };
-
   const handleBulkDelete = async () => {
     if (selectedRows.length === 0) return;
 
     setDeleting(true);
     try {
-      const masterIds = extractFields(selectedRows, "Master ID");
+      const branchcodes = extractFields(selectedRows, "Branch Code");
 
       const deletePayload = {
-        master_id: masterIds,
+        branchcode: branchcodes,
       };
 
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/mastercoding/delete`,
+        `${process.env.NEXT_PUBLIC_BASE_URL}/branches/delete`,
         {
           method: "DELETE",
           headers: {
@@ -222,7 +154,7 @@ export default function Branchmaster() {
       }
 
       // Refresh data after deletion
-      fetchMasterData({}, currentPage, pageSize);
+      fetchBranchData({}, currentPage, pageSize);
 
       // Clear selections
       setSelectedRows([]);
@@ -241,31 +173,17 @@ export default function Branchmaster() {
     const size = Number.parseInt(newPageSize);
     setPageSize(size);
     setCurrentPage(1);
-    fetchMasterData({}, 1, size);
+    fetchBranchData({}, 1, size);
   };
 
   const handlePageChange = (newPage: number) => {
     setCurrentPage(newPage);
-    fetchMasterData({}, newPage, pageSize);
+    fetchBranchData({}, newPage, pageSize);
   };
 
   useEffect(() => {
-    fetchMasterData({}, currentPage, pageSize);
+    fetchBranchData({}, currentPage, pageSize);
   }, []);
-
-  // Handle search with debouncing
-  const handleSearch = (searchParams: Record<string, string>) => {
-    if (searchTimeout) {
-      clearTimeout(searchTimeout);
-    }
-
-    const timeout = setTimeout(() => {
-      setCurrentPage(1);
-      fetchMasterData(searchParams, 1, pageSize);
-    }, 500); // 0.5 seconds
-
-    setSearchTimeout(timeout);
-  };
 
   // Handle row selection
   const handleRowSelect = (row: RowDataType, checked: boolean) => {
@@ -273,7 +191,7 @@ export default function Branchmaster() {
       setSelectedRows((prev) => [...prev, row]);
     } else {
       setSelectedRows((prev) =>
-        prev.filter((r) => r["Master ID"] !== row["Master ID"])
+        prev.filter((r) => r["Branch Code"] !== row["Branch Code"])
       );
     }
   };
@@ -290,16 +208,16 @@ export default function Branchmaster() {
   // Handle row click
   const handleRowClick = (row: RowDataType) => {
     setIsSheetOpen(true);
-    const clickedRowId = row["Master ID"];
+    const clickedRowId = String(row["Branch Code"]); // Ensure it's a string
 
     // If clicking the same row, toggle the sheet
-    if (selectedRowId === clickedRowId) {
+    if (String(selectedRowId) === clickedRowId) {
       setSelectedRow(null);
       setSelectedRowId(null);
     } else {
       // Select new row
       setSelectedRow(row);
-      setSelectedRowId(clickedRowId);
+      setSelectedRowId(clickedRowId); // Store as string
     }
   };
 
@@ -311,8 +229,8 @@ export default function Branchmaster() {
       const isUpdate = !!selectedRowId;
 
       const endpoint = isUpdate
-        ? `${process.env.NEXT_PUBLIC_BASE_URL}/mastercoding/update/${selectedRowId}`
-        : `${process.env.NEXT_PUBLIC_BASE_URL}/mastercoding/add`;
+        ? `${process.env.NEXT_PUBLIC_BASE_URL}/branches/update/${selectedRowId}`
+        : `${process.env.NEXT_PUBLIC_BASE_URL}/branches`;
 
       const method = isUpdate ? "PUT" : "POST";
 
@@ -330,14 +248,14 @@ export default function Branchmaster() {
 
       setRowData((prevData) =>
         prevData.map((row) =>
-          row["Master ID"] === data["Master ID"] ? { ...row, ...data } : row
+          row["Branch Code"] === data["Branch Code"] ? { ...row, ...data } : row
         )
       );
 
       // Update selected row data
       setSelectedRow(data as RowDataType);
     } catch (error) {
-      console.error("Error saving master coding data:", error);
+      console.error("Error saving branch master data:", error);
       throw error;
     }
   };
@@ -351,7 +269,7 @@ export default function Branchmaster() {
     setIsSheetOpen(true);
   };
 
-  const excludedKeys = ["Master ID"];
+  const excludedKeys = [""];
 
   const filteredFieldConfig = fieldConfig.filter(
     (field) => !excludedKeys.includes(field.key)
@@ -360,28 +278,10 @@ export default function Branchmaster() {
   return (
     <div className="w-full h-[85vh] p-4 overflow-hidden">
       <div className="w-full h-full flex flex-col lg:flex-row gap-4 overflow-hidden">
-        <div
-          className={cn(
-            "w-full flex-shrink-0 h-full overflow-hidden",
-            "transition-all duration-300 ease-in-out",
-            isCollapsed ? "lg:w-[300px]" : "lg:w-[70px]"
-          )}
-        >
-          <div className="h-full overflow-auto">
-            <SearchComponent
-              fields={columns}
-              onSearch={handleSearch}
-              fetchSuggestions={fetchSuggestions}
-              setIsCollapsed={setIsCollapsed}
-              isCollapsed={isCollapsed}
-            />
-          </div>
-        </div>
-
         <div className="flex-1 h-full overflow-hidden min-w-0">
           <DataTable
-            tableName="Master Coding"
-            selectionValue="Master ID"
+            tableName="Branch Master"
+            selectionValue="Branch Code"
             loading={loading}
             deleting={deleting}
             data={rowData}
@@ -402,7 +302,7 @@ export default function Branchmaster() {
         </div>
 
         <RightSheet
-          parent={"mastercoding"}
+          parent={"branch-master"}
           selectedRow={selectedRow}
           onReset={() => {
             setSelectedRow(null);
