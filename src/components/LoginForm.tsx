@@ -1,13 +1,13 @@
 "use client";
 
 import type React from "react";
-import Link from "next/link";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 export function LoginForm({
@@ -23,11 +23,15 @@ export function LoginForm({
     password: "",
   });
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
 
+  // Email Validation Function
   const isValidEmail = (email: string) => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   };
 
+  // Handling Input Changes
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
     setFormData((prev) => ({ ...prev, [id]: value }));
@@ -45,8 +49,9 @@ export function LoginForm({
     }
   };
 
+  // Handling Login
   const handleLogin = async () => {
-    console.log("Inside the login method");
+    setIsLoading(true);
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/login`, {
         method: "POST",
@@ -59,7 +64,17 @@ export function LoginForm({
         }),
       });
 
+      const data = await res.json();
+
       if (res.ok) {
+        localStorage.setItem("token", data?.access_token);
+        localStorage.setItem("user_name", data?.user_name);
+        localStorage.setItem("user_role", data?.user_role);
+
+        setTimeout(() => {
+          router.push("/master-coding");
+        }, 1000);
+
         toast.success("Login Successful");
       }
 
@@ -69,11 +84,25 @@ export function LoginForm({
     } catch (error) {
       console.error("Login API failed, the error = ", error);
       toast.error("Login Failed. Please try again");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // On Pressing enter
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLFormElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      handleLogin();
     }
   };
 
   return (
-    <form className={cn("flex flex-col gap-6", className)} {...props}>
+    <form
+      className={cn("flex flex-col gap-6", className)}
+      {...props}
+      onKeyDown={handleKeyDown}
+    >
       <div className="flex flex-col items-center gap-2 text-center">
         <h1 className="text-2xl font-bold">Login to your account</h1>
         <p className="text-balance text-sm text-muted-foreground">
@@ -128,9 +157,18 @@ export function LoginForm({
           type="button"
           onClick={handleLogin}
           className="w-full"
-          disabled={!formData.email || !formData.password || !!errors.email}
+          disabled={
+            !formData.email || !formData.password || !!errors.email || isLoading
+          }
         >
-          Login
+          {isLoading ? (
+            <>
+              <Loader2 className="animate-spin mr-2" size={20} />
+              Logging in...
+            </>
+          ) : (
+            "Login"
+          )}
         </Button>
       </div>
     </form>
