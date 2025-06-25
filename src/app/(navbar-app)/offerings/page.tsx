@@ -3,7 +3,7 @@
 import type React from "react";
 
 import { useState, useRef, useCallback, useEffect } from "react";
-import { Upload, Clock, CheckCircle, XCircle, AlertCircle } from "lucide-react";
+import { Upload, Clock, CheckCircle, AlertCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -13,6 +13,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface UploadedData {
   Material: string;
@@ -37,8 +44,8 @@ export default function FileUploadDataViewer() {
   });
   const [uploadedData, setUploadedData] = useState<UploadedData[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
-  const [selectedYear, setSelectedYear] = useState(2025);
-  const [selectedMonth, setSelectedMonth] = useState(7);
+  const [selectedYear, setSelectedYear] = useState<number>();
+  const [selectedMonth, setSelectedMonth] = useState<number>();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [apiResponse, setApiResponse] = useState<{
     message?: string;
@@ -46,11 +53,22 @@ export default function FileUploadDataViewer() {
     errors?: string[];
   } | null>(null);
 
-  const authToken =
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImFkZWVsc2VyYWoiLCJlbWFpbCI6ImFkZWVsc2VyYWo3QGdtYWlsLmNvbSIsInJvbGUiOiJhZG1pbiIsImJyYW5jaCI6IkFsbCJ9.1vtNhDBNXvx-JgIHyRkjq_sxD7AwhcLXyYPQRPkXD2g";
+  useEffect(() => {
+    const now = new Date();
+    const currentMonth = now.getMonth();
+
+    const nextMonth = (currentMonth + 1) % 12;
+    const nextYear =
+      currentMonth === 11 ? now.getFullYear() + 1 : now.getFullYear();
+
+    setSelectedMonth(nextMonth + 1);
+    setSelectedYear(nextYear);
+  }, []);
 
   useEffect(() => {
     const fetchOffering = async () => {
+      const authToken = localStorage.getItem("token");
+
       try {
         const res = await fetch(
           `${process.env.NEXT_PUBLIC_BASE_URL}/offerings/${selectedYear}/${selectedMonth}`,
@@ -64,14 +82,14 @@ export default function FileUploadDataViewer() {
         );
 
         const data = await res.json();
-        console.log("data", data?.data);
-        console.log("Space", data);
 
         setUploadedData(data?.data);
-      } catch (error) {}
+      } catch (error) {
+        console.error("The error is = ", error);
+      }
     };
     fetchOffering();
-  }, []);
+  }, [selectedMonth, selectedYear]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -118,12 +136,13 @@ export default function FileUploadDataViewer() {
       lastUploaded: null,
     });
 
+    const authToken = localStorage.getItem("token");
     try {
       // Create FormData to send the file
       const formData = new FormData();
       formData.append("file", file);
-      formData.append("year", selectedYear.toString());
-      formData.append("month", selectedMonth.toString());
+      formData.append("year", selectedYear!.toString());
+      formData.append("month", selectedMonth!.toString());
 
       // Update progress to show uploading
       setUploadStatus((prev) => ({
@@ -153,7 +172,6 @@ export default function FileUploadDataViewer() {
       }));
 
       if (!response.ok) {
-        console.log("the api response", data?.detail);
         throw new Error(`Upload failed: ${data?.detail}`);
       }
 
@@ -231,8 +249,6 @@ export default function FileUploadDataViewer() {
     }
   };
 
-  console.log("lenght", uploadedData);
-
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -244,9 +260,9 @@ export default function FileUploadDataViewer() {
                 <Upload className="w-5 h-5 text-blue-600" />
               </div>
               <div>
-                <CardTitle className="text-lg">Sales</CardTitle>
+                <CardTitle className="text-lg">Offerings</CardTitle>
                 <p className="text-sm text-gray-600">
-                  Upload Sales information spreadsheet
+                  Upload Offerings Spreadsheet
                 </p>
               </div>
             </div>
@@ -260,6 +276,60 @@ export default function FileUploadDataViewer() {
               )}
             </div>
           </CardHeader>
+          <div className="px-6 pb-4 border-b">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium text-gray-700">
+                  Year:
+                </label>
+                <Select
+                  value={selectedYear?.toString()}
+                  onValueChange={(value) =>
+                    setSelectedYear(Number.parseInt(value))
+                  }
+                >
+                  <SelectTrigger className="w-24">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="2023">2023</SelectItem>
+                    <SelectItem value="2024">2024</SelectItem>
+                    <SelectItem value="2025">2025</SelectItem>
+                    <SelectItem value="2026">2026</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium text-gray-700">
+                  Month:
+                </label>
+                <Select
+                  value={selectedMonth?.toString()}
+                  onValueChange={(value) =>
+                    setSelectedMonth(Number.parseInt(value))
+                  }
+                >
+                  <SelectTrigger className="w-32">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">January</SelectItem>
+                    <SelectItem value="2">February</SelectItem>
+                    <SelectItem value="3">March</SelectItem>
+                    <SelectItem value="4">April</SelectItem>
+                    <SelectItem value="5">May</SelectItem>
+                    <SelectItem value="6">June</SelectItem>
+                    <SelectItem value="7">July</SelectItem>
+                    <SelectItem value="8">August</SelectItem>
+                    <SelectItem value="9">September</SelectItem>
+                    <SelectItem value="10">October</SelectItem>
+                    <SelectItem value="11">November</SelectItem>
+                    <SelectItem value="12">December</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
           <CardContent>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Upload Area */}
@@ -318,7 +388,8 @@ export default function FileUploadDataViewer() {
 
               {/* Validation Results */}
               <div className="flex items-center justify-center">
-                {uploadStatus.status === "idle" && uploadedData.length === 0 ? (
+                {uploadStatus?.status === "idle" &&
+                uploadedData?.length === 0 ? (
                   <div className="text-center text-gray-500">
                     <div className="text-sm font-medium">
                       No results to display
@@ -338,7 +409,7 @@ export default function FileUploadDataViewer() {
                         {apiResponse.recordsProcessed} records processed
                       </div>
                     </div>
-                    {apiResponse.errors && apiResponse.errors.length > 0 && (
+                    {apiResponse.errors && apiResponse.errors?.length > 0 && (
                       <div className="text-left">
                         <div className="text-xs font-medium text-amber-600 mb-1">
                           Warnings:
@@ -368,12 +439,17 @@ export default function FileUploadDataViewer() {
                     </div>
                   </div>
                 ) : uploadStatus.status === "error" ? (
-                  <div className="border rounded-lg p-8">
+                  <div className="border rounded-lg p-8 max-h-45 overflow-y-auto">
                     <div className="flex items-center mb-2">
                       <AlertCircle className="w-5 h-5 mr-2 text-red-600" />
                       <div className="text-sm font-medium">Upload failed</div>
                     </div>
-                    <div className="text-xs mt-1">{uploadStatus.error}</div>
+
+                    {uploadStatus.error?.split("\n").map((line, index) => (
+                      <div key={index} className="mb-1 last:mb-0 text-xs">
+                        {line}
+                      </div>
+                    ))}
                   </div>
                 ) : (
                   <div className="text-center text-green-600">
@@ -382,7 +458,7 @@ export default function FileUploadDataViewer() {
                       Data loaded successfully
                     </div>
                     <div className="text-xs mt-1">
-                      {uploadedData.length} records available
+                      {uploadedData?.length} records available
                     </div>
                   </div>
                 )}
@@ -392,7 +468,7 @@ export default function FileUploadDataViewer() {
         </Card>
 
         {/* Data Table Section */}
-        {uploadedData.length > 0 && (
+        {uploadedData?.length > 0 && (
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Offerings</CardTitle>
@@ -410,7 +486,7 @@ export default function FileUploadDataViewer() {
                   </TableHeader>
                   <TableBody>
                     {uploadedData.map((record) => (
-                      <TableRow>
+                      <TableRow key={record.Material + record.Product}>
                         <TableCell className="font-medium">
                           {record.Material}
                         </TableCell>
