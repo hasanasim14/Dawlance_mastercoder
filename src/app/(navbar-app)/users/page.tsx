@@ -1,36 +1,102 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { AgGridReact } from "ag-grid-react";
-import type { ColDef } from "ag-grid-community";
-import { ClientSideRowModelModule, themeAlpine } from "ag-grid-community";
-import { ModuleRegistry } from "ag-grid-community";
-import { ValidationModule } from "ag-grid-community";
-import { Skeleton } from "@/components/ui/skeleton";
+import { useEffect, useState } from "react";
 import { RightSheet } from "@/components/RightSheet";
-import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
+import type {
+  RowDataType,
+  PaginationData,
+  FieldConfig,
+  ColumnConfig,
+} from "@/lib/types";
+import { DataTable } from "@/components/DataTable";
+import {
+  transformToApiFormat,
+  transformArrayFromApiFormat,
+  extractFields,
+} from "@/lib/data-transformers";
 
-// Register modules
-ModuleRegistry.registerModules([ClientSideRowModelModule, ValidationModule]);
-
-type RowDataType = {
-  Account: string;
-  Role: string;
-};
-
-const Users = () => {
+export default function Users() {
   const [selectedRow, setSelectedRow] = useState<RowDataType | null>(null);
+  const [selectedRowId, setSelectedRowId] = useState<number | null>(null);
+  const [selectedRows, setSelectedRows] = useState<RowDataType[]>([]);
   const [rowData, setRowData] = useState<RowDataType[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isAddingNew, setIsAddingNew] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
 
-  const fetchMasterData = async (search = "") => {
+  // Pagination states
+  const [pagination, setPagination] = useState<PaginationData>({
+    total_records: 0,
+    records_per_page: 50,
+    page: 1,
+    total_pages: 0,
+  });
+  const [pageSize, setPageSize] = useState(50);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // Define field configuration for the RightSheet with select dropdowns
+  const fieldConfig: FieldConfig[] = [
+    { key: "username", label: "Username", type: "text", required: true },
+    {
+      key: "email",
+      label: "Email",
+      type: "text",
+      required: true,
+    },
+    {
+      key: "password",
+      label: "Password",
+      type: "text",
+    },
+    {
+      key: "role",
+      label: "Role",
+      type: "select",
+      required: true,
+      apiEndpoint: `${process.env.NEXT_PUBLIC_BASE_URL}/roles`,
+    },
+    {
+      key: "branch",
+      label: "Branch",
+      type: "select",
+      required: true,
+      apiEndpoint: `${process.env.NEXT_PUBLIC_BASE_URL}/branches/distinct/branch_code`,
+    },
+  ];
+
+  const columns: readonly ColumnConfig[] = [
+    { key: "Name", label: "Name" },
+    { key: "Email", label: "Email" },
+    { key: "Role", label: "Role" },
+    { key: "Branch", label: "Branch" },
+  ];
+
+  const fetchUserData = async (
+    searchParams: Record<string, string> = {},
+    page = 1,
+    recordsPerPage = 50
+  ) => {
     setLoading(true);
     try {
-      const endpoint = search
-        ? `${process.env}/phaseio/search?term=${encodeURIComponent(search)}`
-        : `${process.env}/phaseio`;
+      let endpoint = `${process.env.NEXT_PUBLIC_BASE_URL}/users`;
+
+      const queryParams = new URLSearchParams();
+
+      queryParams.append("page", page.toString());
+      queryParams.append("limit", recordsPerPage.toString());
+
+      const hasSearchParams = Object.keys(searchParams).length > 0;
+
+      if (hasSearchParams) {
+        const apiSearchParams = transformToApiFormat(searchParams);
+        Object.entries(apiSearchParams).forEach(([field, value]) => {
+          queryParams.append(field, value);
+        });
+      }
+
+      endpoint = `${endpoint}?${queryParams.toString()}`;
 
       const res = await fetch(endpoint, {
         method: "GET",
@@ -41,126 +107,226 @@ const Users = () => {
       const data = await res.json();
 
       const parsedData = typeof data === "string" ? JSON.parse(data) : data;
-      setRowData(parsedData);
+
+      if (parsedData && parsedData.data && Array.isArray(parsedData.data)) {
+        const transformedData = transformArrayFromApiFormat(
+          parsedData.data
+        ) as RowDataType[];
+        setRowData(transformedData);
+
+        if (parsedData.pagination) {
+          setPagination(parsedData.pagination);
+        }
+      } else {
+        console.error("Invalid data structure received:", parsedData);
+        setRowData([]);
+      }
     } catch (error) {
       console.error("Error fetching data", error);
+      setRowData([]);
     } finally {
       setLoading(false);
     }
   };
 
+  const handleBulkDelete = async () => {
+    if (selectedRows.length === 0) return;
+
+    setDeleting(true);
+    try {
+      const masterIds = extractFields(selectedRows, "Master ID");
+
+      const deletePayload = {
+        master_id: masterIds,
+      };
+
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/mastercoding/delete`,
+        {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(deletePayload),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      // Refresh data after deletion
+      fetchUserData({}, currentPage, pageSize);
+
+      // Clear selections
+      setSelectedRows([]);
+      setSelectedRow(null);
+      setSelectedRowId(null);
+    } catch (error) {
+      console.error("Error deleting records:", error);
+    } finally {
+      setDeleting(false);
+      setShowDeleteDialog(false);
+    }
+  };
+
+  // Pagination handlers
+  const handlePageSizeChange = (newPageSize: string) => {
+    const size = Number.parseInt(newPageSize);
+    setPageSize(size);
+    setCurrentPage(1);
+    fetchUserData({}, 1, size);
+  };
+
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage);
+    fetchUserData({}, newPage, pageSize);
+  };
+
   useEffect(() => {
-    fetchMasterData();
+    fetchUserData({}, currentPage, pageSize);
   }, []);
 
-  // Column Definitions for Master Coding
-  const columnDefs: ColDef<RowDataType>[] = useMemo(
-    () => [
-      // Account
-      {
-        headerName: "Account",
-        field: "Account",
-        sortable: true,
-        filter: true,
-        minWidth: 150,
-      },
-      // Role
-      {
-        headerName: "Role",
-        field: "Role",
-        sortable: true,
-        filter: true,
-        minWidth: 150,
-      },
-    ],
-    []
-  );
+  // Handle row selection
+  const handleRowSelect = (row: RowDataType, checked: boolean) => {
+    if (checked) {
+      setSelectedRows((prev) => [...prev, row]);
+    } else {
+      setSelectedRows((prev) =>
+        prev.filter((r) => r["Master ID"] !== row["Master ID"])
+      );
+    }
+  };
+
+  // Handle select all
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedRows([...rowData]);
+    } else {
+      setSelectedRows([]);
+    }
+  };
+
+  // Handle row click
+  const handleRowClick = (row: RowDataType) => {
+    setIsSheetOpen(true);
+    const clickedRowId = row["Master ID"];
+
+    // If clicking the same row, toggle the sheet
+    if (selectedRowId === clickedRowId) {
+      setSelectedRow(null);
+      setSelectedRowId(null);
+    } else {
+      // Select new row
+      setSelectedRow(row);
+      setSelectedRowId(clickedRowId);
+    }
+  };
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const onRowClicked = (event: any) => {
-    setSelectedRow(event.data);
-    setIsAddingNew(false); // Reset adding new state when a row is selected
+  const handleSave = async (data: Record<string, any>): Promise<void> => {
+    try {
+      // Transform data to API format before sending
+      const apiFormattedData = transformToApiFormat(data);
+      const isUpdate = !!selectedRowId;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    event.api.forEachNode((node: any) => {
-      node.setSeleted(false);
-    });
-    event.node.setSeleted(true);
+      const endpoint = isUpdate
+        ? `${process.env.NEXT_PUBLIC_BASE_URL}/mastercoding/update/${selectedRowId}`
+        : `${process.env.NEXT_PUBLIC_BASE_URL}/mastercoding/add`;
+
+      const method = isUpdate ? "PUT" : "POST";
+
+      const response = await fetch(endpoint, {
+        method: method,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(apiFormattedData),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      setRowData((prevData) =>
+        prevData.map((row) =>
+          row["Master ID"] === data["Master ID"] ? { ...row, ...data } : row
+        )
+      );
+
+      // Update selected row data
+      setSelectedRow(data as RowDataType);
+    } catch (error) {
+      console.error("Error saving user data:", error);
+      throw error;
+    }
   };
 
-  const handleAddNewUser = () => {
-    // Create an empty row with the same structure as RowDataType
-    const emptyRow: RowDataType = {
-      Account: "",
-      Role: "",
-    };
-
-    setSelectedRow(emptyRow);
-    setIsAddingNew(true);
+  const handleAddClick = () => {
+    setIsSheetOpen(true);
   };
 
-  const defaultColDef = useMemo(() => {
-    return {
-      flex: 1,
-      resizable: true,
-      sortable: true,
-      filter: true,
-    };
-  }, []);
+  const excludedKeys = [""];
 
-  // Determine what to pass to RightSheet
-  const rightSheetData = isAddingNew ? { Account: "", Role: "" } : selectedRow;
+  const filteredFieldConfig = fieldConfig.filter(
+    (field) => !excludedKeys.includes(field.key)
+  );
 
   return (
-    <div className="flex flex-col h-[calc(100vh-90px)] p-4">
-      <div className="flex flex-col md:flex-row gap-4 flex-grow overflow-hidden h-[calc(100%-120px)]">
-        <div className="rounded-lg border bg-card flex-grow shadow-sm flex flex-col h-full">
-          <div className="p-4 border-b flex justify-between items-center flex-shrink-0">
-            <h3 className="font-semibold">Users</h3>
-            <Button
-              className="px-4 py-2 text-white rounded-md transition-colors"
-              onClick={handleAddNewUser}
-            >
-              <Plus />
-              Add a new role
-            </Button>
-          </div>
-
-          {loading ? (
-            <div className="p-4 space-y-3 flex-grow">
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-10 w-full" />
-            </div>
-          ) : (
-            <div className="ag-theme-alpine w-full h-full">
-              <AgGridReact<RowDataType>
-                theme={themeAlpine}
-                rowData={rowData}
-                columnDefs={columnDefs}
-                // pagination={true}
-                // paginationAutoPageSize={true}
-                onRowClicked={onRowClicked}
-                // getRowClass={getRowClass}
-                defaultColDef={defaultColDef}
-                // onGridReady={onGridReady}
-                animateRows={true}
-                rowHeight={30}
-                headerHeight={38}
-                suppressCellFocus={true}
-                // className="rounded-md"
-                // domLayout="normal"
-              />
-            </div>
-          )}
+    <div className="w-full h-[85vh] p-4 overflow-hidden">
+      <div className="w-full h-full flex flex-col lg:flex-row gap-4 overflow-hidden">
+        <div className="flex-1 h-full overflow-hidden min-w-0">
+          <DataTable
+            tableName="Users"
+            selectionValue="Master ID"
+            loading={loading}
+            deleting={deleting}
+            data={rowData}
+            selectedRows={selectedRows}
+            selectedRowId={selectedRowId}
+            pagination={pagination}
+            currentPage={currentPage}
+            pageSize={pageSize}
+            columns={columns}
+            onRowSelect={handleRowSelect}
+            onSelectAll={handleSelectAll}
+            onRowClick={handleRowClick}
+            onPageSizeChange={handlePageSizeChange}
+            onPageChange={handlePageChange}
+            onDeleteClick={() => setShowDeleteDialog(true)}
+            onAddClick={handleAddClick}
+          />
         </div>
 
-        <RightSheet selectedRow={rightSheetData} parent={"users"} />
+        <RightSheet
+          parent={"users"}
+          selectedRow={selectedRow}
+          onReset={() => {
+            setSelectedRow(null);
+            setIsSheetOpen(false);
+          }}
+          onSave={handleSave}
+          fields={selectedRow ? fieldConfig : filteredFieldConfig}
+          title={selectedRow ? "Edit Entry" : "Create New Entry"}
+          isOpen={isSheetOpen}
+          onClose={() => setIsSheetOpen(false)}
+        />
       </div>
+
+      <ConfirmDialog
+        open={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
+        title="Delete Records"
+        description={`Are you sure you want to delete ${
+          selectedRows.length
+        } record${
+          selectedRows.length > 1 ? "s" : ""
+        }? This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        onConfirm={handleBulkDelete}
+        variant="destructive"
+      />
     </div>
   );
-};
-
-export default Users;
+}

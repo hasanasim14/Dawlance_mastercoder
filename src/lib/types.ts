@@ -1,4 +1,5 @@
 export type RowDataType = {
+  // Master Coding
   "Master ID": number;
   Product: string;
   Material: string;
@@ -10,10 +11,16 @@ export type RowDataType = {
   Series: string;
   Colour: string;
   "Key Feature": string;
+  // Branch Master
   "Branch Code": string;
   "Sales Branch": string;
   "Sales Office": string;
   "Branch Manager": string;
+  // Users
+  Name: string;
+  Email: string;
+  Role: string;
+  Branch: string;
 };
 
 export type SortConfig = {

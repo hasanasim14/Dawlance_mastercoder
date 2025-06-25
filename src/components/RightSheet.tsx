@@ -155,7 +155,7 @@ export function RightSheet({
           let options: SelectOption[] = [];
 
           if (Array.isArray(data)) {
-            // If data is directly an array of strings (like your roles/branches API)
+            // If data is directly an array of strings
             options = data.map((item) => ({
               value:
                 typeof item === "string"
@@ -167,28 +167,46 @@ export function RightSheet({
                   : item.label || item.name || item.value || item.id,
             }));
           } else if (data && typeof data === "object") {
-            // If data is an object with arrays (like your material API)
-            const fieldKey = field.key.toLowerCase();
-            const possibleKeys = [
-              fieldKey,
-              `${fieldKey}s`,
-              field.key,
-              `${field.key}s`,
-            ];
-
-            for (const key of possibleKeys) {
-              if (data[key] && Array.isArray(data[key])) {
-                options = data[key].map((item: any) => ({
-                  value:
-                    typeof item === "string"
-                      ? item
-                      : item.value || item.id || item.name,
-                  label:
-                    typeof item === "string"
-                      ? item
-                      : item.label || item.name || item.value || item.id,
+            // Handle specific API response formats
+            if (field.key === "role" || field.key === "roles") {
+              // Handle roles API response: { "super_admin": "Super Admin", "admin": "Admin", ... }
+              options = Object.entries(data).map(([key, value]) => ({
+                value: key,
+                label: typeof value === "string" ? value : key,
+              }));
+            } else if (field.key === "branch" || field.key === "branches") {
+              // Handle branches API response: { "branch_code": ["K011", "K012", ...] }
+              if (data.branch_code && Array.isArray(data.branch_code)) {
+                options = data.branch_code.map((code: string) => ({
+                  value: code,
+                  label: code,
                 }));
-                break;
+              }
+            } else {
+              // Generic object handling for other fields
+              const fieldKey = field.key.toLowerCase();
+              const possibleKeys = [
+                fieldKey,
+                `${fieldKey}s`,
+                field.key,
+                `${field.key}s`,
+              ];
+
+              for (const key of possibleKeys) {
+                if (data[key] && Array.isArray(data[key])) {
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  options = data[key].map((item: any) => ({
+                    value:
+                      typeof item === "string"
+                        ? item
+                        : item.value || item.id || item.name,
+                    label:
+                      typeof item === "string"
+                        ? item
+                        : item.label || item.name || item.value || item.id,
+                  }));
+                  break;
+                }
               }
             }
           }
