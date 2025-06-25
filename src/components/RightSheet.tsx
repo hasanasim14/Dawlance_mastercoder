@@ -4,27 +4,31 @@ import type React from "react";
 import { useState, useRef, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ChevronRight, X, Loader2 } from "lucide-react";
 import { transformToApiFormat } from "@/lib/data-transformers";
 
-interface MaterialOption {
-  material: string;
-}
-
-interface MaterialDetails {
-  material: string;
-  material_description: string;
-  product: string;
+interface SelectOption {
+  value: string;
+  label: string;
 }
 
 interface FieldConfig {
   key: string;
   label: string;
-  type?: "text" | "number" | "email" | "tel";
+  type?: "text" | "number" | "email" | "tel" | "select";
   required?: boolean;
   readOnly?: boolean;
+  selectOptions?: SelectOption[];
+  apiEndpoint?: string;
 }
 
 interface RightSheetProps {
@@ -41,6 +45,16 @@ interface RightSheetProps {
   apiEndpoint?: string;
   isOpen?: boolean;
   onClose?: () => void;
+}
+
+interface MaterialOption {
+  material: string;
+}
+
+interface MaterialDetails {
+  material: string;
+  material_description: string;
+  product: string;
 }
 
 export function RightSheet({
@@ -62,12 +76,20 @@ export function RightSheet({
   const [isSaving, setIsSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const sheetRef = useRef<HTMLDivElement>(null);
-  // const { toast } = useToast();
 
+  // Material-specific states (existing functionality)
   const [materialOptions, setMaterialOptions] = useState<MaterialOption[]>([]);
   const [isSearchingMaterials, setIsSearchingMaterials] = useState(false);
   const [materialDropdownOpen, setMaterialDropdownOpen] = useState(false);
   const [materialError, setMaterialError] = useState("");
+
+  // Dynamic select options state
+  const [selectOptionsCache, setSelectOptionsCache] = useState<
+    Record<string, SelectOption[]>
+  >({});
+  const [loadingSelects, setLoadingSelects] = useState<Record<string, boolean>>(
+    {}
+  );
 
   // Auto-generate fields from selectedRow if not provided
   const effectiveFields =
@@ -98,6 +120,99 @@ export function RightSheet({
       setHasChanges(false);
     }
   }, [selectedRow, isOpen]);
+
+  // Load select options for fields with apiEndpoint
+  useEffect(() => {
+    const loadSelectOptions = async () => {
+      const fieldsWithApiEndpoints = effectiveFields.filter(
+        (field) =>
+          field.type === "select" &&
+          field.apiEndpoint &&
+          !selectOptionsCache[field.key]
+      );
+
+      for (const field of fieldsWithApiEndpoints) {
+        // if (!field.apiEndpoint) continue;
+        if (!("apiEndpoint" in field) || !field.apiEndpoint) continue;
+
+        setLoadingSelects((prev) => ({ ...prev, [field.key]: true }));
+
+        try {
+          const authToken = localStorage.getItem("token");
+          const response = await fetch(field.apiEndpoint, {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              ...(authToken && { Authorization: `Bearer ${authToken}` }),
+            },
+          });
+          if (!response.ok)
+            throw new Error(`Failed to fetch options for ${field.label}`);
+
+          const data = await response.json();
+
+          // Handle different response formats
+          let options: SelectOption[] = [];
+
+          if (Array.isArray(data)) {
+            // If data is directly an array of strings (like your roles/branches API)
+            options = data.map((item) => ({
+              value:
+                typeof item === "string"
+                  ? item
+                  : item.value || item.id || item.name,
+              label:
+                typeof item === "string"
+                  ? item
+                  : item.label || item.name || item.value || item.id,
+            }));
+          } else if (data && typeof data === "object") {
+            // If data is an object with arrays (like your material API)
+            const fieldKey = field.key.toLowerCase();
+            const possibleKeys = [
+              fieldKey,
+              `${fieldKey}s`,
+              field.key,
+              `${field.key}s`,
+            ];
+
+            for (const key of possibleKeys) {
+              if (data[key] && Array.isArray(data[key])) {
+                options = data[key].map((item: any) => ({
+                  value:
+                    typeof item === "string"
+                      ? item
+                      : item.value || item.id || item.name,
+                  label:
+                    typeof item === "string"
+                      ? item
+                      : item.label || item.name || item.value || item.id,
+                }));
+                break;
+              }
+            }
+          }
+
+          setSelectOptionsCache((prev) => ({
+            ...prev,
+            [field.key]: options,
+          }));
+        } catch (error) {
+          console.error(`Error loading options for ${field.label}:`, error);
+          setSelectOptionsCache((prev) => ({
+            ...prev,
+            [field.key]: [],
+          }));
+        } finally {
+          setLoadingSelects((prev) => ({ ...prev, [field.key]: false }));
+        }
+      }
+    };
+
+    if (effectiveFields.length > 0) {
+      loadSelectOptions();
+    }
+  }, [effectiveFields]);
 
   const toggleExpand = () => {
     const newExpandedState = !isExpanded;
@@ -142,10 +257,12 @@ export function RightSheet({
         await onSave(apiFormattedData);
       } else {
         // Default API call
+        const authToken = localStorage.getItem("token");
         const response = await fetch(apiEndpoint, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${authToken}`,
           },
           body: JSON.stringify(apiFormattedData),
         });
@@ -153,8 +270,6 @@ export function RightSheet({
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
-
-        // const result = await response.json();
       }
 
       setHasChanges(false);
@@ -177,6 +292,7 @@ export function RightSheet({
 
   const isVisible = isOpen !== undefined ? isOpen : !!selectedRow;
 
+  // Existing material search logic (unchanged)
   useEffect(() => {
     if (selectedRow || parent === "mastercoding") {
       setMaterialOptions([]);
@@ -184,7 +300,6 @@ export function RightSheet({
       return;
     }
 
-    // Check both possible field keys
     const materialValue = formData.Material || formData.material || "";
 
     const searchMaterials = async () => {
@@ -238,7 +353,7 @@ export function RightSheet({
 
     const debounceTimer = setTimeout(searchMaterials, 300);
     return () => clearTimeout(debounceTimer);
-  }, [formData.Material, formData.material, selectedRow, selectedRow]);
+  }, [formData.Material, formData.material, selectedRow]);
 
   // Handle clicking outside to close material dropdown
   useEffect(() => {
@@ -272,7 +387,6 @@ export function RightSheet({
 
       const result = await response.json();
 
-      // Extract the first item from the data array
       if (result.data && result.data.length > 0) {
         const item = result.data[0];
         return {
@@ -291,23 +405,19 @@ export function RightSheet({
   };
 
   const handleMaterialSelect = async (material: MaterialOption) => {
-    // Close dropdown and clear error immediately
     setMaterialDropdownOpen(false);
     setMaterialError("");
 
-    // Determine which field key to use
     const materialFieldKey = formData.hasOwnProperty("Material")
       ? "Material"
       : "material";
 
-    // Update form data with selected material
     setFormData((prev) => ({
       ...prev,
       [materialFieldKey]: material.material,
     }));
     setHasChanges(true);
 
-    // Fetch and populate material details
     try {
       const details = await fetchMaterialDetails(material.material);
       if (details) {
@@ -316,7 +426,6 @@ export function RightSheet({
           [materialFieldKey]: material.material,
           "Material Description": details.material_description,
           Product: details.product,
-          // Also try lowercase versions in case field keys are different
           material_description: details.material_description,
           product: details.product,
         }));
@@ -324,6 +433,168 @@ export function RightSheet({
     } catch (error) {
       console.error("Error fetching material details:", error);
     }
+  };
+
+  const renderField = (field: FieldConfig) => {
+    if (field.key === "Master ID" && selectedRow) return null;
+
+    // Handle Material field with existing logic
+    if (field.key === "Material" || field.key === "material") {
+      const isEditMode = !!selectedRow;
+
+      return (
+        <div key={field.key} className="space-y-2">
+          <Label htmlFor={field.key.toLowerCase().replace(/\s+/g, "_")}>
+            {field.label}
+          </Label>
+          <div className="relative" data-material-container>
+            <Input
+              id={field.key.toLowerCase().replace(/\s+/g, "_")}
+              type={field.type || "text"}
+              placeholder={
+                isEditMode ? field.label : `Search ${field.label}...`
+              }
+              value={formData[field.key]?.toString() || ""}
+              onChange={(e) => {
+                const value = e.target.value;
+                handleInputChange(field.key, value);
+              }}
+              onFocus={() => {
+                if (!isEditMode) {
+                  const currentValue = formData[field.key]?.toString() || "";
+                  if (
+                    currentValue.trim().length >= 2 &&
+                    materialOptions.length > 0
+                  ) {
+                    setMaterialDropdownOpen(true);
+                  }
+                }
+              }}
+              readOnly={field.readOnly}
+              required={field.required}
+              className={cn(
+                field.readOnly && "bg-muted/40",
+                hasChanges &&
+                  formData[field.key] !== selectedRow?.[field.key] &&
+                  "border-orange-300"
+              )}
+            />
+            {isSearchingMaterials && !isEditMode && (
+              <div className="absolute right-3 top-3">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span className="sr-only">Loading...</span>
+              </div>
+            )}
+
+            {materialDropdownOpen &&
+              materialOptions.length > 0 &&
+              !isEditMode && (
+                <div className="absolute z-50 mt-1 w-full bg-background border rounded-md shadow-lg max-h-60 overflow-auto">
+                  {materialOptions.map((option, index) => (
+                    <div
+                      key={`${option.material}-${index}`}
+                      className="cursor-pointer rounded px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleMaterialSelect(option);
+                      }}
+                    >
+                      <span className="font-medium">{option.material}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+          </div>
+        </div>
+      );
+    }
+
+    // Handle Select fields - FIXED VERSION
+    if (field.type === "select") {
+      const options =
+        field.selectOptions || selectOptionsCache[field.key] || [];
+      const isLoading = loadingSelects[field.key];
+
+      return (
+        <div key={field.key} className="space-y-2">
+          <Label htmlFor={field.key.toLowerCase().replace(/\s+/g, "_")}>
+            {field.label}
+          </Label>
+          <Select
+            value={formData[field.key]?.toString() || ""}
+            onValueChange={(value) => handleInputChange(field.key, value)}
+            disabled={field.readOnly || isLoading}
+          >
+            <SelectTrigger
+              className={cn(
+                "w-full",
+                field.readOnly && "bg-muted/40",
+                hasChanges &&
+                  formData[field.key] !== selectedRow?.[field.key] &&
+                  "border-orange-300"
+              )}
+            >
+              <SelectValue
+                placeholder={isLoading ? "Loading..." : `Select ${field.label}`}
+              />
+            </SelectTrigger>
+            <SelectContent>
+              {isLoading ? (
+                <div className="flex items-center gap-2 px-2 py-1.5 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Loading...
+                </div>
+              ) : options.length > 0 ? (
+                options.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))
+              ) : (
+                <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                  No options available
+                </div>
+              )}
+            </SelectContent>
+          </Select>
+        </div>
+      );
+    }
+
+    // Handle regular Input fields
+    return (
+      <div key={field.key} className="space-y-2">
+        <Label htmlFor={field.key.toLowerCase().replace(/\s+/g, "_")}>
+          {field.label}
+        </Label>
+        <Input
+          id={field.key.toLowerCase().replace(/\s+/g, "_")}
+          type={field.type || "text"}
+          placeholder={field.label}
+          value={formData[field.key]?.toString() || ""}
+          onChange={(e) => handleInputChange(field.key, e.target.value)}
+          readOnly={
+            field.readOnly ||
+            (field.key.toLowerCase() === "material_description" &&
+              formData["material"]) ||
+            (field.key.toLowerCase() === "product" && formData["material"])
+          }
+          required={field.required}
+          className={cn(
+            (field.readOnly ||
+              (field.key.toLowerCase() === "material_description" &&
+                formData["material"]) ||
+              (field.key.toLowerCase() === "product" &&
+                formData["material"])) &&
+              "bg-muted/40",
+            hasChanges &&
+              formData[field.key] !== selectedRow?.[field.key] &&
+              "border-orange-300"
+          )}
+        />
+      </div>
+    );
   };
 
   return (
@@ -399,121 +670,7 @@ export function RightSheet({
         )}
         {isVisible && effectiveFields.length > 0 ? (
           <div className="grid grid-cols-1 gap-4">
-            {effectiveFields.map((field) => {
-              if (field.key === "Master ID" && selectedRow) return null; // Skip Master ID as it's in the header
-
-              if (field.key === "Material" || field.key === "material") {
-                const isEditMode = !!selectedRow;
-
-                return (
-                  <div key={field.key} className="space-y-2">
-                    <Label
-                      htmlFor={field.key.toLowerCase().replace(/\s+/g, "_")}
-                    >
-                      {field.label}
-                    </Label>
-                    <div className="relative" data-material-container>
-                      <Input
-                        id={field.key.toLowerCase().replace(/\s+/g, "_")}
-                        type={field.type || "text"}
-                        placeholder={
-                          isEditMode ? field.label : `Search ${field.label}...`
-                        }
-                        value={formData[field.key]?.toString() || ""}
-                        onChange={(e) => {
-                          const value = e.target.value;
-                          handleInputChange(field.key, value);
-                        }}
-                        onFocus={() => {
-                          if (!isEditMode) {
-                            const currentValue =
-                              formData[field.key]?.toString() || "";
-                            if (
-                              currentValue.trim().length >= 2 &&
-                              materialOptions.length > 0
-                            ) {
-                              setMaterialDropdownOpen(true);
-                            }
-                          }
-                        }}
-                        readOnly={field.readOnly}
-                        required={field.required}
-                        className={cn(
-                          field.readOnly && "bg-muted/40",
-                          hasChanges &&
-                            formData[field.key] !== selectedRow?.[field.key] &&
-                            "border-orange-300"
-                        )}
-                      />
-                      {isSearchingMaterials && !isEditMode && (
-                        <div className="absolute right-3 top-3">
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          <span className="sr-only">Loading...</span>
-                        </div>
-                      )}
-
-                      {materialDropdownOpen &&
-                        materialOptions.length > 0 &&
-                        !isEditMode && (
-                          <div className="absolute z-50 mt-1 w-full bg-background border rounded-md shadow-lg max-h-60 overflow-auto">
-                            {materialOptions.map((option, index) => (
-                              <div
-                                key={`${option.material}-${index}`}
-                                className="cursor-pointer rounded px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  handleMaterialSelect(option);
-                                }}
-                              >
-                                <span className="font-medium">
-                                  {option.material}
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                    </div>
-                  </div>
-                );
-              }
-
-              return (
-                <div key={field.key} className="space-y-2">
-                  <Label htmlFor={field.key.toLowerCase().replace(/\s+/g, "_")}>
-                    {field.label}
-                  </Label>
-                  <Input
-                    id={field.key.toLowerCase().replace(/\s+/g, "_")}
-                    type={field.type || "text"}
-                    placeholder={field.label}
-                    value={formData[field.key]?.toString() || ""}
-                    onChange={(e) =>
-                      handleInputChange(field.key, e.target.value)
-                    }
-                    readOnly={
-                      field.readOnly ||
-                      (field.key.toLowerCase() === "material_description" &&
-                        formData["material"]) ||
-                      (field.key.toLowerCase() === "product" &&
-                        formData["material"])
-                    }
-                    required={field.required}
-                    className={cn(
-                      (field.readOnly ||
-                        (field.key.toLowerCase() === "material_description" &&
-                          formData["material"]) ||
-                        (field.key.toLowerCase() === "product" &&
-                          formData["material"])) &&
-                        "bg-muted/40",
-                      hasChanges &&
-                        formData[field.key] !== selectedRow?.[field.key] &&
-                        "border-orange-300"
-                    )}
-                  />
-                </div>
-              );
-            })}
+            {effectiveFields.map(renderField)}
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-3 py-10">
@@ -547,14 +704,12 @@ export function RightSheet({
             !isVisible ||
             !hasChanges ||
             isSaving ||
-            // Check if any required fields are empty
             effectiveFields.some(
               (field) =>
                 field.required &&
                 (!formData[field.key] ||
                   formData[field.key].toString().trim() === "")
             ) ||
-            // Check if there's a material error
             !!materialError
           }
           onClick={handleSave}
