@@ -37,6 +37,9 @@ export function DataTableBody({
     );
   }
 
+  console.log("branch selection ==>", selectionValue);
+  console.log("daata ==>", data);
+
   return (
     <TableBody>
       {data.map((row) => {

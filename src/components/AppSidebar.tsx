@@ -21,13 +21,13 @@ import {
   LayoutDashboard,
   LogOut,
   Workflow,
-  UserCog,
   Users,
   Gift,
 } from "lucide-react";
 import { mockUser } from "@/lib/mockUser";
 import { rolePages } from "@/lib/rolePages";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import Link from "next/link";
 
 type Role = keyof typeof rolePages;
@@ -91,11 +91,6 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
       icon: Workflow,
     },
     {
-      title: "Roles",
-      url: "/roles",
-      icon: UserCog,
-    },
-    {
       title: "Users",
       url: "/users",
       icon: Users,
@@ -108,6 +103,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
 
   const handleLogout = () => {
     localStorage.clear();
+    toast.success("Logout Successful");
     router.push("/login");
   };
 
@@ -134,7 +130,11 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
         <div className="mt-auto">
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton tooltip="Logout" onClick={handleLogout}>
+              <SidebarMenuButton
+                tooltip="Logout"
+                onClick={handleLogout}
+                className="cursor-pointer"
+              >
                 <LogOut className="h-4 w-4" />
                 <span>Logout</span>
               </SidebarMenuButton>
