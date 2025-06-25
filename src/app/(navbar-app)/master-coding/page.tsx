@@ -61,22 +61,30 @@ const MasterCoding = () => {
       key: "Material Description",
       label: "Material Description",
       type: "text",
+      required: true,
     },
     {
       key: "Measurement Instrument",
       label: "Measurement Instrument",
       type: "text",
+      required: true,
     },
     {
       key: "Colour Similarity",
       label: "Colour Similarity",
       type: "text",
+      required: true,
     },
-    { key: "Product type", label: "Product Type", type: "text" },
-    { key: "Function", label: "Function", type: "text" },
-    { key: "Series", label: "Series", type: "text" },
-    { key: "Colour", label: "Colour", type: "text" },
-    { key: "Key Feature", label: "Key Feature", type: "text" },
+    {
+      key: "Product type",
+      label: "Product Type",
+      type: "text",
+      required: true,
+    },
+    { key: "Function", label: "Function", type: "text", required: true },
+    { key: "Series", label: "Series", type: "text", required: true },
+    { key: "Colour", label: "Colour", type: "text", required: true },
+    { key: "Key Feature", label: "Key Feature", type: "text", required: true },
   ];
 
   const columns: readonly ColumnConfig[] = [
@@ -135,6 +143,7 @@ const MasterCoding = () => {
         setRowData(transformedData);
 
         if (parsedData.pagination) {
+          console.log("Pagination data:", parsedData);
           setPagination(parsedData.pagination);
         }
       } else {
@@ -341,11 +350,6 @@ const MasterCoding = () => {
     }
   };
 
-  // const handleReset = () => {
-  //   setSelectedRow(null);
-  //   setSelectedRowId(null);
-  // };
-
   const handleAddClick = () => {
     setIsSheetOpen(true);
   };
@@ -381,7 +385,6 @@ const MasterCoding = () => {
           <DataTable
             tableName="Master Coding"
             selectionValue="Master ID"
-            isCollapsed={isCollapsed}
             loading={loading}
             deleting={deleting}
             data={rowData}
