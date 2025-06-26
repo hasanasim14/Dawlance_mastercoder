@@ -11,9 +11,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { ChevronRight, X, Loader2 } from "lucide-react";
+import { ChevronRight, X, Loader2, ChevronDown } from "lucide-react";
 import { transformToApiFormat } from "@/lib/data-transformers";
 
 interface SelectOption {
@@ -24,11 +30,13 @@ interface SelectOption {
 interface FieldConfig {
   key: string;
   label: string;
-  type?: "text" | "number" | "email" | "tel" | "select";
+  type?: "text" | "number" | "email" | "tel" | "select" | "multi-select";
   required?: boolean;
   readOnly?: boolean;
   selectOptions?: SelectOption[];
   apiEndpoint?: string;
+  dependsOn?: string;
+  dependsOnValue?: string | string[];
 }
 
 interface RightSheetProps {
@@ -75,14 +83,11 @@ export function RightSheet({
   const [formData, setFormData] = useState<Record<string, any>>({});
   const [isSaving, setIsSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
-  const sheetRef = useRef<HTMLDivElement>(null);
-
   // Material-specific states (existing functionality)
   const [materialOptions, setMaterialOptions] = useState<MaterialOption[]>([]);
   const [isSearchingMaterials, setIsSearchingMaterials] = useState(false);
   const [materialDropdownOpen, setMaterialDropdownOpen] = useState(false);
   const [materialError, setMaterialError] = useState("");
-
   // Dynamic select options state
   const [selectOptionsCache, setSelectOptionsCache] = useState<
     Record<string, SelectOption[]>
@@ -90,6 +95,7 @@ export function RightSheet({
   const [loadingSelects, setLoadingSelects] = useState<Record<string, boolean>>(
     {}
   );
+  const sheetRef = useRef<HTMLDivElement>(null);
 
   // Auto-generate fields from selectedRow if not provided
   const effectiveFields =
@@ -134,7 +140,6 @@ export function RightSheet({
       for (const field of fieldsWithApiEndpoints) {
         // if (!field.apiEndpoint) continue;
         if (!("apiEndpoint" in field) || !field.apiEndpoint) continue;
-
         setLoadingSelects((prev) => ({ ...prev, [field.key]: true }));
 
         try {
@@ -232,6 +237,61 @@ export function RightSheet({
     }
   }, [effectiveFields]);
 
+  // Load branch options when role changes to "branch"
+  useEffect(() => {
+    const loadBranchOptions = async () => {
+      if (formData.role === "branch" && !selectOptionsCache.branch) {
+        const branchField = effectiveFields.find(
+          (field) => field.key === "branch"
+        );
+        if (
+          branchField &&
+          "apiEndpoint" in branchField &&
+          branchField.apiEndpoint
+        ) {
+          setLoadingSelects((prev) => ({ ...prev, branch: true }));
+
+          try {
+            const authToken = localStorage.getItem("token");
+            const response = await fetch(branchField.apiEndpoint, {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+                ...(authToken && { Authorization: `Bearer ${authToken}` }),
+              },
+            });
+            if (!response.ok) throw new Error("Failed to fetch branch options");
+
+            const data = await response.json();
+            let options: SelectOption[] = [];
+
+            if (data.branch_code && Array.isArray(data.branch_code)) {
+              options = data.branch_code.map((code: string) => ({
+                value: code,
+                label: code,
+              }));
+            }
+
+            setSelectOptionsCache((prev) => ({
+              ...prev,
+              branch: options,
+            }));
+          } catch (error) {
+            console.error("Error loading branch options:", error);
+            setSelectOptionsCache((prev) => ({
+              ...prev,
+              branch: [],
+            }));
+          } finally {
+            setLoadingSelects((prev) => ({ ...prev, branch: false }));
+          }
+        }
+      }
+    };
+
+    loadBranchOptions();
+  }, [formData.role, effectiveFields]);
+
   const toggleExpand = () => {
     const newExpandedState = !isExpanded;
     setIsExpanded(newExpandedState);
@@ -249,12 +309,29 @@ export function RightSheet({
     onReset?.();
   };
 
-  const handleInputChange = (key: string, value: string) => {
+  const handleInputChange = (key: string, value: string | string[]) => {
     setFormData((prev) => {
       const newData = { ...prev, [key]: value };
+
+      // Clear branch selection when role changes from "branch" to something else
+      if (key === "role" && value !== "branch" && prev.branch) {
+        newData.branch = [];
+      }
+
       const hasDataChanges = selectedRow
-        ? Object.keys(newData).some((k) => newData[k] !== selectedRow[k])
-        : Object.values(newData).some((v) => v !== "");
+        ? Object.keys(newData).some((k) => {
+            const newVal = Array.isArray(newData[k])
+              ? newData[k].join(",")
+              : newData[k];
+            const oldVal = Array.isArray(selectedRow[k])
+              ? selectedRow[k].join(",")
+              : selectedRow[k];
+            return newVal !== oldVal;
+          })
+        : Object.values(newData).some((v) => {
+            if (Array.isArray(v)) return v.length > 0;
+            return v !== "";
+          });
       setHasChanges(hasDataChanges);
       return newData;
     });
@@ -309,6 +386,170 @@ export function RightSheet({
   };
 
   const isVisible = isOpen !== undefined ? isOpen : !!selectedRow;
+
+  // Check if field should be visible based on dependencies
+  const isFieldVisible = (field: FieldConfig) => {
+    if (!field.dependsOn || !field.dependsOnValue) return true;
+
+    const dependentValue = formData[field.dependsOn];
+    if (Array.isArray(field.dependsOnValue)) {
+      return field.dependsOnValue.includes(dependentValue);
+    }
+    return dependentValue === field.dependsOnValue;
+  };
+
+  const MultiSelectField = ({ field }: { field: FieldConfig }) => {
+    const options = selectOptionsCache[field.key] || [];
+    const isLoading = loadingSelects[field.key];
+    const selectedValues = Array.isArray(formData[field.key])
+      ? formData[field.key]
+      : [];
+    const [isOpen, setIsOpen] = useState(false);
+
+    const handleToggleOption = (value: string) => {
+      const currentValues = Array.isArray(formData[field.key])
+        ? formData[field.key]
+        : [];
+      const newValues = currentValues.includes(value)
+        ? currentValues.filter((v: string) => v !== value)
+        : [...currentValues, value];
+
+      handleInputChange(field.key, newValues);
+    };
+
+    const handleRemoveOption = (value: string) => {
+      const currentValues = Array.isArray(formData[field.key])
+        ? formData[field.key]
+        : [];
+      const newValues = currentValues.filter((v: string) => v !== value);
+      handleInputChange(field.key, newValues);
+    };
+
+    return (
+      <div className="space-y-2">
+        <Label htmlFor={field.key.toLowerCase().replace(/\s+/g, "_")}>
+          {field.label}
+        </Label>
+
+        <Popover open={isOpen} onOpenChange={setIsOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              role="combobox"
+              aria-expanded={isOpen}
+              className={cn(
+                "w-full justify-between",
+                hasChanges &&
+                  JSON.stringify(formData[field.key]) !==
+                    JSON.stringify(selectedRow?.[field.key]) &&
+                  "border-orange-300"
+              )}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <div className="flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Loading...
+                </div>
+              ) : selectedValues.length > 0 ? (
+                `${selectedValues.length} selected`
+              ) : (
+                `Select ${field.label}...`
+              )}
+              <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+
+          <PopoverContent
+            className="w-[var(--radix-popover-trigger-width)] p-0"
+            align="start"
+            onPointerDownOutside={(e) => {
+              // Only close if clicking outside the popover
+              const target = e.target as HTMLElement;
+              if (!target.closest("[data-popover-content]")) {
+                setIsOpen(false);
+              } else {
+                e.preventDefault();
+              }
+            }}
+            sideOffset={4}
+          >
+            <div data-popover-content className="max-h-60 overflow-auto w-full">
+              {options.length > 0 ? (
+                options.map((option) => (
+                  <div
+                    key={option.value}
+                    className="flex items-center p-2 hover:bg-accent cursor-pointer"
+                    onMouseDown={(e) => e.preventDefault()} // Prevent focus changes
+                    onClick={() => handleToggleOption(option.value)}
+                  >
+                    <div
+                      className={cn(
+                        "mr-2 h-4 w-4 border rounded-sm flex items-center justify-center",
+                        selectedValues.includes(option.value)
+                          ? "bg-primary border-primary"
+                          : "border-input"
+                      )}
+                    >
+                      {selectedValues.includes(option.value) && (
+                        <svg
+                          className="h-3 w-3 text-primary-foreground"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                      )}
+                    </div>
+                    <span className="text-sm">{option.label}</span>
+                  </div>
+                ))
+              ) : (
+                <div className="p-2 text-sm text-muted-foreground">
+                  No options available
+                </div>
+              )}
+            </div>
+
+            {/* <div className="p-2 border-t flex justify-end">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsOpen(false)}
+              >
+                Done
+              </Button>
+            </div> */}
+          </PopoverContent>
+        </Popover>
+
+        {/* Selected values display */}
+        {selectedValues.length > 0 && (
+          <div className="flex flex-wrap gap-1 mt-2">
+            {selectedValues.map((value: string) => {
+              const option = options.find((opt) => opt.value === value);
+              return (
+                <Badge key={value} variant="secondary" className="text-xs">
+                  {option?.label || value}
+                  <button
+                    type="button"
+                    className="ml-1 hover:bg-muted rounded-full"
+                    onClick={() => handleRemoveOption(value)}
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </Badge>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   // Existing material search logic (unchanged)
   useEffect(() => {
@@ -455,6 +696,7 @@ export function RightSheet({
 
   const renderField = (field: FieldConfig) => {
     if (field.key === "Master ID" && selectedRow) return null;
+    if (!isFieldVisible(field)) return null;
 
     // Handle Material field with existing logic
     if (field.key === "Material" || field.key === "material") {
@@ -528,7 +770,15 @@ export function RightSheet({
       );
     }
 
-    // Handle Select fields - FIXED VERSION
+    // Handle Multi-select fields (for branches) - only show when role is "branch"
+    if (field.key === "branch") {
+      if (formData.role !== "branch") {
+        return null; // Don't render the field at all when role is not "branch"
+      }
+      return <MultiSelectField key={field.key} field={field} />;
+    }
+
+    // Handle Select fields
     if (field.type === "select") {
       const options =
         field.selectOptions || selectOptionsCache[field.key] || [];
@@ -726,7 +976,9 @@ export function RightSheet({
               (field) =>
                 field.required &&
                 (!formData[field.key] ||
-                  formData[field.key].toString().trim() === "")
+                  (Array.isArray(formData[field.key])
+                    ? formData[field.key].length === 0
+                    : formData[field.key].toString().trim() === ""))
             ) ||
             !!materialError
           }

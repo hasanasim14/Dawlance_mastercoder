@@ -14,42 +14,31 @@ import {
 interface ConfirmDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  title: string;
   description: string;
-  confirmText?: string;
-  cancelText?: string;
   onConfirm: () => void;
-  variant?: "default" | "destructive";
 }
 
 export function ConfirmDialog({
   open,
   onOpenChange,
-  title,
   description,
-  confirmText,
-  cancelText,
+
   onConfirm,
-  variant = "default",
 }: ConfirmDialogProps) {
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>{title}</AlertDialogTitle>
+          <AlertDialogTitle>Delete Records</AlertDialogTitle>
           <AlertDialogDescription>{description}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>{cancelText}</AlertDialogCancel>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
           <AlertDialogAction
             onClick={onConfirm}
-            className={
-              variant === "destructive"
-                ? "bg-destructive text-destructive-foreground hover:bg-destructive/90 text-white"
-                : ""
-            }
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90 text-white"
           >
-            {confirmText}
+            Delete
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
