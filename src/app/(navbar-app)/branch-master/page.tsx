@@ -9,7 +9,7 @@ import type {
   FieldConfig,
   ColumnConfig,
 } from "@/lib/types";
-import { DataTable } from "@/components/DataTable";
+import { DataTable } from "@/components/DataTable/DataTable";
 import {
   transformToApiFormat,
   transformArrayFromApiFormat,
@@ -275,7 +275,7 @@ export default function Branchmaster() {
         <div className="flex-1 h-full overflow-hidden min-w-0">
           <DataTable
             tableName="Branch Master"
-            selectionValue="Branch Code"
+            selectionValue="Branch"
             loading={loading}
             deleting={deleting}
             data={rowData}
@@ -304,7 +304,7 @@ export default function Branchmaster() {
           }}
           onSave={handleSave}
           fields={selectedRow ? fieldConfig : filteredFieldConfig}
-          title={selectedRow ? "Edit Entry" : "Create New Entry"}
+          title={selectedRow ? "Edit Branch Information" : "Create New Branch"}
           isOpen={isSheetOpen}
           onClose={() => setIsSheetOpen(false)}
         />
@@ -313,16 +313,12 @@ export default function Branchmaster() {
       <ConfirmDialog
         open={showDeleteDialog}
         onOpenChange={setShowDeleteDialog}
-        title="Delete Records"
         description={`Are you sure you want to delete ${
           selectedRows.length
         } record${
           selectedRows.length > 1 ? "s" : ""
         }? This action cannot be undone.`}
-        confirmText="Delete"
-        cancelText="Cancel"
         onConfirm={handleBulkDelete}
-        variant="destructive"
       />
     </div>
   );

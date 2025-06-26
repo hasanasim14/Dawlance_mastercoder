@@ -35,7 +35,7 @@ interface FileUploadStatus {
   error?: string;
 }
 
-export default function FileUploadDataViewer() {
+export default function Offerings() {
   const [uploadStatus, setUploadStatus] = useState<FileUploadStatus>({
     file: null,
     status: "idle",
@@ -71,7 +71,7 @@ export default function FileUploadDataViewer() {
 
       try {
         const res = await fetch(
-          `${process.env.NEXT_PUBLIC_BASE_URL}/offerings/${selectedYear}/${selectedMonth}`,
+          `${process.env.NEXT_PUBLIC_BASE_URL}/offerings/${selectedMonth}/${selectedYear}`,
           {
             method: "GET",
             headers: {

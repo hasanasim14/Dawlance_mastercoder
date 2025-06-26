@@ -9,7 +9,7 @@ import type {
   FieldConfig,
   ColumnConfig,
 } from "@/lib/types";
-import { DataTable } from "@/components/DataTable";
+import { DataTable } from "@/components/DataTable/DataTable";
 import {
   transformToApiFormat,
   transformArrayFromApiFormat,
@@ -38,7 +38,7 @@ export default function Users() {
 
   // Define field configuration for the RightSheet with select dropdowns
   const fieldConfig: FieldConfig[] = [
-    { key: "username", label: "Username", type: "text", required: true },
+    { key: "username", label: "Name", type: "text", required: true },
     {
       key: "email",
       label: "Email",
@@ -49,6 +49,7 @@ export default function Users() {
       key: "password",
       label: "Password",
       type: "text",
+      required: true,
     },
     {
       key: "role",
@@ -61,7 +62,7 @@ export default function Users() {
       key: "branch",
       label: "Branch",
       type: "select",
-      required: true,
+      // required: true,
       apiEndpoint: `${process.env.NEXT_PUBLIC_BASE_URL}/branches/distinct/branch_code`,
     },
   ];
@@ -232,7 +233,7 @@ export default function Users() {
 
       const endpoint = isUpdate
         ? `${process.env.NEXT_PUBLIC_BASE_URL}/mastercoding/update/${selectedRowId}`
-        : `${process.env.NEXT_PUBLIC_BASE_URL}/mastercoding/add`;
+        : `${process.env.NEXT_PUBLIC_BASE_URL}/register`;
 
       const method = isUpdate ? "PUT" : "POST";
 
@@ -278,7 +279,7 @@ export default function Users() {
         <div className="flex-1 h-full overflow-hidden min-w-0">
           <DataTable
             tableName="Users"
-            selectionValue="Master ID"
+            selectionValue="User"
             loading={loading}
             deleting={deleting}
             data={rowData}
@@ -307,7 +308,7 @@ export default function Users() {
           }}
           onSave={handleSave}
           fields={selectedRow ? fieldConfig : filteredFieldConfig}
-          title={selectedRow ? "Edit Entry" : "Create New Entry"}
+          title={selectedRow ? "Edit User Information" : "Create New User"}
           isOpen={isSheetOpen}
           onClose={() => setIsSheetOpen(false)}
         />
@@ -316,16 +317,12 @@ export default function Users() {
       <ConfirmDialog
         open={showDeleteDialog}
         onOpenChange={setShowDeleteDialog}
-        title="Delete Records"
         description={`Are you sure you want to delete ${
           selectedRows.length
         } record${
           selectedRows.length > 1 ? "s" : ""
         }? This action cannot be undone.`}
-        confirmText="Delete"
-        cancelText="Cancel"
         onConfirm={handleBulkDelete}
-        variant="destructive"
       />
     </div>
   );

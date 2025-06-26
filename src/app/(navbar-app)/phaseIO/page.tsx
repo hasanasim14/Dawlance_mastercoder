@@ -14,11 +14,11 @@ import type {
   FieldConfig,
   ColumnConfig,
 } from "@/lib/types";
-import { DataTable } from "@/components/DataTable";
+import { DataTable } from "@/components/DataTable/DataTable";
 import { cn } from "@/lib/utils";
 import SearchComponent from "@/components/SearchComponent";
 
-const PhaseIO = () => {
+export default function PhaseIO() {
   const [selectedRow, setSelectedRow] = useState<RowDataType | null>(null);
   const [selectedRowId, setSelectedRowId] = useState<string | number | null>(
     null
@@ -339,15 +339,10 @@ const PhaseIO = () => {
       // Update selected row data
       setSelectedRow(data as RowDataType);
     } catch (error) {
-      console.error("Error saving master coding data:", error);
+      console.error("Error saving phase io data:", error);
       throw error;
     }
   };
-
-  // const handleReset = () => {
-  //   setSelectedRow(null);
-  //   setSelectedRowId(null);
-  // };
 
   const handleAddClick = () => {
     setIsSheetOpen(true);
@@ -397,14 +392,6 @@ const PhaseIO = () => {
           />
         </div>
 
-        {/* <RightSheet
-          selectedRow={selectedRow}
-          onReset={handleReset}
-          onSave={handleSave}
-          fields={fieldConfig}
-          title="Phase In/Out Details"
-        /> */}
-
         <RightSheet
           parent={"phaseio"}
           selectedRow={selectedRow}
@@ -414,7 +401,7 @@ const PhaseIO = () => {
           }}
           onSave={handleSave}
           fields={fieldConfig}
-          title={selectedRow ? "Edit Entry" : "Create New Entry"}
+          title={selectedRow ? "Edit Material" : "Create New Material"}
           isOpen={isSheetOpen}
           onClose={() => setIsSheetOpen(false)}
         />
@@ -423,19 +410,13 @@ const PhaseIO = () => {
       <ConfirmDialog
         open={showDeleteDialog}
         onOpenChange={setShowDeleteDialog}
-        title="Delete Records"
         description={`Are you sure you want to delete ${
           selectedRows.length
         } record${
           selectedRows.length > 1 ? "s" : ""
         }? This action cannot be undone.`}
-        confirmText="Delete"
-        cancelText="Cancel"
         onConfirm={handleBulkDelete}
-        variant="destructive"
       />
     </div>
   );
-};
-
-export default PhaseIO;
+}

@@ -9,7 +9,7 @@ import type {
   FieldConfig,
   ColumnConfig,
 } from "@/lib/types";
-import { DataTable } from "@/components/DataTable";
+import { DataTable } from "@/components/DataTable/DataTable";
 import {
   transformToApiFormat,
   transformArrayFromApiFormat,
@@ -18,7 +18,7 @@ import {
 import { cn } from "@/lib/utils";
 import SearchComponent from "@/components/SearchComponent";
 
-const MasterCoding = () => {
+export default function MasterCoding() {
   const [selectedRow, setSelectedRow] = useState<RowDataType | null>(null);
   const [selectedRowId, setSelectedRowId] = useState<number | null>(null);
   const [selectedRows, setSelectedRows] = useState<RowDataType[]>([]);
@@ -76,7 +76,7 @@ const MasterCoding = () => {
       required: true,
     },
     {
-      key: "Product type",
+      key: "Product Type",
       label: "Product Type",
       type: "text",
       required: true,
@@ -94,7 +94,7 @@ const MasterCoding = () => {
     { key: "Material Description", label: "Material Description" },
     { key: "Measurement Instrument", label: "Measurement Instrument" },
     { key: "Colour Similarity", label: "Colour Similarity" },
-    { key: "Product type", label: "Product Type" },
+    { key: "Product Type", label: "Product Type" },
     { key: "Function", label: "Function" },
     { key: "Series", label: "Series" },
     { key: "Colour", label: "Colour" },
@@ -413,7 +413,7 @@ const MasterCoding = () => {
           }}
           onSave={handleSave}
           fields={selectedRow ? fieldConfig : filteredFieldConfig}
-          title={selectedRow ? "Edit Entry" : "Create New Entry"}
+          title={selectedRow ? "Edit Entry" : "Create New Master ID"}
           isOpen={isSheetOpen}
           onClose={() => setIsSheetOpen(false)}
         />
@@ -422,19 +422,13 @@ const MasterCoding = () => {
       <ConfirmDialog
         open={showDeleteDialog}
         onOpenChange={setShowDeleteDialog}
-        title="Delete Records"
         description={`Are you sure you want to delete ${
           selectedRows.length
         } record${
           selectedRows.length > 1 ? "s" : ""
         }? This action cannot be undone.`}
-        confirmText="Delete"
-        cancelText="Cancel"
         onConfirm={handleBulkDelete}
-        variant="destructive"
       />
     </div>
   );
-};
-
-export default MasterCoding;
+}
