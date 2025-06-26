@@ -159,8 +159,9 @@ export default function PhaseIO() {
     if (!query.trim()) return [];
 
     try {
-      const endpoint = `${process.env.NEXT_PUBLIC_BASE_URL}/phaseinout/distinct/${field}?filt=${query}`;
       const authToken = localStorage.getItem("token");
+      const fieldForApi = field.replace(/\s+/g, "_");
+      const endpoint = `${process.env.NEXT_PUBLIC_BASE_URL}/phaseinout/distinct/${fieldForApi}?filt=${query}`;
 
       const res = await fetch(endpoint, {
         method: "GET",
@@ -176,22 +177,50 @@ export default function PhaseIO() {
 
       const data = await res.json();
 
+      // converting the queries to match the required state
       if (data && typeof data === "object") {
-        const fieldKey = field.toLowerCase().replace(/\s+/g, " ").trim();
+        const possibleKeys = [
+          field,
+          fieldForApi,
+          field.toLowerCase(),
+          fieldForApi.toLowerCase(),
+          field.toLowerCase().replace(/\s+/g, "_"),
+        ];
 
-        const matchingKey = Object.keys(data).find(
-          (key) =>
-            key.toLowerCase() === fieldKey ||
-            fieldKey.includes(key.toLowerCase()) ||
-            key.toLowerCase().includes(fieldKey)
+        // Find the matching key in the response
+        const matchingKey = Object.keys(data).find((responseKey) =>
+          possibleKeys.some(
+            (possibleKey) =>
+              responseKey.toLowerCase() === possibleKey.toLowerCase() ||
+              responseKey.toLowerCase().replace(/\s+/g, "_") ===
+                possibleKey.toLowerCase().replace(/\s+/g, "_")
+          )
         );
 
         if (matchingKey && Array.isArray(data[matchingKey])) {
           return data[matchingKey];
         }
-      }
 
-      // Fallback to empty array if we can't find matching data
+        // If no exact match, try to find any key that contains our field name
+        const partialMatchKey = Object.keys(data).find((responseKey) =>
+          possibleKeys.some((possibleKey) => {
+            const normalizedResponseKey = responseKey
+              .toLowerCase()
+              .replace(/[_\s]+/g, "");
+            const normalizedPossibleKey = possibleKey
+              .toLowerCase()
+              .replace(/[_\s]+/g, "");
+            return (
+              normalizedResponseKey.includes(normalizedPossibleKey) ||
+              normalizedPossibleKey.includes(normalizedResponseKey)
+            );
+          })
+        );
+
+        if (partialMatchKey && Array.isArray(data[partialMatchKey])) {
+          return data[partialMatchKey];
+        }
+      }
       return [];
     } catch (error) {
       console.error(`Error fetching suggestions for ${field}:`, error);
@@ -241,6 +270,18 @@ export default function PhaseIO() {
       setDeleting(false);
       setShowDeleteDialog(false);
     }
+  };
+
+  // Handle clear filters
+  const handleClearFilters = () => {
+    // Clear any existing search timeout
+    if (searchTimeout) {
+      clearTimeout(searchTimeout);
+    }
+
+    // Reset to first page and fetch data without any filters
+    setCurrentPage(1);
+    fetchPhaseIOData({}, 1, pageSize);
   };
 
   // Pagination handlers
@@ -318,7 +359,7 @@ export default function PhaseIO() {
       const isUpdate = !!selectedRowId;
 
       const endpoint = isUpdate
-        ? `${process.env.NEXT_PUBLIC_BASE_URL}/phaseinout/update/${selectedRowId}`
+        ? `${process.env.NEXT_PUBLIC_BASE_URL}/phaseinout/update`
         : `${process.env.NEXT_PUBLIC_BASE_URL}/phaseinout/add`;
 
       const method = isUpdate ? "PUT" : "POST";
@@ -370,6 +411,7 @@ export default function PhaseIO() {
             <SearchComponent
               fields={columns}
               onSearch={handleSearch}
+              onClearFilters={handleClearFilters}
               fetchSuggestions={fetchSuggestions}
               setIsCollapsed={setIsCollapsed}
               isCollapsed={isCollapsed}

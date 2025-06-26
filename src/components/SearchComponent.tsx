@@ -1,18 +1,19 @@
 "use client";
 
-import { Dispatch, SetStateAction, useState } from "react";
+import { type Dispatch, type SetStateAction, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChevronLeft, ChevronRight, Filter, Search, X } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { AutocompleteInput } from "./AutoCompleteInput";
-import { ColumnConfig } from "@/lib/types";
+import type { ColumnConfig } from "@/lib/types";
 
 // Define the type for the props based on the parent component's row data type
 type SearchComponentProps = {
   fields: readonly ColumnConfig[];
   onSearch?: (fieldSearches: Record<string, string>) => void;
+  onClearFilters?: () => void;
   fetchSuggestions?: (field: string, query: string) => Promise<string[]>;
   setIsCollapsed?: Dispatch<SetStateAction<boolean>>;
   isCollapsed?: boolean;
@@ -21,6 +22,7 @@ type SearchComponentProps = {
 export default function SearchComponent({
   fields,
   onSearch,
+  onClearFilters,
   fetchSuggestions,
   setIsCollapsed,
   isCollapsed,
@@ -28,7 +30,6 @@ export default function SearchComponent({
   const [fieldSearches, setFieldSearches] = useState<Record<string, string>>(
     fields.reduce((acc, field) => ({ ...acc, [field.key]: "" }), {})
   );
-  // const [isOpen, setIsOpen] = useState(true);
 
   const handleInputChange = (field: string, key: string) => {
     setFieldSearches((prev) => ({
@@ -71,6 +72,10 @@ export default function SearchComponent({
     setFieldSearches(
       fields.reduce((acc, field) => ({ ...acc, [field.key]: "" }), {})
     );
+    // Call the parent's clear filters handler to refresh data
+    if (onClearFilters) {
+      onClearFilters();
+    }
   };
 
   // Default implementation if fetchSuggestions is not provided

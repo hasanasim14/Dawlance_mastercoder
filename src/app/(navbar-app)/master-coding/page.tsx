@@ -166,9 +166,11 @@ export default function MasterCoding() {
   ): Promise<string[]> => {
     if (!query.trim()) return [];
 
+    console.log("the field to search for", field);
     try {
       const authToken = localStorage.getItem("token");
-      const endpoint = `${process.env.NEXT_PUBLIC_BASE_URL}/mastercoding/distinct/${field}?filt=${query}`;
+      const fieldForApi = field.replace(/\s+/g, "_");
+      const endpoint = `${process.env.NEXT_PUBLIC_BASE_URL}/mastercoding/distinct/${fieldForApi}?filt=${query}`;
 
       const res = await fetch(endpoint, {
         method: "GET",
@@ -183,23 +185,58 @@ export default function MasterCoding() {
       }
 
       const data = await res.json();
+      console.log("API Response:", data); // Debug log
 
       if (data && typeof data === "object") {
-        const fieldKey = field.toLowerCase().replace(/\s+/g, " ").trim();
+        // Try multiple key formats to match the response
+        const possibleKeys = [
+          field, // Original: "Material Description"
+          fieldForApi, // With underscores: "Material_Description"
+          field.toLowerCase(), // Lowercase: "material description"
+          fieldForApi.toLowerCase(), // Lowercase with underscores: "material_description"
+          field.toLowerCase().replace(/\s+/g, "_"), // Ensure lowercase with underscores
+        ];
 
-        // Try to find the key in the response that matches our field
-        const matchingKey = Object.keys(data).find(
-          (key) =>
-            key.toLowerCase() === fieldKey ||
-            fieldKey.includes(key.toLowerCase()) ||
-            key.toLowerCase().includes(fieldKey)
+        // Find the matching key in the response
+        const matchingKey = Object.keys(data).find((responseKey) =>
+          possibleKeys.some(
+            (possibleKey) =>
+              responseKey.toLowerCase() === possibleKey.toLowerCase() ||
+              responseKey.toLowerCase().replace(/\s+/g, "_") ===
+                possibleKey.toLowerCase().replace(/\s+/g, "_")
+          )
         );
+
+        console.log("Matching key found:", matchingKey); // Debug log
 
         if (matchingKey && Array.isArray(data[matchingKey])) {
           return data[matchingKey];
         }
+
+        // If no exact match, try to find any key that contains our field name
+        const partialMatchKey = Object.keys(data).find((responseKey) =>
+          possibleKeys.some((possibleKey) => {
+            const normalizedResponseKey = responseKey
+              .toLowerCase()
+              .replace(/[_\s]+/g, "");
+            const normalizedPossibleKey = possibleKey
+              .toLowerCase()
+              .replace(/[_\s]+/g, "");
+            return (
+              normalizedResponseKey.includes(normalizedPossibleKey) ||
+              normalizedPossibleKey.includes(normalizedResponseKey)
+            );
+          })
+        );
+
+        console.log("Partial match key found:", partialMatchKey); // Debug log
+
+        if (partialMatchKey && Array.isArray(data[partialMatchKey])) {
+          return data[partialMatchKey];
+        }
       }
 
+      console.log("No matching key found in response"); // Debug log
       return [];
     } catch (error) {
       console.error(`Error fetching suggestions for ${field}:`, error);
@@ -248,6 +285,18 @@ export default function MasterCoding() {
       setDeleting(false);
       setShowDeleteDialog(false);
     }
+  };
+
+  // Handle clear filters
+  const handleClearFilters = () => {
+    // Clear any existing search timeout
+    if (searchTimeout) {
+      clearTimeout(searchTimeout);
+    }
+
+    // Reset to first page and fetch data without any filters
+    setCurrentPage(1);
+    fetchMasterData({}, 1, pageSize);
   };
 
   // Pagination handlers
@@ -382,6 +431,7 @@ export default function MasterCoding() {
             <SearchComponent
               fields={columns}
               onSearch={handleSearch}
+              onClearFilters={handleClearFilters}
               fetchSuggestions={fetchSuggestions}
               setIsCollapsed={setIsCollapsed}
               isCollapsed={isCollapsed}

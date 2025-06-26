@@ -27,13 +27,14 @@ export function AutocompleteInput({
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
 
-  // Fetch suggestions when the input value changes
+  // Fetch suggestions when the input value changes and user is actively typing
   useEffect(() => {
     const getSuggestions = async () => {
-      if (value.trim().length > 0) {
+      if (value.trim().length > 0 && isTyping) {
         setIsLoading(true);
         try {
           const results = await fetchSuggestions(value);
@@ -41,10 +42,12 @@ export function AutocompleteInput({
           setShowSuggestions(results.length > 0);
         } catch (error) {
           console.error("Error fetching suggestions:", error);
+          setSuggestions([]);
+          setShowSuggestions(false);
         } finally {
           setIsLoading(false);
         }
-      } else {
+      } else if (value.trim().length === 0) {
         setSuggestions([]);
         setShowSuggestions(false);
       }
@@ -52,7 +55,7 @@ export function AutocompleteInput({
 
     const debounceTimer = setTimeout(getSuggestions, 300);
     return () => clearTimeout(debounceTimer);
-  }, [value, fetchSuggestions]);
+  }, [value, fetchSuggestions, isTyping]);
 
   // Handle clicking outside to close suggestions
   useEffect(() => {
@@ -64,6 +67,7 @@ export function AutocompleteInput({
         !inputRef.current.contains(event.target as Node)
       ) {
         setShowSuggestions(false);
+        setIsTyping(false);
       }
     };
 
@@ -73,25 +77,39 @@ export function AutocompleteInput({
     };
   }, []);
 
-  //Sales
-  //ivoices
-  //production
-  //production plan
+  // Handle input change
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.value;
+    onChange(newValue);
+    setIsTyping(true);
+  };
 
   // Handle suggestion selection
-  // const handleSuggestionClick = (suggestion: string) => {
-  //   onChange(suggestion);
-  //   onSearch(suggestion);
-  //   setShowSuggestions(false);
-  // };
+  const handleSuggestionClick = (suggestion: string) => {
+    onChange(suggestion);
+    setShowSuggestions(false);
+    setIsTyping(false);
+    inputRef.current?.focus();
+  };
 
   // Handle key press events
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
       onSearch(value);
       setShowSuggestions(false);
+      setIsTyping(false);
     } else if (e.key === "Escape") {
       setShowSuggestions(false);
+      setIsTyping(false);
+    } else if (
+      e.key === "ArrowDown" &&
+      showSuggestions &&
+      suggestions.length > 0
+    ) {
+      e.preventDefault();
+      const firstSuggestion = suggestionsRef.current
+        ?.firstElementChild as HTMLElement;
+      if (firstSuggestion) firstSuggestion.focus();
     }
   };
 
@@ -101,11 +119,10 @@ export function AutocompleteInput({
   ) => {
     if (e.key === "Enter") {
       e.preventDefault();
-      onChange(suggestion);
-      setShowSuggestions(false);
-      inputRef.current?.focus();
+      handleSuggestionClick(suggestion);
     } else if (e.key === "Escape") {
       setShowSuggestions(false);
+      setIsTyping(false);
       inputRef.current?.focus();
     } else if (e.key === "ArrowDown") {
       e.preventDefault();
@@ -122,6 +139,19 @@ export function AutocompleteInput({
     }
   };
 
+  // Handle focus - only show suggestions if user starts typing
+  const handleFocus = () => {
+    // Don't automatically show suggestions on focus
+    // They will show when user starts typing
+  };
+
+  // Handle search button click
+  const handleSearchClick = () => {
+    onSearch(value);
+    setShowSuggestions(false);
+    setIsTyping(false);
+  };
+
   return (
     <div className="relative">
       <div className="flex">
@@ -131,12 +161,8 @@ export function AutocompleteInput({
           type="text"
           placeholder={placeholder}
           value={value}
-          onChange={(e) => onChange(e.target.value)}
-          onFocus={() =>
-            value.trim().length > 0 &&
-            suggestions.length > 0 &&
-            setShowSuggestions(true)
-          }
+          onChange={handleInputChange}
+          onFocus={handleFocus}
           onKeyDown={handleKeyDown}
           className="w-full pr-10"
         />
@@ -145,10 +171,7 @@ export function AutocompleteInput({
           variant="ghost"
           size="icon"
           className="absolute right-0 top-0 h-full"
-          onClick={() => {
-            onSearch(value);
-            setShowSuggestions(false);
-          }}
+          onClick={handleSearchClick}
         >
           <Search className="h-4 w-4" />
         </Button>
@@ -172,9 +195,7 @@ export function AutocompleteInput({
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  onChange(suggestion);
-                  setShowSuggestions(false);
-                  inputRef.current?.focus();
+                  handleSuggestionClick(suggestion);
                 }}
                 onKeyDown={(e) => handleSuggestionKeyDown(e, suggestion)}
               >

@@ -6,7 +6,7 @@ export type RowDataType = {
   "Material Description": string;
   "Measurement Instrument": string;
   "Colour Similarity": string;
-  "Product type": string;
+  "Product Type": string;
   Function: string;
   Series: string;
   Colour: string;
