@@ -129,6 +129,9 @@ export default function Offerings() {
       return;
     }
 
+    // Reset previous API response
+    setApiResponse(null);
+
     setUploadStatus({
       file,
       status: "uploading",
@@ -156,9 +159,8 @@ export default function Offerings() {
         {
           method: "POST",
           headers: {
-            "Content-Type": "application/json",
             Authorization: `Bearer ${authToken}`,
-          },
+          }, // Remove the Content-Type header - browser will set it automatically for FormData
           body: formData,
         }
       );
@@ -173,21 +175,23 @@ export default function Offerings() {
       }));
 
       if (!response.ok) {
-        throw new Error(`Upload failed: ${data?.detail}`);
+        // Extract the error message from the API response
+        const errorMessage =
+          data?.message || data?.detail || "Upload failed. Please try again.";
+        throw new Error(errorMessage);
       }
 
-      const result = await response.json();
-
+      // Use 'data' instead of calling response.json() again
       // Update the uploaded data with the API response
-      if (result.data && Array.isArray(result.data)) {
-        setUploadedData(result.data);
+      if (data.data && Array.isArray(data.data)) {
+        setUploadedData(data.data);
       }
 
       // After setting uploadedData, also set the API response
       setApiResponse({
-        message: result.message || "File processed successfully",
-        recordsProcessed: result.data?.length || 0,
-        errors: result.errors || [],
+        message: data.message || "File processed successfully",
+        recordsProcessed: data.data?.length || 0,
+        errors: data.errors || [],
       });
 
       // Set success status
@@ -206,14 +210,23 @@ export default function Offerings() {
       });
     } catch (error) {
       console.error("File upload error:", error);
+
+      let errorMessage = "Upload failed. Please try again.";
+
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+
       setUploadStatus((prev) => ({
         ...prev,
         status: "error",
-        error:
-          error instanceof Error
-            ? error.message
-            : "Upload failed. Please try again.",
+        error: errorMessage,
       }));
+    }
+
+    // Reset file input to allow re-uploading the same file
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
     }
   };
 
@@ -440,17 +453,47 @@ export default function Offerings() {
                     </div>
                   </div>
                 ) : uploadStatus.status === "error" ? (
-                  <div className="border rounded-lg p-8 max-h-45 overflow-y-auto">
-                    <div className="flex items-center mb-2">
-                      <AlertCircle className="w-5 h-5 mr-2 text-red-600" />
-                      <div className="text-sm font-medium">Upload failed</div>
+                  <div className="border rounded-lg p-6 max-h-60 overflow-y-auto">
+                    <div className="flex items-center mb-3">
+                      <AlertCircle className="w-5 h-5 mr-2 text-red-600 flex-shrink-0" />
+                      <div className="text-sm font-medium text-red-600">
+                        Upload Failed
+                      </div>
                     </div>
 
-                    {uploadStatus.error?.split("\n").map((line, index) => (
-                      <div key={index} className="mb-1 last:mb-0 text-xs">
-                        {line}
-                      </div>
-                    ))}
+                    <div className="text-xs text-gray-700 space-y-1">
+                      {uploadStatus.error?.split("\n").map((line, index) => (
+                        <div key={index} className="leading-relaxed">
+                          {line.trim() && (
+                            <>
+                              {line.startsWith("1.") ||
+                              line.startsWith("2.") ||
+                              line.startsWith("3.") ||
+                              line.startsWith("4.") ||
+                              line.startsWith("5.") ||
+                              line.startsWith("6.") ||
+                              line.startsWith("7.") ||
+                              line.startsWith("8.") ||
+                              line.startsWith("9.") ||
+                              /^\d+\./.test(line) ? (
+                                <div className="flex items-start gap-2 mt-2">
+                                  <span className="text-red-500 font-mono text-xs">
+                                    •
+                                  </span>
+                                  <span className="font-mono">{line}</span>
+                                </div>
+                              ) : (
+                                <div
+                                  className={index === 0 ? "font-medium" : ""}
+                                >
+                                  {line}
+                                </div>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 ) : (
                   <div className="text-center text-green-600">
