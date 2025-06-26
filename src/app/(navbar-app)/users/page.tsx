@@ -62,7 +62,6 @@ export default function Users() {
       key: "branch",
       label: "Branch",
       type: "select",
-      // required: true,
       apiEndpoint: `${process.env.NEXT_PUBLIC_BASE_URL}/branches/distinct/branch_code`,
     },
   ];
@@ -98,11 +97,13 @@ export default function Users() {
       }
 
       endpoint = `${endpoint}?${queryParams.toString()}`;
+      const authToken = localStorage.getItem("token");
 
       const res = await fetch(endpoint, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${authToken}`,
         },
       });
       const data = await res.json();
@@ -141,12 +142,14 @@ export default function Users() {
         master_id: masterIds,
       };
 
+      const authToken = localStorage.getItem("token");
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_BASE_URL}/mastercoding/delete`,
         {
           method: "DELETE",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${authToken}`,
           },
           body: JSON.stringify(deletePayload),
         }
@@ -236,11 +239,13 @@ export default function Users() {
         : `${process.env.NEXT_PUBLIC_BASE_URL}/register`;
 
       const method = isUpdate ? "PUT" : "POST";
+      const authToken = localStorage.getItem("token");
 
       const response = await fetch(endpoint, {
         method: method,
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${authToken}`,
         },
         body: JSON.stringify(apiFormattedData),
       });

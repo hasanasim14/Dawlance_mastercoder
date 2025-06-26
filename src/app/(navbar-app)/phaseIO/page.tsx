@@ -115,11 +115,13 @@ export default function PhaseIO() {
       }
 
       endpoint = `${endpoint}?${queryParams.toString()}`;
+      const authToken = localStorage.getItem("token");
 
       const res = await fetch(endpoint, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${authToken}`,
         },
       });
       const data = await res.json();
@@ -158,11 +160,13 @@ export default function PhaseIO() {
 
     try {
       const endpoint = `${process.env.NEXT_PUBLIC_BASE_URL}/phaseinout/distinct/${field}?filt=${query}`;
+      const authToken = localStorage.getItem("token");
 
       const res = await fetch(endpoint, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${authToken}`,
         },
       });
 
@@ -207,12 +211,14 @@ export default function PhaseIO() {
         material: productsIds,
       };
 
+      const authToken = localStorage.getItem("token");
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_BASE_URL}/phaseinout/delete`,
         {
           method: "DELETE",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${authToken}`,
           },
           body: JSON.stringify(deletePayload),
         }
@@ -316,11 +322,13 @@ export default function PhaseIO() {
         : `${process.env.NEXT_PUBLIC_BASE_URL}/phaseinout/add`;
 
       const method = isUpdate ? "PUT" : "POST";
+      const authToken = localStorage.getItem("token");
 
       const response = await fetch(endpoint, {
         method: method,
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${authToken}`,
         },
         body: JSON.stringify(apiFormattedData),
       });

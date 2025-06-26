@@ -96,10 +96,12 @@ export default function Branchmaster() {
 
       endpoint = `${endpoint}?${queryParams.toString()}`;
 
+      const authToken = localStorage.getItem("token");
       const res = await fetch(endpoint, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${authToken}`,
         },
       });
       const data = await res.json();
@@ -139,12 +141,15 @@ export default function Branchmaster() {
         branch_code: branchcodes,
       };
 
+      const authToken = localStorage.getItem("token");
+
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_BASE_URL}/branches/delete`,
         {
           method: "DELETE",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${authToken}`,
           },
           body: JSON.stringify(deletePayload),
         }
@@ -226,6 +231,7 @@ export default function Branchmaster() {
       // Transform data to API format before sending
       const apiFormattedData = transformToApiFormat(data);
       const isUpdate = !!selectedRowId;
+      const authToken = localStorage.getItem("token");
 
       const endpoint = isUpdate
         ? `${process.env.NEXT_PUBLIC_BASE_URL}/branches/update`
@@ -237,6 +243,7 @@ export default function Branchmaster() {
         method: method,
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${authToken}`,
         },
         body: JSON.stringify(apiFormattedData),
       });

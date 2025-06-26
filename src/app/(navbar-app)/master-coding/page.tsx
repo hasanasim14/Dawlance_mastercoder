@@ -124,12 +124,14 @@ export default function MasterCoding() {
         });
       }
 
+      const authToken = localStorage.getItem("token");
       endpoint = `${endpoint}?${queryParams.toString()}`;
 
       const res = await fetch(endpoint, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${authToken}`,
         },
       });
       const data = await res.json();
@@ -165,12 +167,14 @@ export default function MasterCoding() {
     if (!query.trim()) return [];
 
     try {
+      const authToken = localStorage.getItem("token");
       const endpoint = `${process.env.NEXT_PUBLIC_BASE_URL}/mastercoding/distinct/${field}?filt=${query}`;
 
       const res = await fetch(endpoint, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${authToken}`,
         },
       });
 
@@ -213,6 +217,7 @@ export default function MasterCoding() {
       const deletePayload = {
         master_id: masterIds,
       };
+      const authToken = localStorage.getItem("token");
 
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_BASE_URL}/mastercoding/delete`,
@@ -220,6 +225,7 @@ export default function MasterCoding() {
           method: "DELETE",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${authToken}`,
           },
           body: JSON.stringify(deletePayload),
         }
@@ -323,11 +329,13 @@ export default function MasterCoding() {
         : `${process.env.NEXT_PUBLIC_BASE_URL}/mastercoding/add`;
 
       const method = isUpdate ? "PUT" : "POST";
+      const authToken = localStorage.getItem("token");
 
       const response = await fetch(endpoint, {
         method: method,
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${authToken}`,
         },
         body: JSON.stringify(apiFormattedData),
       });

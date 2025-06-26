@@ -4,9 +4,9 @@ import type { RowDataType, PaginationData, ColumnConfig } from "@/lib/types";
 import { Table } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TableActions } from "./TableActions";
-import { Pagination } from "../Pagination";
 import { DataTableHeader } from "./TableHeader";
 import { DataTableBody } from "./DataTableBody";
+import { Pagination } from "./Pagination";
 
 interface DataTableProps {
   tableName: string;

@@ -156,6 +156,7 @@ export default function Offerings() {
         {
           method: "POST",
           headers: {
+            "Content-Type": "application/json",
             Authorization: `Bearer ${authToken}`,
           },
           body: formData,

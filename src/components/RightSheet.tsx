@@ -21,22 +21,11 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ChevronRight, X, Loader2, ChevronDown } from "lucide-react";
 import { transformToApiFormat } from "@/lib/data-transformers";
+import { FieldConfig } from "@/lib/types";
 
 interface SelectOption {
   value: string;
   label: string;
-}
-
-interface FieldConfig {
-  key: string;
-  label: string;
-  type?: "text" | "number" | "email" | "tel" | "select" | "multi-select";
-  required?: boolean;
-  readOnly?: boolean;
-  selectOptions?: SelectOption[];
-  apiEndpoint?: string;
-  dependsOn?: string;
-  dependsOnValue?: string | string[];
 }
 
 interface RightSheetProps {
@@ -172,15 +161,14 @@ export function RightSheet({
                   : item.label || item.name || item.value || item.id,
             }));
           } else if (data && typeof data === "object") {
-            // Handle specific API response formats
             if (field.key === "role" || field.key === "roles") {
-              // Handle roles API response: { "super_admin": "Super Admin", "admin": "Admin", ... }
+              // Handle roles API response
               options = Object.entries(data).map(([key, value]) => ({
                 value: key,
                 label: typeof value === "string" ? value : key,
               }));
             } else if (field.key === "branch" || field.key === "branches") {
-              // Handle branches API response: { "branch_code": ["K011", "K012", ...] }
+              // Handle branches API response
               if (data.branch_code && Array.isArray(data.branch_code)) {
                 options = data.branch_code.map((code: string) => ({
                   value: code,
@@ -480,7 +468,7 @@ export function RightSheet({
                   <div
                     key={option.value}
                     className="flex items-center p-2 hover:bg-accent cursor-pointer"
-                    onMouseDown={(e) => e.preventDefault()} // Prevent focus changes
+                    onMouseDown={(e) => e.preventDefault()}
                     onClick={() => handleToggleOption(option.value)}
                   >
                     <div
@@ -514,16 +502,6 @@ export function RightSheet({
                 </div>
               )}
             </div>
-
-            {/* <div className="p-2 border-t flex justify-end">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsOpen(false)}
-              >
-                Done
-              </Button>
-            </div> */}
           </PopoverContent>
         </Popover>
 
@@ -773,7 +751,7 @@ export function RightSheet({
     // Handle Multi-select fields (for branches) - only show when role is "branch"
     if (field.key === "branch") {
       if (formData.role !== "branch") {
-        return null; // Don't render the field at all when role is not "branch"
+        return null;
       }
       return <MultiSelectField key={field.key} field={field} />;
     }
