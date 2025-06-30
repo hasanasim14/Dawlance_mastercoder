@@ -21,7 +21,7 @@ import { cn } from "@/lib/utils";
 async function uploadFileAction(formData: FormData) {
   try {
     const file = formData.get("file") as File;
-    const type = formData.get("type") as string;
+    const option = formData.get("type") as string;
 
     if (!file) {
       return { success: false, error: "No file provided" };
@@ -32,23 +32,14 @@ async function uploadFileAction(formData: FormData) {
       return { success: false, error: "Only .xlsx files are supported" };
     }
 
-    console.log(`Uploading ${type} file: ${file.name} (${file.size} bytes)`);
-
-    // Convert file to blob and call API with dynamic endpoint
-    const fileBlob = new Blob([await file.arrayBuffer()], { type: file.type });
+    const newFormData = new FormData();
+    newFormData.append("file", formData.get("file") as File);
 
     const response = await fetch(
-      `https://your-api-endpoint.com/upload/${type}`,
+      `${process.env.NEXT_PUBLIC_BASE_URL}/upload/${option}`,
       {
         method: "POST",
-        body: fileBlob,
-        headers: {
-          "Content-Type":
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-          // Add any required headers here
-          // 'Authorization': `Bearer ${process.env.API_TOKEN}`,
-          // 'X-API-Key': process.env.API_KEY,
-        },
+        body: newFormData,
       }
     );
 
