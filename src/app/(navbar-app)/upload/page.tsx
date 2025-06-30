@@ -2,23 +2,76 @@
 
 import type React from "react";
 import { useState, useRef } from "react";
-import { Button } from "@/components/ui/button";
 import { Card, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import {
-  X,
-  FileSpreadsheet,
   CloudUpload,
   CheckCircle2,
   Clock,
   AlertCircle,
   ShoppingCart,
-  Receipt,
   Server,
   GanttChart,
+  DollarSign,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+// Server Action for handling file upload
+async function uploadFileAction(formData: FormData) {
+  try {
+    const file = formData.get("file") as File;
+    const type = formData.get("type") as string;
+
+    if (!file) {
+      return { success: false, error: "No file provided" };
+    }
+
+    // Validate file type
+    if (!file.name.endsWith(".xlsx")) {
+      return { success: false, error: "Only .xlsx files are supported" };
+    }
+
+    console.log(`Uploading ${type} file: ${file.name} (${file.size} bytes)`);
+
+    // Convert file to blob and call API with dynamic endpoint
+    const fileBlob = new Blob([await file.arrayBuffer()], { type: file.type });
+
+    const response = await fetch(
+      `https://your-api-endpoint.com/upload/${type}`,
+      {
+        method: "POST",
+        body: fileBlob,
+        headers: {
+          "Content-Type":
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          // Add any required headers here
+          // 'Authorization': `Bearer ${process.env.API_TOKEN}`,
+          // 'X-API-Key': process.env.API_KEY,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`API Error (${response.status}): ${errorText}`);
+    }
+
+    const result = await response.json();
+
+    // Handle successful response
+    return {
+      success: true,
+      message: result.message || `Successfully processed ${file.name}`,
+    };
+  } catch (error) {
+    console.error("Upload error:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Upload failed",
+    };
+  }
+}
 
 // Upload status types
 type UploadStatus = "idle" | "success" | "error" | "pending";
@@ -28,42 +81,19 @@ interface UploadCardData {
   id: string;
   title: string;
   description: string;
-  file: File | null;
-  fileName: string;
-  fileSize: string;
   status: UploadStatus;
-  lastUploaded: string;
-  inputRef: React.RefObject<HTMLInputElement>;
+  lastUploaded: string | null;
+  inputRef: React.RefObject<HTMLInputElement | null>;
   icon: React.ReactNode;
   result: string | null;
 }
 
 function UploadCards() {
   // Create refs outside of state
-  const SalesInputRef = useRef<HTMLInputElement>(undefined!);
-  const InvoicesInputRef = useRef<HTMLInputElement>(undefined!);
-  const ProductionInputRef = useRef<HTMLInputElement>(undefined!);
-  const ProductionPlanInputRef = useRef<HTMLInputElement>(undefined!);
-
-  // Dummy last uploaded dates
-  const dummyDates = [
-    "May 5, 2025 - 10:23 AM",
-    "May 2, 2025 - 3:45 PM",
-    "Apr 28, 2025 - 9:12 AM",
-    "Apr 25, 2025 - 2:30 PM",
-  ];
-
-  // Dummy result data
-  const dummyResults = {
-    sales:
-      "1,250 sales transactions processed: $85,430 in total revenue. Top products: Widget A ($12,200), Gadget B ($9,800). 15 returns processed.",
-    invoices:
-      "842 invoices generated this period. 3 invoices pending due to missing payment details. Average invoice amount: $102. 45 overdue invoices flagged.",
-    production:
-      "Produced 2,130 units this week (98% of target). 26 units failed quality checks. Current output rate: 145 units/hour. Top product: Model X (780 units).",
-    production_plan:
-      "Next week's plan: 1,850 units across 12 products. Priority items: Model Y (600 units), Component Z (450 units). 52 parts need reordering to meet targets.",
-  };
+  const SalesInputRef = useRef<HTMLInputElement>(null);
+  const StocksInputRef = useRef<HTMLInputElement>(null);
+  const ProductionInputRef = useRef<HTMLInputElement>(null);
+  const ProductionPlanInputRef = useRef<HTMLInputElement>(null);
 
   // Initial card data
   const [cards, setCards] = useState<UploadCardData[]>([
@@ -71,216 +101,209 @@ function UploadCards() {
       id: "sales",
       title: "Sales",
       description: "Upload Sales information spreadsheet",
-      file: null,
-      fileName: "",
-      fileSize: "",
       status: "idle",
-      lastUploaded: dummyDates[0],
+      lastUploaded: null,
       inputRef: SalesInputRef,
       icon: <ShoppingCart className="h-5 w-5" />,
       result: null,
     },
     {
-      id: "invoices",
-      title: "Invoices",
-      description: "Upload Invoices information spreadsheet",
-      file: null,
-      fileName: "",
-      fileSize: "",
-      status: "success",
-      lastUploaded: dummyDates[1],
-      inputRef: InvoicesInputRef,
-      icon: <Receipt className="h-5 w-5" />,
-      result: dummyResults.invoices,
+      id: "stocks",
+      title: "Stocks",
+      description: "Upload Stocks information spreadsheet",
+      status: "idle",
+      lastUploaded: null,
+      inputRef: StocksInputRef,
+      icon: <DollarSign className="h-5 w-5" />,
+      result: null,
     },
     {
       id: "production",
       title: "Production",
       description: "Upload Production information spreadsheet",
-      file: null,
-      fileName: "",
-      fileSize: "",
-      status: "error",
-      lastUploaded: dummyDates[2],
+      status: "idle",
+      lastUploaded: null,
       inputRef: ProductionInputRef,
       icon: <Server className="h-5 w-5" />,
-      result: dummyResults.production,
+      result: null,
     },
     {
       id: "production_plan",
       title: "Production Plan",
       description: "Upload Production Plans information spreadsheet",
-      file: null,
-      fileName: "",
-      fileSize: "",
-      status: "success",
-      lastUploaded: dummyDates[3],
+      status: "idle",
+      lastUploaded: null,
       inputRef: ProductionPlanInputRef,
       icon: <GanttChart className="h-5 w-5" />,
-      result: dummyResults.production_plan,
+      result: null,
     },
   ]);
-
-  const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return "0 Bytes";
-    const k = 1024;
-    const sizes = ["Bytes", "KB", "MB", "GB"];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return (
-      Number.parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i]
-    );
-  };
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
   };
 
-  const handleFileChange = (
+  const handleFileChange = async (
     cardId: string,
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
-    if (e.target.files && e.target.files.length > 0) {
-      const file = e.target.files[0];
-      if (!file.name.endsWith(".xlsx")) {
-        alert("Only .xlsx files are supported");
-        return;
-      }
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-      setCards(
-        cards.map((card) =>
-          card.id === cardId
-            ? {
-                ...card,
-                file: file,
-                fileName: file.name,
-                fileSize: formatFileSize(file.size),
-              }
-            : card
-        )
-      );
-
-      // Automatically trigger upload when file is selected
-      setTimeout(() => {
-        uploadFile(cardId);
-      }, 100);
-    }
-  };
-
-  const handleFileDrop = (
-    cardId: string,
-    e: React.DragEvent<HTMLDivElement>
-  ) => {
-    e.preventDefault();
-    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      const file = e.dataTransfer.files[0];
-      if (!file.name.endsWith(".xlsx")) {
-        alert("Only .xlsx files are supported");
-        return;
-      }
-
-      setCards(
-        cards.map((card) =>
-          card.id === cardId
-            ? {
-                ...card,
-                file: file,
-                fileName: file.name,
-                fileSize: formatFileSize(file.size),
-              }
-            : card
-        )
-      );
-
-      // Automatically trigger upload when file is dropped
-      setTimeout(() => {
-        uploadFile(cardId);
-      }, 100);
-    }
-  };
-
-  const removeFile = (cardId: string) => {
-    setCards(
-      cards.map((card) =>
-        card.id === cardId
-          ? {
-              ...card,
-              file: null,
-              fileName: "",
-              fileSize: "",
-            }
-          : card
-      )
-    );
-  };
-
-  const uploadFile = async (cardId: string) => {
-    const card = cards.find((c) => c.id === cardId);
-
-    if (!card || !card.file) {
-      alert("No file selected");
+    if (!file.name.endsWith(".xlsx")) {
+      alert("Only .xlsx files are supported");
       return;
     }
 
-    // Set status to pending
-    setCards(
-      cards.map((c) =>
-        c.id === cardId
-          ? {
-              ...c,
-              status: "pending",
-              result: null,
-            }
-          : c
+    // Set status to pending immediately
+    setCards((prev) =>
+      prev.map((card) =>
+        card.id === cardId
+          ? { ...card, status: "pending" as UploadStatus, result: null }
+          : card
       )
     );
 
     try {
-      // Simulate upload delay
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      // Create FormData with file and type
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("type", cardId);
 
-      // Get dummy result data for this card
-      const result = dummyResults[cardId as keyof typeof dummyResults];
+      // Call the server action
+      const result = await uploadFileAction(formData);
 
-      // Update status to success and update last uploaded time
-      setCards(
-        cards.map((c) =>
-          c.id === cardId
-            ? {
-                ...c,
-                status: "success",
-                lastUploaded: new Date().toLocaleString("en-US", {
-                  month: "short",
-                  day: "numeric",
-                  year: "numeric",
-                  hour: "numeric",
-                  minute: "2-digit",
-                  hour12: true,
-                }),
-                file: null,
-                fileName: "",
-                fileSize: "",
-                result: result,
-              }
-            : c
-        )
-      );
+      if (result.success) {
+        setCards((prev) =>
+          prev.map((card) =>
+            card.id === cardId
+              ? {
+                  ...card,
+                  status: "success" as UploadStatus,
+                  result: result.message,
+                  lastUploaded: new Date().toLocaleString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                    hour: "numeric",
+                    minute: "2-digit",
+                    hour12: true,
+                  }),
+                }
+              : card
+          )
+        );
+      } else {
+        setCards((prev) =>
+          prev.map((card) =>
+            card.id === cardId
+              ? {
+                  ...card,
+                  status: "error" as UploadStatus,
+                  result: result.error || null,
+                }
+              : card
+          )
+        );
+      }
     } catch (error) {
-      // Update status to error
-      setCards(
-        cards.map((c) =>
-          c.id === cardId
+      setCards((prev) =>
+        prev.map((card) =>
+          card.id === cardId
             ? {
-                ...c,
-                status: "error",
+                ...card,
+                status: "error" as UploadStatus,
                 result: `Error: ${
                   error instanceof Error ? error.message : "Unknown error"
                 }`,
               }
-            : c
+            : card
         )
       );
+    }
 
-      console.error("Upload error:", error);
+    // Clear the input
+    e.target.value = "";
+  };
+
+  const handleFileDrop = async (
+    cardId: string,
+    e: React.DragEvent<HTMLDivElement>
+  ) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files?.[0];
+    if (!file) return;
+
+    if (!file.name.endsWith(".xlsx")) {
+      alert("Only .xlsx files are supported");
+      return;
+    }
+
+    // Set status to pending immediately
+    setCards((prev) =>
+      prev.map((card) =>
+        card.id === cardId
+          ? { ...card, status: "pending" as UploadStatus, result: null }
+          : card
+      )
+    );
+
+    try {
+      // Create FormData with file and type
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("type", cardId);
+
+      // Call the server action
+      const result = await uploadFileAction(formData);
+
+      if (result.success) {
+        setCards((prev) =>
+          prev.map((card) =>
+            card.id === cardId
+              ? {
+                  ...card,
+                  status: "success" as UploadStatus,
+                  result: result.message,
+                  lastUploaded: new Date().toLocaleString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                    hour: "numeric",
+                    minute: "2-digit",
+                    hour12: true,
+                  }),
+                }
+              : card
+          )
+        );
+      } else {
+        setCards((prev) =>
+          prev.map((card) =>
+            card.id === cardId
+              ? {
+                  ...card,
+                  status: "error" as UploadStatus,
+                  result: result.error || null,
+                }
+              : card
+          )
+        );
+      }
+    } catch (error) {
+      setCards((prev) =>
+        prev.map((card) =>
+          card.id === cardId
+            ? {
+                ...card,
+                status: "error" as UploadStatus,
+                result: `Error: ${
+                  error instanceof Error ? error.message : "Unknown error"
+                }`,
+              }
+            : card
+        )
+      );
     }
   };
 
@@ -365,10 +388,12 @@ function UploadCards() {
                   <div className="ml-auto">{getStatusBadge(card.status)}</div>
                 </div>
 
-                <div className="flex items-center text-xs text-muted-foreground mb-4">
-                  <Clock className="h-3 w-3 mr-1" />
-                  <span>Last uploaded: {card.lastUploaded}</span>
-                </div>
+                {card.lastUploaded && (
+                  <div className="flex items-center text-xs text-muted-foreground mb-4">
+                    <Clock className="h-3 w-3 mr-1" />
+                    <span>Last uploaded: {card.lastUploaded}</span>
+                  </div>
+                )}
 
                 <div
                   className={cn(
@@ -382,44 +407,19 @@ function UploadCards() {
                   onDrop={(e) => handleFileDrop(card.id, e)}
                   onClick={() => card.inputRef.current?.click()}
                 >
-                  {!card.file ? (
-                    <>
-                      <CloudUpload className="h-12 w-12 mb-3 text-primary/80" />
-                      <p className="text-base font-medium mb-2">
-                        Drop Excel file here or click to browse
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        (.xlsx files only)
-                      </p>
-                      {card.status === "idle" && (
-                        <p className="text-xs text-muted-foreground mt-4">
-                          Files will be uploaded automatically when selected
-                        </p>
-                      )}
-                    </>
-                  ) : (
-                    <div className="w-full">
-                      <div className="flex items-center justify-between border rounded-md p-3 px-4 text-sm bg-background/50">
-                        <div className="flex items-center gap-2 truncate pr-2">
-                          <FileSpreadsheet className="h-5 w-5 flex-shrink-0 text-green-500" />
-                          <span className="truncate">
-                            {card.fileName} - {card.fileSize}
-                          </span>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            removeFile(card.id);
-                          }}
-                          className="h-7 w-7 rounded-full flex-shrink-0 hover:bg-destructive/10 hover:text-destructive"
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
+                  <CloudUpload className="h-12 w-12 mb-3 text-primary/80" />
+                  <p className="text-base font-medium mb-2">
+                    Drop Excel file here or click to browse
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    (.xlsx files only)
+                  </p>
+                  {card.status === "pending" && (
+                    <p className="text-xs text-muted-foreground mt-4">
+                      Processing file...
+                    </p>
                   )}
+
                   <input
                     type="file"
                     ref={card.inputRef}
@@ -430,10 +430,10 @@ function UploadCards() {
                 </div>
               </div>
 
-              {/* Results Section - Simplified */}
+              {/* Results Section */}
               <div className="p-5 bg-muted/10">
                 <div className="flex items-center mb-4">
-                  <h3 className="text-base font-medium">File Validations</h3>
+                  <h3 className="text-base font-medium">Processing Results</h3>
                   {card.status === "pending" && (
                     <Badge variant="outline" className="ml-auto animate-pulse">
                       <Clock className="h-3 w-3 mr-1" />
@@ -464,9 +464,8 @@ function UploadCards() {
                     </div>
                     <p className="text-sm font-medium">Processing your file</p>
                     <p className="text-xs text-muted-foreground mt-2">
-                      This may take a few moments...
+                      Calling API...
                     </p>
-                    <Progress value={45} className="h-1 w-full mt-4" />
                   </div>
                 ) : card.result ? (
                   <div className="p-4 bg-background rounded-lg border border-border/50 h-[180px] flex items-center">
@@ -502,7 +501,7 @@ function UploadCards() {
             </div>
 
             {card.status === "pending" && (
-              <Progress value={45} className="h-1 rounded-none" />
+              <Progress value={50} className="h-1 rounded-none animate-pulse" />
             )}
           </Card>
         ))}
