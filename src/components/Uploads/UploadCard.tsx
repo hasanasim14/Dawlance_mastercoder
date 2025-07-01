@@ -1,15 +1,13 @@
 "use client";
 
 import type React from "react";
+import ValidationResults from "./ValidationResults";
 import { Card, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { CloudUpload, CheckCircle2, Clock, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { UploadCardData, UploadStatus } from "@/app/(navbar-app)/upload/page";
-import ValidationResults from "./ValidationResults";
-// import type { UploadCardData, UploadStatus } from "./upload-cards";
-// import ValidationResults from "./validation-results";
 
 interface UploadCardProps {
   card: UploadCardData;
@@ -27,7 +25,6 @@ function UploadCard({
   onFileDrop,
   onDragOver,
 }: UploadCardProps) {
-  // Safety check for undefined card
   if (!card) {
     return null;
   }
@@ -177,7 +174,10 @@ function UploadCard({
             </div>
           ) : card.validationData && card.status === "success" ? (
             <div className="p-4 bg-background rounded-lg border border-border/50 max-h-[400px] overflow-y-auto">
-              <ValidationResults validationData={card.validationData} />
+              <ValidationResults
+                validationData={card.validationData}
+                uploadType={card.id}
+              />
             </div>
           ) : card.result ? (
             <div className="p-4 bg-background rounded-lg border border-border/50 h-[180px] flex items-center">

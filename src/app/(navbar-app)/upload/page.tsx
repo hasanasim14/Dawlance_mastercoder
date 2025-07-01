@@ -1,10 +1,9 @@
 "use client";
 
 import type React from "react";
+import UploadCard from "@/components/Uploads/UploadCard";
 import { useState, useRef } from "react";
 import { ShoppingCart, Server, GanttChart, DollarSign } from "lucide-react";
-import UploadCard from "@/components/Uploads/UploadCard";
-// import UploadCard from "./upload-card";
 
 // Server Action for handling file upload
 async function uploadFileAction(formData: FormData) {
@@ -39,11 +38,10 @@ async function uploadFileAction(formData: FormData) {
 
     const result = await response.json();
 
-    // Handle successful response
     return {
       success: true,
       message: result.message || `Successfully processed ${file.name}`,
-      validationData: result, // Include the full validation response
+      validationData: result,
     };
   } catch (error) {
     console.error("Upload error:", error);
@@ -77,13 +75,11 @@ export interface UploadCardData {
 }
 
 function UploadCards() {
-  // Create refs outside of state
   const SalesInputRef = useRef<HTMLInputElement>(null);
   const StocksInputRef = useRef<HTMLInputElement>(null);
   const ProductionInputRef = useRef<HTMLInputElement>(null);
   const ProductionPlanInputRef = useRef<HTMLInputElement>(null);
 
-  // Initial card data
   const [cards, setCards] = useState<UploadCardData[]>([
     {
       id: "sales",

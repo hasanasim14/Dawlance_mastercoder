@@ -16,7 +16,6 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ValidationData } from "@/app/(navbar-app)/upload/page";
-// import type { ValidationData } from "./upload-cards";
 
 // Modal content component for detailed error display
 function ErrorDetailsModal({
@@ -30,10 +29,10 @@ function ErrorDetailsModal({
   children: React.ReactNode;
 }) {
   const renderContent = () => {
-    // Handle arrays
+    // for arrays
     if (Array.isArray(value)) {
       return (
-        <div className="space-y-2">
+        <div>
           <p className="text-sm text-muted-foreground mb-4">
             Found {value.length} item{value.length !== 1 ? "s" : ""}:
           </p>
@@ -54,7 +53,7 @@ function ErrorDetailsModal({
       );
     }
 
-    // Handle objects
+    // for objects
     if (typeof value === "object" && value !== null) {
       return (
         <div className="space-y-4 max-h-96 overflow-y-auto">
@@ -86,7 +85,7 @@ function ErrorDetailsModal({
       );
     }
 
-    // Handle strings and other types
+    // for strings
     return (
       <div className="p-4 bg-muted/50 rounded-lg">
         <p className="text-sm">{String(value)}</p>
@@ -97,60 +96,88 @@ function ErrorDetailsModal({
   return (
     <Dialog>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden">
+      <DialogContent className="w-[40vw] max-w-[80vw] max-h-[80vh] overflow-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <AlertTriangle className="h-5 w-5 text-yellow-500" />
             {title}
           </DialogTitle>
         </DialogHeader>
-        <div className="mt-4">{renderContent()}</div>
+        {renderContent()}
       </DialogContent>
     </Dialog>
   );
 }
 
-// Table modal component specifically for "Duplicates in Data"
 function DuplicatesTableModal({
   title,
   duplicates,
+  uploadType,
   children,
 }: {
   title: string;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   duplicates: any[];
+  uploadType: string;
   children: React.ReactNode;
 }) {
-  // Define the headers in the order you want them displayed
-  const headers = [
-    "Sales Office Description",
-    "Payer",
-    "Payer Name",
-    "Item text",
-    "Billing Document",
-    "Sales Document Type",
-    "Sales Document",
-    "Billing Date",
-    "Due Date",
-    "Material",
-    "Material Description",
-    "Sales Order Item Created Date",
-    "Descr. of Storage Loc.",
-    "Document Currency",
-    "ZBTP value",
-    "ZPK0 value",
-    "Billing qty in SKU",
-    "MWST value",
-    "ZPT2 value",
-    "Product",
-  ];
+  const getHeadersForType = (type: string) => {
+    switch (type) {
+      case "sales":
+        return [
+          "Sales Office Description",
+          "Payer",
+          "Payer Name",
+          "Item text",
+          "Billing Document",
+          "Sales Document Type",
+          "Sales Document",
+          "Billing Date",
+          "Due Date",
+          "Material",
+          "Material Description",
+          "Sales Order Item Created Date",
+          "Descr. of Storage Loc.",
+          "Document Currency",
+          "ZBTP value",
+          "ZPK0 value",
+          "Billing qty in SKU",
+          "MWST value",
+          "ZPT2 value",
+          "Product",
+        ];
+      case "stocks":
+        return [
+          "Year",
+          "Month",
+          "Warehouse_code",
+          "Warehouse",
+          "Product",
+          "Material",
+          "Material_name",
+          "TTL",
+        ];
+      case "production":
+        return [
+          "Material",
+          "Material Description",
+          "Month",
+          "Quantity",
+          "Year",
+        ];
+      case "production_plan":
+        return ["Material", "Month", "Year", "PlanProdQty"];
+      default:
+        return [];
+    }
+  };
 
-  // Format date values (assuming they're timestamps)
+  const headers = getHeadersForType(uploadType);
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const formatValue = (value: any, key: string) => {
     if (value === null || value === undefined) return "N/A";
 
-    // Format date fields
     if (key.toLowerCase().includes("date") && typeof value === "number") {
       return new Date(value).toLocaleDateString("en-US", {
         year: "numeric",
@@ -159,7 +186,6 @@ function DuplicatesTableModal({
       });
     }
 
-    // Format currency values
     if (key.toLowerCase().includes("value") || key === "Payer") {
       return typeof value === "number" ? value.toLocaleString() : value;
     }
@@ -186,16 +212,16 @@ function DuplicatesTableModal({
 
           <div className="border rounded-lg overflow-hidden h-[calc(95vh-140px)]">
             <div className="overflow-auto h-full">
-              <table className="w-full text-sm relative min-w-[2000px]">
+              <table className="w-full text-sm relative table-auto">
                 <thead className="bg-[#F5FBFF] sticky top-0 z-20 border-b">
                   <tr>
-                    <th className="p-3 text-left font-medium border-r bg-background/95 sticky left-0 z-30 min-w-[60px]">
+                    <th className="p-3 text-left font-medium border-r bg-background/95 sticky left-0 z-30 min-w-[1px]">
                       #
                     </th>
                     {headers.map((header) => (
                       <th
                         key={header}
-                        className="p-3 text-left font-medium border-r min-w-[250px] whitespace-nowrap"
+                        className="p-3 text-left font-medium border-r whitespace-nowrap"
                       >
                         {header}
                       </th>
@@ -211,7 +237,7 @@ function DuplicatesTableModal({
                       {headers.map((header) => (
                         <td
                           key={header}
-                          className="p-3 border-r min-w-[250px] whitespace-nowrap"
+                          className="p-3 border-r whitespace-nowrap"
                         >
                           <div
                             className="max-w-[400px] truncate"
@@ -234,8 +260,16 @@ function DuplicatesTableModal({
 }
 
 // Dynamic validation item component
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function ValidationItem({ label, value }: { label: string; value: any }) {
+function ValidationItem({
+  label,
+  value,
+  uploadType,
+}: {
+  label: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  value: any;
+  uploadType: string;
+}) {
   const getValidationStatus = () => {
     // Handle boolean values
     if (typeof value === "boolean") {
@@ -289,7 +323,7 @@ function ValidationItem({ label, value }: { label: string; value: any }) {
 
     // Handle strings and numbers
     if (typeof value === "string" || typeof value === "number") {
-      // For strings, non-empty is usually good, for numbers, positive is usually good
+      // For strings
       const isGood =
         (typeof value === "string" && value.length > 0) ||
         (typeof value === "number" && value >= 0);
@@ -360,6 +394,7 @@ function ValidationItem({ label, value }: { label: string; value: any }) {
               <DuplicatesTableModal
                 title={formatLabel(label)}
                 duplicates={value}
+                uploadType={uploadType}
               >
                 <button
                   className={cn(
@@ -395,9 +430,13 @@ function ValidationItem({ label, value }: { label: string; value: any }) {
 
 interface ValidationResultsProps {
   validationData: ValidationData;
+  uploadType: string;
 }
 
-function ValidationResults({ validationData }: ValidationResultsProps) {
+const ValidationResults: React.FC<ValidationResultsProps> = ({
+  validationData,
+  uploadType,
+}) => {
   // Get all keys from the validation data and sort them for consistent display
   const allKeys = Object.keys(validationData).sort();
 
@@ -448,11 +487,16 @@ function ValidationResults({ validationData }: ValidationResultsProps) {
       {/* Individual validations */}
       <div className="space-y-1">
         {validationKeys.map((key) => (
-          <ValidationItem key={key} label={key} value={validationData[key]} />
+          <ValidationItem
+            key={key}
+            label={key}
+            value={validationData[key]}
+            uploadType={uploadType}
+          />
         ))}
       </div>
     </div>
   );
-}
+};
 
 export default ValidationResults;
