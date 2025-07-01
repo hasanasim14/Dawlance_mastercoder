@@ -23,6 +23,7 @@ import {
   Workflow,
   Users,
   Gift,
+  Store,
 } from "lucide-react";
 import { mockUser } from "@/lib/mockUser";
 import { rolePages } from "@/lib/rolePages";
@@ -89,6 +90,11 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
       title: "Branch Master",
       url: "/branch-master",
       icon: Workflow,
+    },
+    {
+      title: "Branch RFC",
+      url: "/branch-rfc",
+      icon: Store,
     },
     {
       title: "Users",

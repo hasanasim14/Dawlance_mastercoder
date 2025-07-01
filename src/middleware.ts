@@ -26,6 +26,7 @@ export const config = {
     "/results",
     "/upload",
     "/branch-master",
+    "/branch-rfc",
     "/roles",
     "/users",
   ],

@@ -8,6 +8,7 @@ export const rolePages = {
     "/upload",
     "/phaseIO",
     "/branch-master",
+    "/branch-rfc",
     "/users",
     "/roles",
   ],
