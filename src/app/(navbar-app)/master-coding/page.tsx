@@ -145,7 +145,6 @@ export default function MasterCoding() {
         setRowData(transformedData);
 
         if (parsedData.pagination) {
-          console.log("Pagination data:", parsedData);
           setPagination(parsedData.pagination);
         }
       } else {
@@ -166,7 +165,6 @@ export default function MasterCoding() {
   ): Promise<string[]> => {
     if (!query.trim()) return [];
 
-    console.log("the field to search for", field);
     try {
       const authToken = localStorage.getItem("token");
       const fieldForApi = field.replace(/\s+/g, "_");
@@ -185,16 +183,15 @@ export default function MasterCoding() {
       }
 
       const data = await res.json();
-      console.log("API Response:", data); // Debug log
 
       if (data && typeof data === "object") {
         // Try multiple key formats to match the response
         const possibleKeys = [
-          field, // Original: "Material Description"
-          fieldForApi, // With underscores: "Material_Description"
-          field.toLowerCase(), // Lowercase: "material description"
-          fieldForApi.toLowerCase(), // Lowercase with underscores: "material_description"
-          field.toLowerCase().replace(/\s+/g, "_"), // Ensure lowercase with underscores
+          field,
+          fieldForApi,
+          field.toLowerCase(),
+          fieldForApi.toLowerCase(),
+          field.toLowerCase().replace(/\s+/g, "_"),
         ];
 
         // Find the matching key in the response
@@ -206,8 +203,6 @@ export default function MasterCoding() {
                 possibleKey.toLowerCase().replace(/\s+/g, "_")
           )
         );
-
-        console.log("Matching key found:", matchingKey); // Debug log
 
         if (matchingKey && Array.isArray(data[matchingKey])) {
           return data[matchingKey];
@@ -229,14 +224,11 @@ export default function MasterCoding() {
           })
         );
 
-        console.log("Partial match key found:", partialMatchKey); // Debug log
-
         if (partialMatchKey && Array.isArray(data[partialMatchKey])) {
           return data[partialMatchKey];
         }
       }
 
-      console.log("No matching key found in response"); // Debug log
       return [];
     } catch (error) {
       console.error(`Error fetching suggestions for ${field}:`, error);

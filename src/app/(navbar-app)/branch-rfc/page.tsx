@@ -1,36 +1,28 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { RightSheet } from "@/components/RightSheet";
-import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { useState, useCallback } from "react";
 import type {
   RowDataType,
   PaginationData,
   FieldConfig,
   ColumnConfig,
 } from "@/lib/types";
-import { DataTable } from "@/components/DataTable/DataTable";
 import {
   transformToApiFormat,
   transformArrayFromApiFormat,
-  extractFields,
 } from "@/lib/data-transformers";
-import { cn } from "@/lib/utils";
-import SearchComponent from "@/components/SearchComponent";
+import { RFCTable } from "@/components/rfcTable/DataTable";
+// import { toast } from "@/hooks/use-toast";
 
 export default function BranchRFC() {
   const [selectedRow, setSelectedRow] = useState<RowDataType | null>(null);
   const [selectedRowId, setSelectedRowId] = useState<number | null>(null);
-  const [selectedRows, setSelectedRows] = useState<RowDataType[]>([]);
   const [rowData, setRowData] = useState<RowDataType[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [deleting, setDeleting] = useState(false);
-  const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(
-    null
-  );
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [posting, setPosting] = useState(false);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [columns, setColumns] = useState<readonly ColumnConfig[]>([]);
 
   // Pagination states
   const [pagination, setPagination] = useState<PaginationData>({
@@ -39,8 +31,6 @@ export default function BranchRFC() {
     page: 1,
     total_pages: 0,
   });
-  const [pageSize, setPageSize] = useState(50);
-  const [currentPage, setCurrentPage] = useState(1);
 
   // Define field configuration for the RightSheet
   const fieldConfig: FieldConfig[] = [
@@ -87,279 +77,242 @@ export default function BranchRFC() {
     { key: "Key Feature", label: "Key Feature", type: "text", required: true },
   ];
 
-  const columns: readonly ColumnConfig[] = [
-    { key: "Master ID", label: "Master ID" },
-    { key: "Product", label: "Product" },
-    { key: "Material", label: "Material" },
-    { key: "Material Description", label: "Material Description" },
-    { key: "Measurement Instrument", label: "Measurement Instrument" },
-    { key: "Colour Similarity", label: "Colour Similarity" },
-    { key: "Product Type", label: "Product Type" },
-    { key: "Function", label: "Function" },
-    { key: "Series", label: "Series" },
-    { key: "Colour", label: "Colour" },
-    { key: "Key Feature", label: "Key Feature" },
-  ];
+  // Generate columns from API response data
+  const generateColumnsFromData = (
+    data: RowDataType[]
+  ): readonly ColumnConfig[] => {
+    if (!data || data.length === 0) {
+      return [];
+    }
 
-  const fetchMasterData = async (
-    searchParams: Record<string, string> = {},
-    page = 1,
-    recordsPerPage = 50
-  ) => {
-    setLoading(true);
-    try {
-      let endpoint = `${process.env.NEXT_PUBLIC_BASE_URL}/mastercoding`;
+    // Get all unique keys from the first row
+    const firstRow = data[0];
+    const keys = Object.keys(firstRow);
 
-      const queryParams = new URLSearchParams();
+    // Define the preferred order of columns
+    const columnOrder = [
+      "Branch",
+      "Material",
+      "Material Description",
+      "Product",
+      "Last RFC",
+    ];
 
-      queryParams.append("page", page.toString());
-      queryParams.append("limit", recordsPerPage.toString());
+    // Separate known columns from dynamic ones
+    const knownColumns: string[] = [];
+    const dynamicColumns: string[] = [];
 
-      const hasSearchParams = Object.keys(searchParams).length > 0;
-
-      if (hasSearchParams) {
-        const apiSearchParams = transformToApiFormat(searchParams);
-        Object.entries(apiSearchParams).forEach(([field, value]) => {
-          queryParams.append(field, value);
-        });
-      }
-
-      const authToken = localStorage.getItem("token");
-      endpoint = `${endpoint}?${queryParams.toString()}`;
-
-      const res = await fetch(endpoint, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${authToken}`,
-        },
-      });
-      const data = await res.json();
-
-      const parsedData = typeof data === "string" ? JSON.parse(data) : data;
-
-      if (parsedData && parsedData.data && Array.isArray(parsedData.data)) {
-        const transformedData = transformArrayFromApiFormat(
-          parsedData.data
-        ) as RowDataType[];
-        setRowData(transformedData);
-
-        if (parsedData.pagination) {
-          setPagination(parsedData.pagination);
-        }
+    keys.forEach((key) => {
+      if (columnOrder.includes(key)) {
+        knownColumns.push(key);
       } else {
-        console.error("Invalid data structure received:", parsedData);
-        setRowData([]);
+        dynamicColumns.push(key);
       }
-    } catch (error) {
-      console.error("Error fetching data", error);
-      setRowData([]);
-    } finally {
-      setLoading(false);
-    }
+    });
+
+    // Sort known columns by preferred order
+    knownColumns.sort(
+      (a, b) => columnOrder.indexOf(a) - columnOrder.indexOf(b)
+    );
+
+    // Sort dynamic columns (sales columns first, then RFC columns)
+    dynamicColumns.sort((a, b) => {
+      const aIsSales = a.includes("Sales");
+      const bIsSales = b.includes("Sales");
+      const aIsRFC = a.includes("RFC");
+      const bIsRFC = b.includes("RFC");
+
+      // Sales columns come first
+      if (aIsSales && !bIsSales) return -1;
+      if (!aIsSales && bIsSales) return 1;
+
+      // Then RFC columns
+      if (aIsRFC && !bIsRFC) return 1;
+      if (!aIsRFC && bIsRFC) return -1;
+
+      // Alphabetical for same type
+      return a.localeCompare(b);
+    });
+
+    // Combine all columns in order
+    const orderedKeys = [...knownColumns, ...dynamicColumns];
+
+    // Convert to ColumnConfig format
+    return orderedKeys.map((key) => ({
+      key,
+      label: key,
+    }));
   };
 
-  const fetchSuggestions = async (
-    field: string,
-    query: string
-  ): Promise<string[]> => {
-    if (!query.trim()) return [];
+  const fetchBranchRFCData = useCallback(
+    async (branch: string, month: string, year: string) => {
+      setLoading(true);
+      try {
+        const query = new URLSearchParams({
+          branch,
+          month,
+          year,
+        }).toString();
 
-    try {
-      const authToken = localStorage.getItem("token");
-      const fieldForApi = field.replace(/\s+/g, "_");
-      const endpoint = `${process.env.NEXT_PUBLIC_BASE_URL}/mastercoding/distinct/${fieldForApi}?filt=${query}`;
+        const endpoint = `${process.env.NEXT_PUBLIC_BASE_URL}/branch-rfc?${query}`;
+        const authToken = localStorage.getItem("token");
 
-      const res = await fetch(endpoint, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${authToken}`,
-        },
-      });
-
-      if (!res.ok) {
-        throw new Error(`Failed to fetch suggestions: ${res.status}`);
-      }
-
-      const data = await res.json();
-
-      if (data && typeof data === "object") {
-        // Try multiple key formats to match the response
-        const possibleKeys = [
-          field,
-          fieldForApi,
-          field.toLowerCase(),
-          fieldForApi.toLowerCase(),
-          field.toLowerCase().replace(/\s+/g, "_"),
-        ];
-
-        // Find the matching key in the response
-        const matchingKey = Object.keys(data).find((responseKey) =>
-          possibleKeys.some(
-            (possibleKey) =>
-              responseKey.toLowerCase() === possibleKey.toLowerCase() ||
-              responseKey.toLowerCase().replace(/\s+/g, "_") ===
-                possibleKey.toLowerCase().replace(/\s+/g, "_")
-          )
-        );
-
-        if (matchingKey && Array.isArray(data[matchingKey])) {
-          return data[matchingKey];
-        }
-
-        // If no exact match, try to find any key that contains our field name
-        const partialMatchKey = Object.keys(data).find((responseKey) =>
-          possibleKeys.some((possibleKey) => {
-            const normalizedResponseKey = responseKey
-              .toLowerCase()
-              .replace(/[_\s]+/g, "");
-            const normalizedPossibleKey = possibleKey
-              .toLowerCase()
-              .replace(/[_\s]+/g, "");
-            return (
-              normalizedResponseKey.includes(normalizedPossibleKey) ||
-              normalizedPossibleKey.includes(normalizedResponseKey)
-            );
-          })
-        );
-
-        if (partialMatchKey && Array.isArray(data[partialMatchKey])) {
-          return data[partialMatchKey];
-        }
-      }
-
-      return [];
-    } catch (error) {
-      console.error(`Error fetching suggestions for ${field}:`, error);
-      return [];
-    }
-  };
-
-  const handleBulkDelete = async () => {
-    if (selectedRows.length === 0) return;
-
-    setDeleting(true);
-    try {
-      const masterIds = extractFields(selectedRows, "Master ID");
-
-      const deletePayload = {
-        master_id: masterIds,
-      };
-      const authToken = localStorage.getItem("token");
-
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/mastercoding/delete`,
-        {
-          method: "DELETE",
+        const res = await fetch(endpoint, {
+          method: "GET",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${authToken}`,
           },
-          body: JSON.stringify(deletePayload),
+        });
+
+        const data = await res.json();
+        const parsedData = typeof data === "string" ? JSON.parse(data) : data;
+
+        if (parsedData && parsedData.data && Array.isArray(parsedData.data)) {
+          const transformedData = transformArrayFromApiFormat(
+            parsedData.data
+          ) as RowDataType[];
+          setRowData(transformedData);
+
+          // Generate columns based on actual response data
+          const generatedColumns = generateColumnsFromData(transformedData);
+          setColumns(generatedColumns);
+
+          if (parsedData.pagination) {
+            setPagination(parsedData.pagination);
+          }
+
+          // toast({
+          //   title: "Data loaded successfully",
+          //   description: `Loaded ${transformedData.length} records for ${branch}`,
+          // });
+        } else {
+          console.error("Invalid data structure received:", parsedData);
+          setRowData([]);
+          setColumns([]);
+          // toast({
+          //   title: "No data found",
+          //   description: "No RFC data available for the selected criteria",
+          //   variant: "destructive",
+          // });
         }
-      );
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      } catch (error) {
+        console.error("Error fetching branch rfc data", error);
+        setRowData([]);
+        setColumns([]);
+        // toast({
+        //   title: "Error loading data",
+        //   description: "Failed to fetch RFC data. Please try again.",
+        //   variant: "destructive",
+        // });
+      } finally {
+        setLoading(false);
       }
+    },
+    []
+  );
 
-      // Refresh data after deletion
-      fetchMasterData({}, currentPage, pageSize);
+  const handlePost = useCallback(
+    async (branch: string, month: string, year: string) => {
+      setPosting(true);
+      try {
+        const authToken = localStorage.getItem("token");
+        const endpoint = `${process.env.NEXT_PUBLIC_BASE_URL}/branch-rfc/post`;
 
-      // Clear selections
-      setSelectedRows([]);
-      setSelectedRow(null);
-      setSelectedRowId(null);
-    } catch (error) {
-      console.error("Error deleting records:", error);
-    } finally {
-      setDeleting(false);
-      setShowDeleteDialog(false);
-    }
-  };
+        const requestBody = {
+          branch,
+          month: Number.parseInt(month),
+          year: Number.parseInt(year),
+          data: rowData, // Send current table data
+        };
 
-  // Handle clear filters
-  const handleClearFilters = () => {
-    // Clear any existing search timeout
-    if (searchTimeout) {
-      clearTimeout(searchTimeout);
-    }
+        const response = await fetch(endpoint, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${authToken}`,
+          },
+          body: JSON.stringify(requestBody),
+        });
 
-    // Reset to first page and fetch data without any filters
-    setCurrentPage(1);
-    fetchMasterData({}, 1, pageSize);
-  };
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
 
-  // Pagination handlers
-  const handlePageSizeChange = (newPageSize: string) => {
-    const size = Number.parseInt(newPageSize);
-    setPageSize(size);
-    setCurrentPage(1);
-    fetchMasterData({}, 1, size);
-  };
+        const result = await response.json();
 
-  const handlePageChange = (newPage: number) => {
-    setCurrentPage(newPage);
-    fetchMasterData({}, newPage, pageSize);
-  };
+        // toast({
+        //   title: "Data posted successfully",
+        //   description: `RFC data for ${branch} has been posted successfully`,
+        // });
 
-  useEffect(() => {
-    fetchMasterData({}, currentPage, pageSize);
-  }, []);
+        // Refresh data after posting
+        await fetchBranchRFCData(branch, month, year);
+      } catch (error) {
+        console.error("Error posting RFC data:", error);
+        // toast({
+        //   title: "Error posting data",
+        //   description: "Failed to post RFC data. Please try again.",
+        //   variant: "destructive",
+        // });
+      } finally {
+        setPosting(false);
+      }
+    },
+    [rowData, fetchBranchRFCData]
+  );
 
-  // Handle search with debouncing
-  const handleSearch = (searchParams: Record<string, string>) => {
-    if (searchTimeout) {
-      clearTimeout(searchTimeout);
-    }
+  const handleSave = useCallback(
+    async (branch: string, month: string, year: string) => {
+      setSaving(true);
+      try {
+        const authToken = localStorage.getItem("token");
+        const endpoint = `${process.env.NEXT_PUBLIC_BASE_URL}/branch-rfc/save`;
 
-    const timeout = setTimeout(() => {
-      setCurrentPage(1);
-      fetchMasterData(searchParams, 1, pageSize);
-    }, 500); // 0.5 seconds
+        const requestBody = {
+          branch,
+          month: Number.parseInt(month),
+          year: Number.parseInt(year),
+          data: rowData, // Send current table data
+        };
 
-    setSearchTimeout(timeout);
-  };
+        const response = await fetch(endpoint, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${authToken}`,
+          },
+          body: JSON.stringify(requestBody),
+        });
 
-  // Handle row selection
-  const handleRowSelect = (row: RowDataType, checked: boolean) => {
-    if (checked) {
-      setSelectedRows((prev) => [...prev, row]);
-    } else {
-      setSelectedRows((prev) =>
-        prev.filter((r) => r["Master ID"] !== row["Master ID"])
-      );
-    }
-  };
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
 
-  // Handle select all
-  const handleSelectAll = (checked: boolean) => {
-    if (checked) {
-      setSelectedRows([...rowData]);
-    } else {
-      setSelectedRows([]);
-    }
-  };
+        const result = await response.json();
 
-  // Handle row click
-  const handleRowClick = (row: RowDataType) => {
-    setIsSheetOpen(true);
-    const clickedRowId = row["Master ID"];
+        // toast({
+        //   title: "Data saved successfully",
+        //   description: `RFC data for ${branch} has been saved successfully`,
+        // });
 
-    // If clicking the same row, toggle the sheet
-    if (selectedRowId === clickedRowId) {
-      setSelectedRow(null);
-      setSelectedRowId(null);
-    } else {
-      // Select new row
-      setSelectedRow(row);
-      setSelectedRowId(clickedRowId);
-    }
-  };
+        // Refresh data after saving
+        await fetchBranchRFCData(branch, month, year);
+      } catch (error) {
+        console.error("Error saving RFC data:", error);
+        // toast({
+        //   title: "Error saving data",
+        //   description: "Failed to save RFC data. Please try again.",
+        //   variant: "destructive",
+        // });
+      } finally {
+        setSaving(false);
+      }
+    },
+    [rowData, fetchBranchRFCData]
+  );
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleSave = async (data: Record<string, any>): Promise<void> => {
+  const handleFormSave = async (data: Record<string, any>): Promise<void> => {
     try {
       // Transform data to API format before sending
       const apiFormattedData = transformToApiFormat(data);
@@ -399,86 +352,20 @@ export default function BranchRFC() {
     }
   };
 
-  const handleAddClick = () => {
-    setIsSheetOpen(true);
-  };
-
-  const excludedKeys = ["Master ID"];
-
-  const filteredFieldConfig = fieldConfig.filter(
-    (field) => !excludedKeys.includes(field.key)
-  );
-
   return (
     <div className="w-full h-[85vh] p-4 overflow-hidden">
-      <div className="w-full h-full flex flex-col lg:flex-row gap-4 overflow-hidden">
-        <div
-          className={cn(
-            "w-full flex-shrink-0 h-full overflow-hidden",
-            "transition-all duration-300 ease-in-out",
-            isCollapsed ? "lg:w-[300px]" : "lg:w-[70px]"
-          )}
-        >
-          <div className="h-full overflow-auto">
-            <SearchComponent
-              fields={columns}
-              onSearch={handleSearch}
-              onClearFilters={handleClearFilters}
-              fetchSuggestions={fetchSuggestions}
-              setIsCollapsed={setIsCollapsed}
-              isCollapsed={isCollapsed}
-            />
-          </div>
-        </div>
-
-        <div className="flex-1 h-full overflow-hidden min-w-0">
-          <DataTable
-            tableName="Master Coding"
-            selectionValue="Master ID"
-            loading={loading}
-            deleting={deleting}
-            data={rowData}
-            selectedRows={selectedRows}
-            selectedRowId={selectedRowId}
-            pagination={pagination}
-            currentPage={currentPage}
-            pageSize={pageSize}
-            columns={columns}
-            onRowSelect={handleRowSelect}
-            onSelectAll={handleSelectAll}
-            onRowClick={handleRowClick}
-            onPageSizeChange={handlePageSizeChange}
-            onPageChange={handlePageChange}
-            onDeleteClick={() => setShowDeleteDialog(true)}
-            onAddClick={handleAddClick}
-          />
-        </div>
-
-        <RightSheet
-          parent={"mastercoding"}
-          selectedRow={selectedRow}
-          onReset={() => {
-            setSelectedRow(null);
-            setIsSheetOpen(false);
-          }}
+      <div className="w-full h-full overflow-hidden">
+        <RFCTable
+          rowData={rowData}
+          columns={columns}
+          onPost={handlePost}
           onSave={handleSave}
-          fields={selectedRow ? fieldConfig : filteredFieldConfig}
-          title={selectedRow ? "Edit Entry" : "Create New Master ID"}
-          isOpen={isSheetOpen}
-          onClose={() => setIsSheetOpen(false)}
+          onFetchData={fetchBranchRFCData}
+          isLoading={loading}
+          isSaving={saving}
+          isPosting={posting}
         />
       </div>
-
-      <ConfirmDialog
-        open={showDeleteDialog}
-        onOpenChange={setShowDeleteDialog}
-        description={`Are you sure you want to delete ${
-          selectedRows.length
-        } record${
-          selectedRows.length > 1 ? "s" : ""
-        }? This action cannot be undone.`}
-        onConfirm={handleBulkDelete}
-      />
     </div>
   );
 }

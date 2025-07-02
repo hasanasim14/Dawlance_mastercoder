@@ -115,7 +115,6 @@ export default function Branchmaster() {
         setRowData(transformedData);
 
         if (parsedData.pagination) {
-          console.log("Pagination data:", parsedData);
           setPagination(parsedData.pagination);
         }
       } else {

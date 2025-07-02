@@ -22,6 +22,10 @@ export type RowDataType = {
   Email: string;
   Role: string;
   Branch: string;
+  // Branch RFC
+  "Last RFC": string;
+  "YTD Sales": string;
+  [key: string]: any;
 };
 
 export type SortConfig = {

@@ -37,8 +37,7 @@ export function DataTableBody({
     );
   }
 
-  console.log("branch selection ==>", selectionValue);
-  console.log("daata ==>", data);
+  console.log("the coliumns", data);
 
   return (
     <TableBody>
