@@ -1,81 +1,21 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import type {
-  RowDataType,
-  PaginationData,
-  FieldConfig,
-  ColumnConfig,
-} from "@/lib/types";
-import {
-  transformToApiFormat,
-  transformArrayFromApiFormat,
-} from "@/lib/data-transformers";
+
+import type { RowDataType, ColumnConfig } from "@/lib/types";
+
+import { transformArrayFromApiFormat } from "@/lib/data-transformers";
+
 import { RFCTable } from "@/components/rfcTable/DataTable";
+
 // import { toast } from "@/hooks/use-toast";
 
 export default function BranchRFC() {
-  const [selectedRow, setSelectedRow] = useState<RowDataType | null>(null);
-  const [selectedRowId, setSelectedRowId] = useState<number | null>(null);
   const [rowData, setRowData] = useState<RowDataType[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [posting, setPosting] = useState(false);
-  const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [columns, setColumns] = useState<readonly ColumnConfig[]>([]);
-
-  // Pagination states
-  const [pagination, setPagination] = useState<PaginationData>({
-    total_records: 0,
-    records_per_page: 50,
-    page: 1,
-    total_pages: 0,
-  });
-
-  // Define field configuration for the RightSheet
-  const fieldConfig: FieldConfig[] = [
-    {
-      key: "Master ID",
-      label: "Master ID",
-      type: "number",
-      readOnly: true,
-    },
-    { key: "Product", label: "Product", type: "text", required: true },
-    {
-      key: "Material",
-      label: "Material",
-      type: "text",
-      required: true,
-    },
-    {
-      key: "Material Description",
-      label: "Material Description",
-      type: "text",
-      required: true,
-    },
-    {
-      key: "Measurement Instrument",
-      label: "Measurement Instrument",
-      type: "text",
-      required: true,
-    },
-    {
-      key: "Colour Similarity",
-      label: "Colour Similarity",
-      type: "text",
-      required: true,
-    },
-    {
-      key: "Product Type",
-      label: "Product Type",
-      type: "text",
-      required: true,
-    },
-    { key: "Function", label: "Function", type: "text", required: true },
-    { key: "Series", label: "Series", type: "text", required: true },
-    { key: "Colour", label: "Colour", type: "text", required: true },
-    { key: "Key Feature", label: "Key Feature", type: "text", required: true },
-  ];
 
   // Generate columns from API response data
   const generateColumnsFromData = (
@@ -155,6 +95,7 @@ export default function BranchRFC() {
         }).toString();
 
         const endpoint = `${process.env.NEXT_PUBLIC_BASE_URL}/branch-rfc?${query}`;
+
         const authToken = localStorage.getItem("token");
 
         const res = await fetch(endpoint, {
@@ -166,21 +107,19 @@ export default function BranchRFC() {
         });
 
         const data = await res.json();
+
         const parsedData = typeof data === "string" ? JSON.parse(data) : data;
 
         if (parsedData && parsedData.data && Array.isArray(parsedData.data)) {
           const transformedData = transformArrayFromApiFormat(
             parsedData.data
           ) as RowDataType[];
+
           setRowData(transformedData);
 
           // Generate columns based on actual response data
           const generatedColumns = generateColumnsFromData(transformedData);
           setColumns(generatedColumns);
-
-          if (parsedData.pagination) {
-            setPagination(parsedData.pagination);
-          }
 
           // toast({
           //   title: "Data loaded successfully",
@@ -226,50 +165,87 @@ export default function BranchRFC() {
           month,
           year,
         }).toString();
+
         const authToken = localStorage.getItem("token");
-        const endpoint = `${process.env.NEXT_PUBLIC_BASE_URL}/branch-rfc?${query}`;
 
-        const requestBody = {
-          // branch,
-          // month: Number.parseInt(month),
-          // year: Number.parseInt(year),
-          data: data,
-        };
+        // Find the RFC column (same logic as in RFCTable component)
+        const rfcColumn = columns.find(
+          (col) => col.key.includes("RFC") && !col.key.includes("Last")
+        );
 
-        const response = await fetch(endpoint, {
+        if (!rfcColumn) {
+          throw new Error("RFC column not found");
+        }
+
+        // Transform data to only include material and rfc, same format as save API
+        const postData = data.map((row) => ({
+          material: String(row["Material"] || ""),
+          rfc: String(row[rfcColumn.key] || ""),
+        }));
+
+        // First API call - existing branch-rfc endpoint
+        const branchRfcEndpoint = `${process.env.NEXT_PUBLIC_BASE_URL}/branch-rfc?${query}`;
+
+        // Second API call - add your second endpoint here
+        const secondApiEndpoint = `${process.env.NEXT_PUBLIC_BASE_URL}/branch-rfc-save?${query}`;
+
+        // Sequential API calls (if second API depends on first)
+        const branchRfcResponse = await fetch(branchRfcEndpoint, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${authToken}`,
           },
-          body: JSON.stringify(requestBody),
+          body: JSON.stringify(postData),
         });
 
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+        if (!branchRfcResponse.ok) {
+          throw new Error(
+            `Branch RFC API error! status: ${branchRfcResponse.status}`
+          );
         }
 
-        const result = await response.json();
+        const branchRfcResult = await branchRfcResponse.json();
+        console.log("Branch RFC API result:", branchRfcResult);
+
+        // Second API call - can use data from first API if needed
+        const secondApiResponse = await fetch(secondApiEndpoint, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${authToken}`,
+          },
+          body: JSON.stringify(postData),
+        });
+
+        if (!secondApiResponse.ok) {
+          throw new Error(
+            `Second API error! status: ${secondApiResponse.status}`
+          );
+        }
+
+        const secondApiResult = await secondApiResponse.json();
+        console.log("Second API result:", secondApiResult);
 
         // toast({
         //   title: "Data posted successfully",
-        //   description: `RFC data for ${branch} has been posted successfully`,
+        //   description: `RFC data for ${branch} has been posted to both endpoints successfully`,
         // });
 
-        // Refresh data after posting
+        // Refresh data after both successful posts
         await fetchBranchRFCData(branch, month, year);
       } catch (error) {
         console.error("Error posting RFC data:", error);
         // toast({
         //   title: "Error posting data",
-        //   description: "Failed to post RFC data. Please try again.",
+        //   description: `Failed to post RFC data: ${error.message}. Please try again.`,
         //   variant: "destructive",
         // });
       } finally {
         setPosting(false);
       }
     },
-    [fetchBranchRFCData]
+    [fetchBranchRFCData, columns]
   );
 
   const handleSave = useCallback(
@@ -282,8 +258,11 @@ export default function BranchRFC() {
       setSaving(true);
       try {
         const query = new URLSearchParams({ branch, month, year }).toString();
+
         const authToken = localStorage.getItem("token");
+
         const endpoint = `${process.env.NEXT_PUBLIC_BASE_URL}/branch-rfc-save?${query}`;
+
         console.log("the response is", changedData);
 
         const response = await fetch(endpoint, {
@@ -299,7 +278,7 @@ export default function BranchRFC() {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
 
-        const result = await response.json();
+        // const result = await response.json();
 
         // toast({
         //   title: "Data saved successfully",

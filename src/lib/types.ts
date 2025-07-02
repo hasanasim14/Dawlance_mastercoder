@@ -25,6 +25,7 @@ export type RowDataType = {
   // Branch RFC
   "Last RFC": string;
   "YTD Sales": string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [key: string]: any;
 };
 

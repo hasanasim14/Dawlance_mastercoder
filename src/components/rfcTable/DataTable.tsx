@@ -137,6 +137,7 @@ export const RFCTable: React.FC<DataTableProps> = ({
         );
         const data = await res.json();
         const branchCodes = data.data.map(
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           (branch: any) => branch["Sales Office"]
         );
         setBranches(branchCodes);
@@ -236,6 +237,7 @@ export const RFCTable: React.FC<DataTableProps> = ({
   };
 
   // Get current value for a cell (edited value or original)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const getCellValue = (rowIndex: number, originalValue: any) => {
     return editedValues[rowIndex] !== undefined
       ? editedValues[rowIndex]
