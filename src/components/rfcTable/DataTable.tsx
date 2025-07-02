@@ -18,15 +18,26 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import type { ColumnConfig, RowDataType } from "@/lib/types";
 import { useEffect, useState } from "react";
-import { Save, Send, Loader2 } from "lucide-react";
+import { Save, Send, Loader2, Edit3 } from "lucide-react";
 
 interface DataTableProps {
   rowData: RowDataType[];
   columns: readonly ColumnConfig[];
-  onPost: (branch: string, month: string, year: string) => Promise<void>;
-  onSave: (branch: string, month: string, year: string) => Promise<void>;
+  onPost: (
+    branch: string,
+    month: string,
+    year: string,
+    data: RowDataType[]
+  ) => Promise<void>;
+  onSave: (
+    branch: string,
+    month: string,
+    year: string,
+    changedData: Array<{ material: string; rfc: string }>
+  ) => Promise<void>;
   onFetchData: (branch: string, month: string, year: string) => Promise<void>;
   isLoading?: boolean;
   isSaving?: boolean;
@@ -50,6 +61,11 @@ export const RFCTable: React.FC<DataTableProps> = ({
   const [debounceTimeout, setDebounceTimeout] = useState<NodeJS.Timeout | null>(
     null
   );
+
+  // State for tracking edited values and which rows have been modified
+  const [editedValues, setEditedValues] = useState<Record<number, string>>({});
+  const [modifiedRows, setModifiedRows] = useState<Set<number>>(new Set());
+  const [editingCell, setEditingCell] = useState<number | null>(null);
 
   // Generate years array (current year ± 5 years)
   const currentYear = new Date().getFullYear();
@@ -99,6 +115,13 @@ export const RFCTable: React.FC<DataTableProps> = ({
     setSelectedMonth(month);
     setSelectedYear(year);
   }, []);
+
+  // Reset edited values when data changes
+  useEffect(() => {
+    setEditedValues({});
+    setModifiedRows(new Set());
+    setEditingCell(null);
+  }, [rowData]);
 
   useEffect(() => {
     const fetchBranches = async () => {
@@ -186,15 +209,120 @@ export const RFCTable: React.FC<DataTableProps> = ({
     }
   };
 
+  // Get the RFC column (last column)
+  const getRFCColumn = () => {
+    return columns.find(
+      (col) => col.key.includes("RFC") && !col.key.includes("Last")
+    );
+  };
+
+  // Handle cell value change
+  const handleCellChange = (rowIndex: number, value: string) => {
+    setEditedValues((prev) => ({
+      ...prev,
+      [rowIndex]: value,
+    }));
+    setModifiedRows((prev) => new Set([...prev, rowIndex]));
+  };
+
+  // Handle cell edit start
+  const handleCellEdit = (rowIndex: number) => {
+    setEditingCell(rowIndex);
+  };
+
+  // Handle cell edit end
+  const handleCellBlur = () => {
+    setEditingCell(null);
+  };
+
+  // Get current value for a cell (edited value or original)
+  const getCellValue = (rowIndex: number, originalValue: any) => {
+    return editedValues[rowIndex] !== undefined
+      ? editedValues[rowIndex]
+      : String(originalValue ?? "");
+  };
+
+  // Validate if all RFC values are filled for POST
+  const validateAllRFCFilled = () => {
+    const rfcColumn = getRFCColumn();
+    if (!rfcColumn) return false;
+
+    return rowData.every((row, index) => {
+      const currentValue = getCellValue(index, row[rfcColumn.key]);
+      return (
+        currentValue !== "" &&
+        currentValue !== null &&
+        currentValue !== undefined
+      );
+    });
+  };
+
+  // Get changed records for SAVE
+  const getChangedRecords = () => {
+    const rfcColumn = getRFCColumn();
+    if (!rfcColumn) return [];
+
+    const changedRecords: Array<{ material: string; rfc: string }> = [];
+
+    modifiedRows.forEach((rowIndex) => {
+      const row = rowData[rowIndex];
+      const editedValue = editedValues[rowIndex];
+
+      if (
+        editedValue !== undefined &&
+        editedValue !== "" &&
+        editedValue !== null
+      ) {
+        changedRecords.push({
+          material: String(row["Material"] || ""),
+          rfc: editedValue,
+        });
+      }
+    });
+
+    return changedRecords;
+  };
+
+  // Check if save is allowed (has valid changes)
+  const canSave = () => {
+    const changedRecords = getChangedRecords();
+    return changedRecords.length > 0;
+  };
+
   const handlePost = async () => {
     if (selectedBranch && selectedMonth && selectedYear) {
-      await onPost(selectedBranch, selectedMonth, selectedYear);
+      if (!validateAllRFCFilled()) {
+        alert(
+          "All RFC values must be filled before posting. You can use 0 but not leave any field empty."
+        );
+        return;
+      }
+
+      // Create updated data with edited values
+      const updatedData = rowData.map((row, index) => {
+        const rfcColumn = getRFCColumn();
+        if (rfcColumn && editedValues[index] !== undefined) {
+          return {
+            ...row,
+            [rfcColumn.key]: editedValues[index],
+          };
+        }
+        return row;
+      });
+
+      await onPost(selectedBranch, selectedMonth, selectedYear, updatedData);
     }
   };
 
   const handleSave = async () => {
     if (selectedBranch && selectedMonth && selectedYear) {
-      await onSave(selectedBranch, selectedMonth, selectedYear);
+      if (!canSave()) {
+        alert("No valid changes to save. Please edit some RFC values first.");
+        return;
+      }
+
+      const changedRecords = getChangedRecords();
+      await onSave(selectedBranch, selectedMonth, selectedYear, changedRecords);
     }
   };
 
@@ -259,7 +387,7 @@ export const RFCTable: React.FC<DataTableProps> = ({
           <div className="flex items-center gap-2 ml-4">
             <Button
               onClick={handleSave}
-              disabled={!isFormValid || isSaving || isPosting}
+              disabled={!isFormValid || !canSave() || isSaving || isPosting}
               variant="outline"
               size="sm"
             >
@@ -271,14 +399,16 @@ export const RFCTable: React.FC<DataTableProps> = ({
               ) : (
                 <>
                   <Save className="w-4 h-4 mr-2" />
-                  Save
+                  Save ({modifiedRows.size})
                 </>
               )}
             </Button>
 
             <Button
               onClick={handlePost}
-              disabled={!isFormValid || isSaving || isPosting}
+              disabled={
+                !isFormValid || !validateAllRFCFilled() || isSaving || isPosting
+              }
               size="sm"
             >
               {isPosting ? (
@@ -304,7 +434,7 @@ export const RFCTable: React.FC<DataTableProps> = ({
             <Table>
               <TableHeader className="sticky top-0 z-10">
                 <TableRow>
-                  {columns.map((column) => (
+                  {columns.map((column, colIndex) => (
                     <TableHead
                       key={column.key}
                       className="select-none whitespace-nowrap bg-background border-b px-4 py-3"
@@ -312,6 +442,10 @@ export const RFCTable: React.FC<DataTableProps> = ({
                     >
                       <div className="flex items-center gap-2">
                         {column.label}
+                        {colIndex === columns.length - 1 &&
+                          column.key.includes("RFC") && (
+                            <Edit3 className="w-3 h-3 text-muted-foreground" />
+                          )}
                       </div>
                     </TableHead>
                   ))}
@@ -342,19 +476,82 @@ export const RFCTable: React.FC<DataTableProps> = ({
                   </TableRow>
                 ) : (
                   rowData.map((row, rowIndex) => (
-                    <TableRow key={rowIndex} className="hover:bg-muted/50">
-                      {columns.map((column) => (
-                        <TableCell
-                          key={column.key}
-                          className="whitespace-nowrap px-4 py-3"
-                          style={{ minWidth: getColumnWidth(column.key) }}
-                          title={String(row[column.key] ?? "")}
-                        >
-                          <div className="truncate max-w-[200px]">
-                            {String(row[column.key] ?? "")}
-                          </div>
-                        </TableCell>
-                      ))}
+                    <TableRow
+                      key={rowIndex}
+                      className={`hover:bg-muted/50 ${
+                        modifiedRows.has(rowIndex)
+                          ? "bg-blue-50 dark:bg-blue-950/20"
+                          : ""
+                      }`}
+                    >
+                      {columns.map((column, colIndex) => {
+                        const isLastColumn = colIndex === columns.length - 1;
+                        const isRFCColumn =
+                          column.key.includes("RFC") &&
+                          !column.key.includes("Last");
+                        const isEditable = isLastColumn && isRFCColumn;
+                        const cellValue = getCellValue(
+                          rowIndex,
+                          row[column.key]
+                        );
+                        const isEditing =
+                          editingCell === rowIndex && isEditable;
+
+                        return (
+                          <TableCell
+                            key={column.key}
+                            className="whitespace-nowrap px-4 py-3"
+                            style={{ minWidth: getColumnWidth(column.key) }}
+                            title={String(row[column.key] ?? "")}
+                          >
+                            {isEditable ? (
+                              isEditing ? (
+                                <Input
+                                  type="number"
+                                  value={cellValue}
+                                  onChange={(e) =>
+                                    handleCellChange(rowIndex, e.target.value)
+                                  }
+                                  onBlur={handleCellBlur}
+                                  onKeyDown={(e) => {
+                                    if (
+                                      e.key === "Enter" ||
+                                      e.key === "Escape"
+                                    ) {
+                                      handleCellBlur();
+                                    }
+                                  }}
+                                  className="w-full h-8 text-sm"
+                                  autoFocus
+                                  placeholder="Enter RFC value"
+                                />
+                              ) : (
+                                <div
+                                  className="cursor-pointer hover:bg-muted/50 p-1 rounded min-h-[24px] flex items-center"
+                                  onClick={() => handleCellEdit(rowIndex)}
+                                >
+                                  <span
+                                    className={`truncate max-w-[180px] ${
+                                      modifiedRows.has(rowIndex)
+                                        ? "font-medium text-blue-600 dark:text-blue-400"
+                                        : ""
+                                    }`}
+                                  >
+                                    {cellValue || "Click to edit"}
+                                  </span>
+                                  {!cellValue && (
+                                    <Edit3 className="w-3 h-3 ml-1 text-muted-foreground" />
+                                  )}
+                                </div>
+                              )
+                            ) : (
+                              <div className="truncate max-w-[200px]">
+                                {String(row[column.key] ?? "")}
+                              </div>
+                            )}
+                          </TableCell>
+                        );
+                      })}
                     </TableRow>
                   ))
                 )}

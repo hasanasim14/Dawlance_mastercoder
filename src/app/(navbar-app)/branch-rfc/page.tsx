@@ -213,17 +213,27 @@ export default function BranchRFC() {
   );
 
   const handlePost = useCallback(
-    async (branch: string, month: string, year: string) => {
+    async (
+      branch: string,
+      month: string,
+      year: string,
+      data: RowDataType[]
+    ) => {
       setPosting(true);
       try {
+        const query = new URLSearchParams({
+          branch,
+          month,
+          year,
+        }).toString();
         const authToken = localStorage.getItem("token");
-        const endpoint = `${process.env.NEXT_PUBLIC_BASE_URL}/branch-rfc/post`;
+        const endpoint = `${process.env.NEXT_PUBLIC_BASE_URL}/branch-rfc?${query}`;
 
         const requestBody = {
-          branch,
-          month: Number.parseInt(month),
-          year: Number.parseInt(year),
-          data: rowData, // Send current table data
+          // branch,
+          // month: Number.parseInt(month),
+          // year: Number.parseInt(year),
+          data: data,
         };
 
         const response = await fetch(endpoint, {
@@ -259,30 +269,30 @@ export default function BranchRFC() {
         setPosting(false);
       }
     },
-    [rowData, fetchBranchRFCData]
+    [fetchBranchRFCData]
   );
 
   const handleSave = useCallback(
-    async (branch: string, month: string, year: string) => {
+    async (
+      branch: string,
+      month: string,
+      year: string,
+      changedData: Array<{ material: string; rfc: string }>
+    ) => {
       setSaving(true);
       try {
+        const query = new URLSearchParams({ branch, month, year }).toString();
         const authToken = localStorage.getItem("token");
-        const endpoint = `${process.env.NEXT_PUBLIC_BASE_URL}/branch-rfc/save`;
-
-        const requestBody = {
-          branch,
-          month: Number.parseInt(month),
-          year: Number.parseInt(year),
-          data: rowData, // Send current table data
-        };
+        const endpoint = `${process.env.NEXT_PUBLIC_BASE_URL}/branch-rfc-save?${query}`;
+        console.log("the response is", changedData);
 
         const response = await fetch(endpoint, {
-          method: "PUT",
+          method: "POST",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${authToken}`,
           },
-          body: JSON.stringify(requestBody),
+          body: JSON.stringify(changedData), // Send only changed records in the specified format
         });
 
         if (!response.ok) {
@@ -309,48 +319,8 @@ export default function BranchRFC() {
         setSaving(false);
       }
     },
-    [rowData, fetchBranchRFCData]
+    [fetchBranchRFCData]
   );
-
-  const handleFormSave = async (data: Record<string, any>): Promise<void> => {
-    try {
-      // Transform data to API format before sending
-      const apiFormattedData = transformToApiFormat(data);
-      const isUpdate = !!selectedRowId;
-
-      const endpoint = isUpdate
-        ? `${process.env.NEXT_PUBLIC_BASE_URL}/mastercoding/update/${selectedRowId}`
-        : `${process.env.NEXT_PUBLIC_BASE_URL}/mastercoding/add`;
-
-      const method = isUpdate ? "PUT" : "POST";
-      const authToken = localStorage.getItem("token");
-
-      const response = await fetch(endpoint, {
-        method: method,
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${authToken}`,
-        },
-        body: JSON.stringify(apiFormattedData),
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      setRowData((prevData) =>
-        prevData.map((row) =>
-          row["Master ID"] === data["Master ID"] ? { ...row, ...data } : row
-        )
-      );
-
-      // Update selected row data
-      setSelectedRow(data as RowDataType);
-    } catch (error) {
-      console.error("Error saving master coding data:", error);
-      throw error;
-    }
-  };
 
   return (
     <div className="w-full h-[85vh] p-4 overflow-hidden">
