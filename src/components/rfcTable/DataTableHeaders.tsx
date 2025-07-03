@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Save, Send, Loader2 } from "lucide-react";
+import { Save, Send, Loader2, FilterX } from "lucide-react";
 import type { RowDataType } from "@/lib/types";
 
 interface BranchOption {
@@ -32,13 +32,19 @@ interface HeadersProps {
     year: string,
     changedData: Array<{ material: string; rfc: string }>
   ) => Promise<void>;
-  onFetchData: (branch: string, month: string, year: string) => Promise<void>;
+  onFetchData: (
+    branch: string,
+    month: string,
+    year: string,
+    filters?: Record<string, string[]>
+  ) => Promise<void>;
   isSaving?: boolean;
   isPosting?: boolean;
   rowData: RowDataType[];
   editedValues: Record<number, string>;
   modifiedRows: Set<number>;
   rfcColumnKey?: string;
+  columnFilters?: Record<string, string[]>;
 }
 
 export const RFCTableHeaders: React.FC<HeadersProps> = ({
@@ -51,6 +57,7 @@ export const RFCTableHeaders: React.FC<HeadersProps> = ({
   editedValues,
   modifiedRows,
   rfcColumnKey,
+  columnFilters = {},
 }) => {
   const [branches, setBranches] = useState<BranchOption[]>([]);
   const [selectedBranch, setSelectedBranch] = useState<string>("");
@@ -122,9 +129,9 @@ export const RFCTableHeaders: React.FC<HeadersProps> = ({
             },
           }
         );
+
         const data = await res.json();
         // Transform the data to include both Sales Office and Sales Branch
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const branchOptions: BranchOption[] = data.data.map((branch: any) => ({
           salesOffice: branch["Sales Office"],
           salesBranch: branch["Sales Branch"] || branch["Sales Office"],
@@ -139,17 +146,17 @@ export const RFCTableHeaders: React.FC<HeadersProps> = ({
     fetchBranches();
   }, []);
 
-  // Fetch data when selections change (with debouncing)
+  // Fetch data when selections change (with debouncing) - but NOT when filters change
   useEffect(() => {
     // Clear existing timeout
     if (debounceTimeout) {
       clearTimeout(debounceTimeout);
     }
 
-    // Set new timeout
+    // Set new timeout - removed columnFilters from dependency
     if (selectedBranch && selectedMonth && selectedYear) {
       const timeout = setTimeout(() => {
-        onFetchData(selectedBranch, selectedMonth, selectedYear);
+        onFetchData(selectedBranch, selectedMonth, selectedYear); // Don't pass filters here
       }, 500); // 500ms delay
 
       setDebounceTimeout(timeout);
@@ -161,7 +168,7 @@ export const RFCTableHeaders: React.FC<HeadersProps> = ({
         clearTimeout(debounceTimeout);
       }
     };
-  }, [selectedBranch, selectedMonth, selectedYear, onFetchData]);
+  }, [selectedBranch, selectedMonth, selectedYear, onFetchData]); // Removed columnFilters
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -173,7 +180,6 @@ export const RFCTableHeaders: React.FC<HeadersProps> = ({
   }, []);
 
   // Get current value for a cell (edited value or original)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const getCellValue = (rowIndex: number, originalValue: any) => {
     return editedValues[rowIndex] !== undefined
       ? editedValues[rowIndex]
@@ -225,6 +231,19 @@ export const RFCTableHeaders: React.FC<HeadersProps> = ({
     return changedRecords.length > 0;
   };
 
+  // Check if there are active filters
+  const hasActiveFilters = () => {
+    return Object.values(columnFilters).some((filters) => filters.length > 0);
+  };
+
+  // Get total number of active filters
+  const getActiveFilterCount = () => {
+    return Object.values(columnFilters).reduce(
+      (total, filters) => total + filters.length,
+      0
+    );
+  };
+
   const handlePost = async () => {
     if (selectedBranch && selectedMonth && selectedYear) {
       if (!validateAllRFCFilled()) {
@@ -265,7 +284,20 @@ export const RFCTableHeaders: React.FC<HeadersProps> = ({
 
   return (
     <div className="flex items-center gap-4 p-4 justify-between border-b bg-background/50 flex-shrink-0">
-      <h3 className="font-semibold">Branch RFC</h3>
+      <div className="flex items-center gap-4">
+        <h3 className="font-semibold">Branch RFC</h3>
+
+        {/* Active Filters Indicator */}
+        {hasActiveFilters() && (
+          <div className="flex items-center gap-2 px-2 py-1 bg-blue-100 dark:bg-blue-900/20 rounded-md text-sm">
+            <FilterX className="w-3 h-3 text-blue-600" />
+            <span className="text-blue-600 font-medium">
+              {getActiveFilterCount()} filter
+              {getActiveFilterCount() !== 1 ? "s" : ""} active
+            </span>
+          </div>
+        )}
+      </div>
 
       <div className="flex items-center gap-3 flex-wrap">
         {/* Branch Select */}
@@ -336,6 +368,7 @@ export const RFCTableHeaders: React.FC<HeadersProps> = ({
               </>
             )}
           </Button>
+
           <Button
             onClick={handlePost}
             disabled={

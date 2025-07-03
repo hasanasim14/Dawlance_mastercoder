@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import type { ColumnConfig, RowDataType } from "@/lib/types";
 import { Loader2, Edit3 } from "lucide-react";
 import { RFCTableHeaders } from "./DataTableHeaders";
+import { ColumnFilter } from "./ColumnFilter";
 
 interface DataTableProps {
   rowData: RowDataType[];
@@ -34,6 +35,11 @@ interface DataTableProps {
   isLoading?: boolean;
   isSaving?: boolean;
   isPosting?: boolean;
+  // Props for filtering
+  filterableColumns?: string[];
+  columnFilters?: Record<string, string[]>;
+  onFilterChange?: (filters: Record<string, string[]>) => void;
+  onApplyFilters?: () => void; // Simplified for frontend filtering
 }
 
 export const RFCTable: React.FC<DataTableProps> = ({
@@ -45,6 +51,10 @@ export const RFCTable: React.FC<DataTableProps> = ({
   isLoading = false,
   isSaving = false,
   isPosting = false,
+  filterableColumns = [],
+  columnFilters = {},
+  onFilterChange,
+  onApplyFilters,
 }) => {
   // State for tracking edited values and which rows have been modified
   const [editedValues, setEditedValues] = useState<Record<number, string>>({});
@@ -70,7 +80,7 @@ export const RFCTable: React.FC<DataTableProps> = ({
       case "Product":
         return "150px";
       case "Last RFC":
-        return "100px";
+        return "90px";
       default:
         // For dynamic columns (Sales, RFC, etc.)
         if (columnKey.includes("Sales")) {
@@ -80,7 +90,7 @@ export const RFCTable: React.FC<DataTableProps> = ({
           return "120px";
         }
         if (columnKey.includes("YTD")) {
-          return "120px";
+          return "150px";
         }
         return "150px";
     }
@@ -113,11 +123,28 @@ export const RFCTable: React.FC<DataTableProps> = ({
   };
 
   // Get current value for a cell (edited value or original)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const getCellValue = (rowIndex: number, originalValue: any) => {
     return editedValues[rowIndex] !== undefined
       ? editedValues[rowIndex]
       : String(originalValue ?? "");
+  };
+
+  // Handle filter change (this just updates local state)
+  const handleFilterChange = (columnKey: string, selectedValues: string[]) => {
+    if (onFilterChange) {
+      const newFilters = {
+        ...columnFilters,
+        [columnKey]: selectedValues,
+      };
+      onFilterChange(newFilters);
+    }
+  };
+
+  // Handle apply filter (this triggers frontend filtering)
+  const handleApplyFilter = () => {
+    if (onApplyFilters) {
+      onApplyFilters();
+    }
   };
 
   const rfcColumn = getRFCColumn();
@@ -135,6 +162,7 @@ export const RFCTable: React.FC<DataTableProps> = ({
         editedValues={editedValues}
         modifiedRows={modifiedRows}
         rfcColumnKey={rfcColumn?.key}
+        columnFilters={columnFilters}
       />
 
       {/* Table container with proper sticky headers */}
@@ -143,23 +171,46 @@ export const RFCTable: React.FC<DataTableProps> = ({
           <Table className="relative">
             <TableHeader className="sticky top-0 z-20 bg-background shadow-sm">
               <TableRow className="border-b">
-                {columns.map((column, colIndex) => (
-                  <TableHead
-                    key={column.key}
-                    className="select-none whitespace-nowrap bg-background border-b px-4 py-3 font-semibold"
-                    style={{ minWidth: getColumnWidth(column.key) }}
-                  >
-                    <div className="flex items-center gap-2">
-                      {column.label}
-                      {colIndex === columns.length - 1 &&
-                        column.key.includes("RFC") && (
-                          <Edit3 className="w-3 h-3 text-muted-foreground" />
+                {columns.map((column, colIndex) => {
+                  const isFilterable = filterableColumns.includes(column.key);
+                  const hasActiveFilter = columnFilters[column.key]?.length > 0;
+
+                  return (
+                    <TableHead
+                      key={column.key}
+                      className="select-none whitespace-nowrap bg-background border-b px-4 py-3 font-semibold"
+                      style={{ minWidth: getColumnWidth(column.key) }}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          {column.label}
+                          {colIndex === columns.length - 1 &&
+                            column.key.includes("RFC") && (
+                              <Edit3 className="w-3 h-3 text-muted-foreground" />
+                            )}
+                          {hasActiveFilter && (
+                            <div className="w-2 h-2 bg-blue-600 rounded-full" />
+                          )}
+                        </div>
+
+                        {isFilterable && (
+                          <ColumnFilter
+                            columnKey={column.key}
+                            columnLabel={column.label}
+                            data={rowData}
+                            selectedFilters={columnFilters[column.key] || []}
+                            onFilterChange={handleFilterChange}
+                            onApplyFilter={handleApplyFilter}
+                            allFilters={columnFilters}
+                          />
                         )}
-                    </div>
-                  </TableHead>
-                ))}
+                      </div>
+                    </TableHead>
+                  );
+                })}
               </TableRow>
             </TableHeader>
+
             <TableBody>
               {isLoading ? (
                 <TableRow>

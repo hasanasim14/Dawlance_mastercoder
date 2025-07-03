@@ -1,19 +1,28 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import type { RowDataType, ColumnConfig } from "@/lib/types";
 import { transformArrayFromApiFormat } from "@/lib/data-transformers";
 import { RFCTable } from "@/components/rfcTable/DataTable";
 
-// import { toast } from "@/hooks/use-toast";
-
 export default function BranchRFC() {
-  const [rowData, setRowData] = useState<RowDataType[]>([]);
+  // Original data from API (unfiltered)
+  const [originalRowData, setOriginalRowData] = useState<RowDataType[]>([]);
+  // Filtered data for display
+  const [filteredRowData, setFilteredRowData] = useState<RowDataType[]>([]);
+
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [posting, setPosting] = useState(false);
-
   const [columns, setColumns] = useState<readonly ColumnConfig[]>([]);
+
+  // State for column filters
+  const [columnFilters, setColumnFilters] = useState<Record<string, string[]>>(
+    {}
+  );
+
+  // Define which columns should have filters (make this dynamic)
+  const filterableColumns = ["Product", "Material", "Branch"]; // Add more columns as needed
 
   // Generate columns from API response data
   const generateColumnsFromData = (
@@ -82,18 +91,58 @@ export default function BranchRFC() {
     }));
   };
 
+  // Frontend filtering function
+  const applyFiltersToData = useCallback(
+    (data: RowDataType[], filters: Record<string, string[]>) => {
+      if (!data || data.length === 0) return data;
+
+      // If no filters are applied, return all data
+      const hasActiveFilters = Object.values(filters).some(
+        (filterValues) => filterValues.length > 0
+      );
+      if (!hasActiveFilters) return data;
+
+      return data.filter((row) => {
+        // Check each filter
+        for (const [columnKey, selectedValues] of Object.entries(filters)) {
+          if (selectedValues.length === 0) continue; // Skip empty filters
+
+          const cellValue = String(row[columnKey] || "").trim();
+
+          // If the cell value is not in the selected values, exclude this row
+          if (!selectedValues.includes(cellValue)) {
+            return false;
+          }
+        }
+        return true; // Row passes all filters
+      });
+    },
+    []
+  );
+
+  // Apply filters whenever filters or original data changes
+  const applyCurrentFilters = useCallback(() => {
+    const filtered = applyFiltersToData(originalRowData, columnFilters);
+    setFilteredRowData(filtered);
+
+    console.log("Filters applied:", columnFilters);
+    console.log("Original data count:", originalRowData.length);
+    console.log("Filtered data count:", filtered.length);
+  }, [originalRowData, columnFilters, applyFiltersToData]);
+
   const fetchBranchRFCData = useCallback(
     async (branch: string, month: string, year: string) => {
       setLoading(true);
       try {
-        const query = new URLSearchParams({
+        const queryParams = new URLSearchParams({
           branch,
           month,
           year,
-        }).toString();
+        });
 
-        const endpoint = `${process.env.NEXT_PUBLIC_BASE_URL}/branch-rfc?${query}`;
-
+        const endpoint = `${
+          process.env.NEXT_PUBLIC_BASE_URL
+        }/branch-rfc?${queryParams.toString()}`;
         const authToken = localStorage.getItem("token");
 
         const res = await fetch(endpoint, {
@@ -105,7 +154,6 @@ export default function BranchRFC() {
         });
 
         const data = await res.json();
-
         const parsedData = typeof data === "string" ? JSON.parse(data) : data;
 
         if (parsedData && parsedData.data && Array.isArray(parsedData.data)) {
@@ -113,41 +161,58 @@ export default function BranchRFC() {
             parsedData.data
           ) as RowDataType[];
 
-          setRowData(transformedData);
+          // Store original data
+          setOriginalRowData(transformedData);
+
+          // Apply current filters to the new data
+          const filtered = applyFiltersToData(transformedData, columnFilters);
+          setFilteredRowData(filtered);
 
           // Generate columns based on actual response data
           const generatedColumns = generateColumnsFromData(transformedData);
           setColumns(generatedColumns);
 
-          // toast({
-          //   title: "Data loaded successfully",
-          //   description: `Loaded ${transformedData.length} records for ${branch}`,
-          // });
+          console.log(
+            "Data fetched successfully:",
+            transformedData.length,
+            "rows"
+          );
         } else {
           console.error("Invalid data structure received:", parsedData);
-          setRowData([]);
+          setOriginalRowData([]);
+          setFilteredRowData([]);
           setColumns([]);
-          // toast({
-          //   title: "No data found",
-          //   description: "No RFC data available for the selected criteria",
-          //   variant: "destructive",
-          // });
         }
       } catch (error) {
         console.error("Error fetching branch rfc data", error);
-        setRowData([]);
+        setOriginalRowData([]);
+        setFilteredRowData([]);
         setColumns([]);
-        // toast({
-        //   title: "Error loading data",
-        //   description: "Failed to fetch RFC data. Please try again.",
-        //   variant: "destructive",
-        // });
       } finally {
         setLoading(false);
       }
     },
+    [columnFilters, applyFiltersToData]
+  );
+
+  // Handle filter changes (this just updates local state)
+  const handleFilterChange = useCallback(
+    (filters: Record<string, string[]>) => {
+      setColumnFilters(filters);
+    },
     []
   );
+
+  // Handle apply filters (this triggers frontend filtering)
+  const handleApplyFilters = useCallback(() => {
+    applyCurrentFilters();
+  }, [applyCurrentFilters]);
+
+  // Clear all filters
+  const clearAllFilters = useCallback(() => {
+    setColumnFilters({});
+    setFilteredRowData(originalRowData);
+  }, [originalRowData]);
 
   const handlePost = useCallback(
     async (
@@ -203,7 +268,7 @@ export default function BranchRFC() {
               "Content-Type": "application/json",
               Authorization: `Bearer ${authToken}`,
             },
-            body: JSON.stringify(postData), // You can modify this data structure if needed
+            body: JSON.stringify(postData),
           }),
         ]);
 
@@ -227,20 +292,10 @@ export default function BranchRFC() {
         console.log("Branch RFC API result:", branchRfcResult);
         console.log("Second API result:", secondApiResult);
 
-        // toast({
-        //   title: "Data posted successfully",
-        //   description: `RFC data for ${branch} has been posted to both endpoints successfully`,
-        // });
-
         // Refresh data after both successful posts
         await fetchBranchRFCData(branch, month, year);
       } catch (error) {
         console.error("Error posting RFC data:", error);
-        // toast({
-        //   title: "Error posting data",
-        //   description: `Failed to post RFC data: ${error.message}. Please try again.`,
-        //   variant: "destructive",
-        // });
       } finally {
         setPosting(false);
       }
@@ -258,9 +313,7 @@ export default function BranchRFC() {
       setSaving(true);
       try {
         const query = new URLSearchParams({ branch, month, year }).toString();
-
         const authToken = localStorage.getItem("token");
-
         const endpoint = `${process.env.NEXT_PUBLIC_BASE_URL}/branch-rfc-save?${query}`;
 
         console.log("the response is", changedData);
@@ -271,29 +324,17 @@ export default function BranchRFC() {
             "Content-Type": "application/json",
             Authorization: `Bearer ${authToken}`,
           },
-          body: JSON.stringify(changedData), // Send only changed records in the specified format
+          body: JSON.stringify(changedData),
         });
 
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
 
-        // const result = await response.json();
-
-        // toast({
-        //   title: "Data saved successfully",
-        //   description: `RFC data for ${branch} has been saved successfully`,
-        // });
-
         // Refresh data after saving
         await fetchBranchRFCData(branch, month, year);
       } catch (error) {
         console.error("Error saving RFC data:", error);
-        // toast({
-        //   title: "Error saving data",
-        //   description: "Failed to save RFC data. Please try again.",
-        //   variant: "destructive",
-        // });
       } finally {
         setSaving(false);
       }
@@ -301,11 +342,45 @@ export default function BranchRFC() {
     [fetchBranchRFCData]
   );
 
+  // Get filter summary for display
+  const filterSummary = useMemo(() => {
+    const activeFilters = Object.entries(columnFilters).filter(
+      ([_, values]) => values.length > 0
+    );
+    const totalFiltered = activeFilters.reduce(
+      (sum, [_, values]) => sum + values.length,
+      0
+    );
+    return {
+      activeFilters: activeFilters.length,
+      totalFiltered,
+      showing: filteredRowData.length,
+      total: originalRowData.length,
+    };
+  }, [columnFilters, filteredRowData.length, originalRowData.length]);
+
   return (
     <div className="w-full h-[85vh] p-4 overflow-hidden">
       <div className="w-full h-full overflow-hidden">
+        {/* Filter Summary */}
+        {filterSummary.activeFilters > 0 && (
+          <div className="mb-2 flex items-center justify-between text-sm text-muted-foreground">
+            <div>
+              Showing {filterSummary.showing} of {filterSummary.total} rows (
+              {filterSummary.activeFilters} filter
+              {filterSummary.activeFilters !== 1 ? "s" : ""} applied)
+            </div>
+            <button
+              onClick={clearAllFilters}
+              className="text-blue-600 hover:text-blue-800 underline"
+            >
+              Clear all filters
+            </button>
+          </div>
+        )}
+
         <RFCTable
-          rowData={rowData}
+          rowData={filteredRowData} // Use filtered data instead of original
           columns={columns}
           onPost={handlePost}
           onSave={handleSave}
@@ -313,6 +388,10 @@ export default function BranchRFC() {
           isLoading={loading}
           isSaving={saving}
           isPosting={posting}
+          filterableColumns={filterableColumns}
+          columnFilters={columnFilters}
+          onFilterChange={handleFilterChange}
+          onApplyFilters={handleApplyFilters}
         />
       </div>
     </div>
