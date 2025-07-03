@@ -66,7 +66,7 @@ async function postFileAction(formData: FormData) {
 
     // Replace with your actual post API endpoint
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_BASE_URL}/post/${option}`,
+      `${process.env.NEXT_PUBLIC_BASE_URL}/upload/post/${option}`,
       {
         method: "POST",
         body: newFormData,

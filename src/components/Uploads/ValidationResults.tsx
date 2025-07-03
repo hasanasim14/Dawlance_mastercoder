@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ValidationData } from "@/app/(navbar-app)/upload/page";
+import { useEffect } from "react";
 
 // Modal content component for detailed error display
 function ErrorDetailsModal({
@@ -440,13 +441,33 @@ const ValidationResults: React.FC<ValidationResultsProps> = ({
   uploadType,
 }) => {
   // Get all keys from the validation data and sort them for consistent display
-  // const allKeys = Object.keys(validationData).sort();
   const allKeys = Object.keys(validationData);
 
   // Filter out common non-validation fields if needed
   const validationKeys = allKeys.filter(
     (key) => !["message", "timestamp", "file_name", "file_size"].includes(key)
   );
+
+  // Use useEffect to update parent state after render
+  useEffect(() => {
+    if (validationKeys.length === 0) {
+      setNoValidationErrors(false);
+      return;
+    }
+
+    // Count passed and failed validations
+    const passedCount = validationKeys.filter((key) => {
+      const value = validationData[key];
+      if (typeof value === "boolean") return value;
+      if (Array.isArray(value)) return value.length === 0;
+      if (typeof value === "object" && value !== null)
+        return Object.keys(value).length === 0;
+      return true;
+    }).length;
+
+    const totalCount = validationKeys.length;
+    setNoValidationErrors(passedCount === totalCount);
+  }, [validationData, validationKeys.length, setNoValidationErrors]);
 
   if (validationKeys.length === 0) {
     return (
@@ -456,7 +477,7 @@ const ValidationResults: React.FC<ValidationResultsProps> = ({
     );
   }
 
-  // Count passed and failed validations
+  // Count passed and failed validations for display
   const passedCount = validationKeys.filter((key) => {
     const value = validationData[key];
     if (typeof value === "boolean") return value;
@@ -467,7 +488,6 @@ const ValidationResults: React.FC<ValidationResultsProps> = ({
   }).length;
 
   const totalCount = validationKeys.length;
-  setNoValidationErrors(passedCount / totalCount! === 1);
 
   return (
     <div className="space-y-4">

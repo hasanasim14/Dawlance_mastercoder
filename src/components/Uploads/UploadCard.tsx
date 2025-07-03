@@ -40,11 +40,11 @@ function UploadCard({
   onDragOver,
   onPost,
 }: UploadCardProps) {
+  const [noValidationErrors, setNoValidationErrors] = useState(false);
+
   if (!card) {
     return null;
   }
-
-  const [noValidationErrors, setNoValidationErrors] = useState(false);
 
   const getStatusBadge = (status: UploadStatus) => {
     switch (status) {
@@ -227,7 +227,9 @@ function UploadCard({
                 <Button
                   onClick={() => onPost(card.id)}
                   disabled={
-                    card.postStatus === "pending" || !noValidationErrors
+                    card.postStatus === "pending" ||
+                    card.postStatus === "success" ||
+                    !noValidationErrors
                   }
                   className="h-8 px-4 text-sm"
                   variant={
@@ -242,7 +244,7 @@ function UploadCard({
                   ) : card.postStatus === "success" ? (
                     <>
                       <CheckCircle2 className="h-4 w-4 mr-2" />
-                      Post Again
+                      Posted
                     </>
                   ) : (
                     <>
@@ -281,7 +283,7 @@ function UploadCard({
               </p>
             </div>
           ) : card.validationData && card.status === "success" ? (
-            <div className="p-4 bg-background rounded-lg border border-border/50 max-h-[400px] overflow-y-auto">
+            <div className="p-4 bg-background rounded-lg border border-border/50 max-h-[300px] overflow-y-auto">
               <ValidationResults
                 setNoValidationErrors={setNoValidationErrors}
                 validationData={card.validationData}
