@@ -21,6 +21,7 @@ interface BranchOption {
 }
 
 interface HeadersProps {
+  tableName: string;
   onPost: (
     branch: string,
     month: string,
@@ -46,6 +47,7 @@ interface HeadersProps {
 }
 
 export const RFCTableHeaders: React.FC<HeadersProps> = ({
+  tableName,
   onPost,
   onSave,
   onFetchData,
@@ -287,7 +289,7 @@ export const RFCTableHeaders: React.FC<HeadersProps> = ({
   return (
     <div className="flex items-center gap-4 p-4 justify-between border-b bg-background/50 flex-shrink-0">
       <div className="flex items-center gap-4">
-        <h3 className="font-semibold">Branch RFC</h3>
+        <h3 className="font-semibold">{tableName}</h3>
 
         {/* Active Filters Indicator */}
         {hasActiveFilters() && (
@@ -304,7 +306,7 @@ export const RFCTableHeaders: React.FC<HeadersProps> = ({
         {originalRowData.length > 0 && (
           <div className="text-xs text-muted-foreground">
             Total rows: {originalRowData.length} | Showing: {rowData.length} |
-            Modified: {modifiedRows.size} | Edited:{" "}
+            Modified: {modifiedRows.size}
             {Object.keys(editedValues).length}
           </div>
         )}

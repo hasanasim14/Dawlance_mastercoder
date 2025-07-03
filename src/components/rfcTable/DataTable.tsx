@@ -3,14 +3,23 @@
 import type React from "react";
 import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import type { ColumnConfig, RowDataType } from "@/lib/types";
 import { Loader2, Edit3 } from "lucide-react";
 import { RFCTableHeaders } from "./DataTableHeaders";
 import { ColumnFilter } from "./ColumnFilter";
 
 interface DataTableProps {
+  tableName: string;
   rowData: RowDataType[];
-  originalRowData: RowDataType[]; // Add original data for validation
+  originalRowData: RowDataType[];
   columns: readonly ColumnConfig[];
   onPost: (
     branch: string,
@@ -28,17 +37,16 @@ interface DataTableProps {
   isLoading?: boolean;
   isSaving?: boolean;
   isPosting?: boolean;
-  // Props for filtering
   filterableColumns?: string[];
   columnFilters?: Record<string, string[]>;
   onFilterChange?: (filters: Record<string, string[]>) => void;
   onApplyFilters?: () => void;
-  // Add props for edited values management
   editedValues?: Record<string, string>;
   onEditedValuesChange?: (editedValues: Record<string, string>) => void;
 }
 
 export const RFCTable: React.FC<DataTableProps> = ({
+  tableName,
   rowData,
   originalRowData,
   columns,
@@ -71,31 +79,33 @@ export const RFCTable: React.FC<DataTableProps> = ({
     setEditingCell(null);
   }, [originalRowData]); // Only reset when original data changes, not filtered data
 
-  // Helper function to determine column widths based on content
-  const getColumnWidth = (columnKey: string): string => {
+  // Helper function to determine column classes for responsive design
+  const getColumnClasses = (columnKey: string): string => {
+    const baseClasses = "text-left";
+
     switch (columnKey) {
       case "Branch":
-        return "180px";
+        return `${baseClasses} min-w-[140px] w-[140px]`; // Always visible
       case "Material":
-        return "140px";
+        return `${baseClasses} min-w-[120px] w-[120px]`; // Always visible
       case "Material Description":
-        return "280px";
+        return `${baseClasses} min-w-[200px] w-[200px] hidden md:table-cell`; // Show on medium and up
       case "Product":
-        return "150px";
+        return `${baseClasses} min-w-[120px] w-[120px] hidden lg:table-cell`; // Show on large and up
       case "Last RFC":
-        return "100px";
+        return `${baseClasses} min-w-[80px] w-[80px] hidden sm:table-cell`; // Show on small and up
       default:
         // For dynamic columns (Sales, RFC, etc.)
         if (columnKey.includes("Sales")) {
-          return "120px";
+          return `${baseClasses} min-w-[100px] w-[100px] hidden lg:table-cell`; // Show on large and up
         }
-        if (columnKey.includes("RFC")) {
-          return "140px";
+        if (columnKey.includes("RFC") && !columnKey.includes("Last")) {
+          return `${baseClasses} min-w-[120px] w-[120px]`; // Always visible (editable column)
         }
         if (columnKey.includes("YTD")) {
-          return "120px";
+          return `${baseClasses} min-w-[100px] w-[100px] hidden lg:table-cell`; // Show on large and up
         }
-        return "120px";
+        return `${baseClasses} min-w-[100px] w-[100px] hidden md:table-cell`; // Default: show on medium and up
     }
   };
 
@@ -109,18 +119,11 @@ export const RFCTable: React.FC<DataTableProps> = ({
   // Handle cell value change
   const handleCellChange = (row: RowDataType, value: string) => {
     const rowKey = getRowKey(row);
-    // console.log("Cell change:", {
-    //   rowKey,
-    //   value,
-    //   currentEditedValues: editedValues,
-    // });
 
     const newEditedValues = {
       ...editedValues,
       [rowKey]: value,
     };
-
-    // console.log("New edited values:", newEditedValues);
 
     if (onEditedValuesChange) {
       onEditedValuesChange(newEditedValues);
@@ -147,13 +150,6 @@ export const RFCTable: React.FC<DataTableProps> = ({
     const editedValue = editedValues[rowKey];
     const finalValue =
       editedValue !== undefined ? editedValue : String(originalValue ?? "");
-
-    // console.log("Getting cell value:", {
-    //   rowKey,
-    //   editedValue,
-    //   originalValue,
-    //   finalValue,
-    // });
 
     return finalValue;
   };
@@ -188,175 +184,192 @@ export const RFCTable: React.FC<DataTableProps> = ({
     }
   };
 
-  // Add this useEffect after the existing ones
-  // useEffect(() => {
-  //   console.log("DataTable editedValues changed:", editedValues);
-  // }, [editedValues]);
-
   const rfcColumn = getRFCColumn();
 
   return (
     <div className="rounded-lg border bg-card shadow-sm h-full w-full flex flex-col">
       {/* Header with controls */}
       <RFCTableHeaders
+        tableName={tableName}
         onPost={onPost}
         onSave={onSave}
         onFetchData={onFetchData}
         isSaving={isSaving}
         isPosting={isPosting}
         rowData={rowData}
-        originalRowData={originalRowData} // Pass original data for validation
+        originalRowData={originalRowData}
         editedValues={editedValues}
         modifiedRows={modifiedRows}
         rfcColumnKey={rfcColumn?.key}
         columnFilters={columnFilters}
-        getRowKey={getRowKey} // Pass the row key function
+        getRowKey={getRowKey}
       />
 
-      {/* Table container with custom sticky headers */}
+      {/* Responsive table container */}
       <div className="flex-1 overflow-hidden">
-        <div className="h-full overflow-auto">
-          {/* Sticky Table Header */}
-          <div className="sticky top-0 z-50 bg-background border-b shadow-sm">
-            <div
-              className="grid"
-              style={{
-                gridTemplateColumns: columns
-                  .map((col) => getColumnWidth(col.key))
-                  .join(" "),
-              }}
-            >
-              {columns.map((column, colIndex) => {
-                const isFilterable = filterableColumns.includes(column.key);
-                const hasActiveFilter = columnFilters[column.key]?.length > 0;
-
-                return (
-                  <div
-                    key={column.key}
-                    className="px-4 py-3 font-semibold text-sm bg-background border-r last:border-r-0 flex items-center justify-between min-h-[48px]"
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className="truncate">{column.label}</span>
-                      {colIndex === columns.length - 1 &&
-                        column.key.includes("RFC") && (
-                          <Edit3 className="w-3 h-3 text-muted-foreground flex-shrink-0" />
-                        )}
-                      {hasActiveFilter && (
-                        <div className="w-2 h-2 bg-blue-600 rounded-full flex-shrink-0" />
-                      )}
-                    </div>
-
-                    {isFilterable && (
-                      <div className="flex-shrink-0">
-                        <ColumnFilter
-                          columnKey={column.key}
-                          columnLabel={column.label}
-                          data={rowData}
-                          selectedFilters={columnFilters[column.key] || []}
-                          onFilterChange={handleFilterChange}
-                          onApplyFilter={handleApplyFilter}
-                          // allFilters={columnFilters}
-                        />
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Table Body */}
-          <div>
-            {isLoading ? (
-              <div className="flex items-center justify-center py-8">
-                <div className="flex items-center gap-2">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Loading data...
-                </div>
-              </div>
-            ) : rowData.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                No data available. Please select branch, month, and year to view
-                RFC data.
-              </div>
-            ) : (
-              rowData.map((row) => (
-                <div
-                  key={getRowKey(row)} // Use unique key instead of index
-                  className={`grid border-b hover:bg-muted/50 ${
-                    isRowModified(row) ? "bg-blue-50 dark:bg-blue-950/20" : ""
-                  }`}
-                  style={{
-                    gridTemplateColumns: columns
-                      .map((col) => getColumnWidth(col.key))
-                      .join(" "),
-                  }}
-                >
+        <div className="h-full w-full overflow-auto">
+          <div className="min-w-full">
+            <Table className="relative w-full table-fixed">
+              <TableHeader className="sticky top-0 z-50 bg-background">
+                <TableRow className="hover:bg-transparent border-b shadow-sm">
                   {columns.map((column, colIndex) => {
-                    const isLastColumn = colIndex === columns.length - 1;
-                    const isRFCColumn =
-                      column.key.includes("RFC") &&
-                      !column.key.includes("Last");
-                    const isEditable = isLastColumn && isRFCColumn;
-
-                    const cellValue = getCellValue(row, row[column.key]);
-                    const isEditing = isCellEditing(row) && isEditable;
+                    const isFilterable = filterableColumns.includes(column.key);
+                    const hasActiveFilter =
+                      columnFilters[column.key]?.length > 0;
+                    const columnClasses = getColumnClasses(column.key);
 
                     return (
-                      <div
+                      <TableHead
                         key={column.key}
-                        className="px-4 py-3 border-r last:border-r-0 flex items-center min-h-[48px]"
-                        title={String(row[column.key] ?? "")}
+                        className={`${columnClasses} bg-background p-2 font-semibold text-sm`}
                       >
-                        {isEditable ? (
-                          isEditing ? (
-                            <Input
-                              type="number"
-                              value={cellValue}
-                              onChange={(e) =>
-                                handleCellChange(row, e.target.value)
-                              }
-                              onBlur={handleCellBlur}
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter" || e.key === "Escape") {
-                                  handleCellBlur();
-                                }
-                              }}
-                              className="w-full h-8 text-sm"
-                              autoFocus
-                              placeholder="Enter RFC value"
-                            />
-                          ) : (
-                            <div
-                              className="cursor-pointer hover:bg-muted/50 p-1 rounded min-h-[24px] flex items-center w-full"
-                              onClick={() => handleCellEdit(row)}
-                            >
-                              <span
-                                className={`truncate flex-1 ${
-                                  isRowModified(row)
-                                    ? "font-medium text-blue-600 dark:text-blue-400"
-                                    : ""
-                                }`}
-                              >
-                                {cellValue || "Click to edit"}
-                              </span>
-                              {!cellValue && (
-                                <Edit3 className="w-3 h-3 ml-1 text-muted-foreground flex-shrink-0" />
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="truncate">{column.label}</span>
+                            {colIndex === columns.length - 1 &&
+                              column.key.includes("RFC") && (
+                                <Edit3 className="w-3 h-3 text-muted-foreground flex-shrink-0" />
                               )}
-                            </div>
-                          )
-                        ) : (
-                          <div className="truncate text-sm w-full">
-                            {String(row[column.key] ?? "")}
+                            {hasActiveFilter && (
+                              <div className="w-2 h-2 bg-blue-600 rounded-full flex-shrink-0" />
+                            )}
                           </div>
-                        )}
-                      </div>
+
+                          {isFilterable && (
+                            <div className="flex-shrink-0">
+                              <ColumnFilter
+                                columnKey={column.key}
+                                columnLabel={column.label}
+                                data={rowData}
+                                selectedFilters={
+                                  columnFilters[column.key] || []
+                                }
+                                onFilterChange={handleFilterChange}
+                                onApplyFilter={handleApplyFilter}
+                              />
+                            </div>
+                          )}
+                        </div>
+                      </TableHead>
                     );
                   })}
-                </div>
-              ))
-            )}
+                </TableRow>
+              </TableHeader>
+
+              <TableBody>
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={columns.length}
+                      className="text-center py-8"
+                    >
+                      <div className="flex items-center justify-center gap-2">
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Loading data...
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : rowData.length === 0 ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={columns.length}
+                      className="text-center py-8 text-muted-foreground"
+                    >
+                      No data available. Please select branch, month, and year
+                      to view RFC data.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  rowData.map((row) => (
+                    <TableRow
+                      key={getRowKey(row)}
+                      className={`hover:bg-muted/50 ${
+                        isRowModified(row)
+                          ? "bg-blue-50 dark:bg-blue-950/20"
+                          : ""
+                      }`}
+                    >
+                      {columns.map((column, colIndex) => {
+                        const isLastColumn = colIndex === columns.length - 1;
+                        const isRFCColumn =
+                          column.key.includes("RFC") &&
+                          !column.key.includes("Last");
+                        const isEditable = isLastColumn && isRFCColumn;
+                        const cellValue = getCellValue(row, row[column.key]);
+                        const isEditing = isCellEditing(row) && isEditable;
+                        const columnClasses = getColumnClasses(column.key);
+
+                        return (
+                          <TableCell
+                            key={column.key}
+                            className={`${columnClasses} p-2 min-h-[48px]`}
+                            title={String(row[column.key] ?? "")}
+                          >
+                            {isEditable ? (
+                              isEditing ? (
+                                <Input
+                                  type="number"
+                                  value={cellValue}
+                                  onChange={(e) =>
+                                    handleCellChange(row, e.target.value)
+                                  }
+                                  onBlur={handleCellBlur}
+                                  onKeyDown={(e) => {
+                                    if (
+                                      e.key === "Enter" ||
+                                      e.key === "Escape"
+                                    ) {
+                                      handleCellBlur();
+                                    }
+                                  }}
+                                  className="w-full h-8 text-sm"
+                                  autoFocus
+                                  placeholder="Enter RFC value"
+                                />
+                              ) : (
+                                <div
+                                  className="cursor-pointer hover:bg-muted/50 p-1 rounded min-h-[24px] flex items-center w-full"
+                                  onClick={() => handleCellEdit(row)}
+                                >
+                                  <span
+                                    className={`truncate flex-1 ${
+                                      isRowModified(row)
+                                        ? "font-medium text-blue-600 dark:text-blue-400"
+                                        : ""
+                                    }`}
+                                  >
+                                    {cellValue || "Click to edit"}
+                                  </span>
+                                  {!cellValue && (
+                                    <Edit3 className="w-3 h-3 ml-1 text-muted-foreground flex-shrink-0" />
+                                  )}
+                                </div>
+                              )
+                            ) : (
+                              <div className="truncate text-sm w-full">
+                                {String(row[column.key] ?? "")}
+                              </div>
+                            )}
+                          </TableCell>
+                        );
+                      })}
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
           </div>
+        </div>
+      </div>
+
+      {/* Mobile responsive indicator */}
+      <div className="md:hidden p-2 text-xs text-muted-foreground border-t bg-muted/20">
+        <div className="flex items-center gap-1">
+          <span>📱</span>
+          <span>
+            Some columns hidden on smaller screens. Scroll horizontally to view
+            all data.
+          </span>
         </div>
       </div>
     </div>

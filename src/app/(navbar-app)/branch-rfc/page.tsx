@@ -334,6 +334,7 @@ export default function BranchRFC() {
     <div className="w-full h-[85vh] p-4 overflow-hidden">
       <div className="w-full h-full overflow-hidden">
         <RFCTable
+          tableName="Branch RFC"
           rowData={filteredRowData}
           originalRowData={originalRowData}
           columns={columns}
