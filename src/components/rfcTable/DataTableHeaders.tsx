@@ -32,19 +32,16 @@ interface HeadersProps {
     year: string,
     changedData: Array<{ material: string; rfc: string }>
   ) => Promise<void>;
-  onFetchData: (
-    branch: string,
-    month: string,
-    year: string,
-    filters?: Record<string, string[]>
-  ) => Promise<void>;
+  onFetchData: (branch: string, month: string, year: string) => Promise<void>;
   isSaving?: boolean;
   isPosting?: boolean;
   rowData: RowDataType[];
-  editedValues: Record<number, string>;
-  modifiedRows: Set<number>;
+  originalRowData: RowDataType[]; // Add original data
+  editedValues: Record<string, string>; // Now keyed by unique row identifier
+  modifiedRows: Set<string>; // Now using unique keys
   rfcColumnKey?: string;
   columnFilters?: Record<string, string[]>;
+  getRowKey: (row: RowDataType) => string; // Function to get unique row key
 }
 
 export const RFCTableHeaders: React.FC<HeadersProps> = ({
@@ -54,10 +51,12 @@ export const RFCTableHeaders: React.FC<HeadersProps> = ({
   isSaving = false,
   isPosting = false,
   rowData,
+  originalRowData,
   editedValues,
   modifiedRows,
   rfcColumnKey,
   columnFilters = {},
+  getRowKey,
 }) => {
   const [branches, setBranches] = useState<BranchOption[]>([]);
   const [selectedBranch, setSelectedBranch] = useState<string>("");
@@ -66,6 +65,11 @@ export const RFCTableHeaders: React.FC<HeadersProps> = ({
   const [debounceTimeout, setDebounceTimeout] = useState<NodeJS.Timeout | null>(
     null
   );
+
+  // Add this useEffect at the beginning of the component
+  useEffect(() => {
+    console.log("Headers: editedValues prop changed:", editedValues);
+  }, [editedValues]);
 
   // Generate years array (current year ± 5 years)
   const currentYear = new Date().getFullYear();
@@ -153,10 +157,11 @@ export const RFCTableHeaders: React.FC<HeadersProps> = ({
       clearTimeout(debounceTimeout);
     }
 
-    // Set new timeout - removed columnFilters from dependency
+    // Set new timeout - ONLY when branch/month/year changes
     if (selectedBranch && selectedMonth && selectedYear) {
       const timeout = setTimeout(() => {
-        onFetchData(selectedBranch, selectedMonth, selectedYear); // Don't pass filters here
+        console.log("Fetching new data due to branch/month/year change");
+        onFetchData(selectedBranch, selectedMonth, selectedYear);
       }, 500); // 500ms delay
 
       setDebounceTimeout(timeout);
@@ -168,7 +173,7 @@ export const RFCTableHeaders: React.FC<HeadersProps> = ({
         clearTimeout(debounceTimeout);
       }
     };
-  }, [selectedBranch, selectedMonth, selectedYear, onFetchData]); // Removed columnFilters
+  }, [selectedBranch, selectedMonth, selectedYear, onFetchData]); // ONLY these dependencies
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -179,19 +184,29 @@ export const RFCTableHeaders: React.FC<HeadersProps> = ({
     };
   }, []);
 
-  // Get current value for a cell (edited value or original)
-  const getCellValue = (rowIndex: number, originalValue: any) => {
-    return editedValues[rowIndex] !== undefined
-      ? editedValues[rowIndex]
-      : String(originalValue ?? "");
+  // Get current value for a cell (edited value or original) - now works with original data
+  const getCellValue = (row: RowDataType, originalValue: any) => {
+    const rowKey = getRowKey(row);
+    const editedValue = editedValues[rowKey];
+    const finalValue =
+      editedValue !== undefined ? editedValue : String(originalValue ?? "");
+
+    console.log("Headers getCellValue:", {
+      rowKey,
+      editedValue,
+      originalValue,
+      finalValue,
+    });
+
+    return finalValue;
   };
 
-  // Validate if all RFC values are filled for POST
+  // Validate if all RFC values are filled for POST - check ORIGINAL data, not filtered
   const validateAllRFCFilled = () => {
     if (!rfcColumnKey) return false;
 
-    return rowData.every((row, index) => {
-      const currentValue = getCellValue(index, row[rfcColumnKey]);
+    return originalRowData.every((row) => {
+      const currentValue = getCellValue(row, row[rfcColumnKey]);
       return (
         currentValue !== "" &&
         currentValue !== null &&
@@ -200,23 +215,29 @@ export const RFCTableHeaders: React.FC<HeadersProps> = ({
     });
   };
 
-  // Get changed records for SAVE
+  // Get changed records for SAVE - work with unique keys
   const getChangedRecords = () => {
     if (!rfcColumnKey) return [];
 
     const changedRecords: Array<{ material: string; rfc: string }> = [];
 
-    modifiedRows.forEach((rowIndex) => {
-      const row = rowData[rowIndex];
-      const editedValue = editedValues[rowIndex];
+    // Go through all modified rows and find the corresponding original data
+    modifiedRows.forEach((rowKey) => {
+      const editedValue = editedValues[rowKey];
+
+      // Find the original row that matches this key
+      const originalRow = originalRowData.find(
+        (row) => getRowKey(row) === rowKey
+      );
 
       if (
+        originalRow &&
         editedValue !== undefined &&
         editedValue !== "" &&
         editedValue !== null
       ) {
         changedRecords.push({
-          material: String(row["Material"] || ""),
+          material: String(originalRow["Material"] || ""),
           rfc: editedValue,
         });
       }
@@ -248,17 +269,18 @@ export const RFCTableHeaders: React.FC<HeadersProps> = ({
     if (selectedBranch && selectedMonth && selectedYear) {
       if (!validateAllRFCFilled()) {
         alert(
-          "All RFC values must be filled before posting. You can use 0 but not leave any field empty."
+          "All RFC values must be filled before posting. You can use 0 but not leave any field empty. Please check all data including filtered rows."
         );
         return;
       }
 
-      // Create updated data with edited values
-      const updatedData = rowData.map((row, index) => {
-        if (rfcColumnKey && editedValues[index] !== undefined) {
+      // Create updated data with edited values using ORIGINAL data
+      const updatedData = originalRowData.map((row) => {
+        const rowKey = getRowKey(row);
+        if (rfcColumnKey && editedValues[rowKey] !== undefined) {
           return {
             ...row,
-            [rfcColumnKey]: editedValues[index],
+            [rfcColumnKey]: editedValues[rowKey],
           };
         }
         return row;
@@ -295,6 +317,15 @@ export const RFCTableHeaders: React.FC<HeadersProps> = ({
               {getActiveFilterCount()} filter
               {getActiveFilterCount() !== 1 ? "s" : ""} active
             </span>
+          </div>
+        )}
+
+        {/* Show validation info */}
+        {originalRowData.length > 0 && (
+          <div className="text-xs text-muted-foreground">
+            Total rows: {originalRowData.length} | Showing: {rowData.length} |
+            Modified: {modifiedRows.size} | Edited:{" "}
+            {Object.keys(editedValues).length}
           </div>
         )}
       </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import type { RowDataType, ColumnConfig } from "@/lib/types";
 import { transformArrayFromApiFormat } from "@/lib/data-transformers";
 import { RFCTable } from "@/components/rfcTable/DataTable";
@@ -21,8 +21,17 @@ export default function BranchRFC() {
     {}
   );
 
+  // State for edited values - now keyed by unique row identifier
+  const [editedValues, setEditedValues] = useState<Record<string, string>>({});
+
   // Define which columns should have filters (make this dynamic)
   const filterableColumns = ["Product", "Material", "Branch"]; // Add more columns as needed
+
+  // Helper function to create unique row key
+  const getRowKey = (row: RowDataType): string => {
+    // Use Material + Branch as unique identifier (adjust based on your data structure)
+    return `${row["Material"] || ""}_${row["Branch"] || ""}`;
+  };
 
   // Generate columns from API response data
   const generateColumnsFromData = (
@@ -120,7 +129,7 @@ export default function BranchRFC() {
     []
   );
 
-  // Apply filters whenever filters or original data changes
+  // Apply filters whenever filters change - DON'T clear edited values
   const applyCurrentFilters = useCallback(() => {
     const filtered = applyFiltersToData(originalRowData, columnFilters);
     setFilteredRowData(filtered);
@@ -128,10 +137,13 @@ export default function BranchRFC() {
     console.log("Filters applied:", columnFilters);
     console.log("Original data count:", originalRowData.length);
     console.log("Filtered data count:", filtered.length);
-  }, [originalRowData, columnFilters, applyFiltersToData]);
+    console.log("Edited values preserved:", editedValues); // Show actual values, not just count
+  }, [originalRowData, columnFilters, applyFiltersToData, editedValues]);
 
+  // FIXED: Remove columnFilters from dependency array to prevent API calls on filter changes
   const fetchBranchRFCData = useCallback(
     async (branch: string, month: string, year: string) => {
+      console.log("🚀 API CALL: Fetching data for", { branch, month, year });
       setLoading(true);
       try {
         const queryParams = new URLSearchParams({
@@ -164,7 +176,7 @@ export default function BranchRFC() {
           // Store original data
           setOriginalRowData(transformedData);
 
-          // Apply current filters to the new data
+          // Apply current filters to the new data (but don't trigger new API call)
           const filtered = applyFiltersToData(transformedData, columnFilters);
           setFilteredRowData(filtered);
 
@@ -172,8 +184,12 @@ export default function BranchRFC() {
           const generatedColumns = generateColumnsFromData(transformedData);
           setColumns(generatedColumns);
 
+          // ONLY clear edited values when NEW data is loaded (branch/month/year change)
+          console.log("🔄 New data loaded - clearing edited values");
+          setEditedValues({});
+
           console.log(
-            "Data fetched successfully:",
+            "✅ Data fetched successfully:",
             transformedData.length,
             "rows"
           );
@@ -192,24 +208,49 @@ export default function BranchRFC() {
         setLoading(false);
       }
     },
-    [columnFilters, applyFiltersToData]
+    [] // REMOVED columnFilters and applyFiltersToData from dependencies
   );
+
+  // Apply filters when columnFilters change (separate from data fetching)
+  useEffect(() => {
+    console.log(
+      "🔍 Filter change detected - applying filters without API call"
+    );
+    applyCurrentFilters();
+  }, [applyCurrentFilters]);
 
   // Handle filter changes (this just updates local state)
   const handleFilterChange = useCallback(
     (filters: Record<string, string[]>) => {
+      console.log("🎛️ Filter change:", filters);
       setColumnFilters(filters);
     },
     []
   );
 
-  // Handle apply filters (this triggers frontend filtering)
+  // Handle apply filters (this triggers frontend filtering ONLY)
   const handleApplyFilters = useCallback(() => {
+    console.log("✨ Applying filters - preserving edited values");
     applyCurrentFilters();
   }, [applyCurrentFilters]);
 
+  // Handle edited values change
+  const handleEditedValuesChange = useCallback(
+    (newEditedValues: Record<string, string>) => {
+      console.log(
+        "📝 Page: Edited values changing from:",
+        editedValues,
+        "to:",
+        newEditedValues
+      );
+      setEditedValues(newEditedValues);
+    },
+    [editedValues]
+  ); // Add editedValues as dependency to see current state
+
   // Clear all filters
   const clearAllFilters = useCallback(() => {
+    console.log("🧹 Clearing all filters - preserving edited values");
     setColumnFilters({});
     setFilteredRowData(originalRowData);
   }, [originalRowData]);
@@ -359,6 +400,11 @@ export default function BranchRFC() {
     };
   }, [columnFilters, filteredRowData.length, originalRowData.length]);
 
+  // Add this useEffect after the existing ones
+  useEffect(() => {
+    console.log("📊 Page: editedValues state changed:", editedValues);
+  }, [editedValues]);
+
   return (
     <div className="w-full h-[85vh] p-4 overflow-hidden">
       <div className="w-full h-full overflow-hidden">
@@ -379,8 +425,20 @@ export default function BranchRFC() {
           </div>
         )}
 
+        {/* Debug info - remove in production */}
+        {process.env.NODE_ENV === "development" && (
+          <div className="mb-2 text-xs text-gray-500 bg-gray-100 p-2 rounded">
+            Debug: Edited values count: {Object.keys(editedValues).length} |
+            Original rows: {originalRowData.length} | Filtered rows:{" "}
+            {filteredRowData.length}
+            <br />
+            Edited values: {JSON.stringify(editedValues)}
+          </div>
+        )}
+
         <RFCTable
-          rowData={filteredRowData} // Use filtered data instead of original
+          rowData={filteredRowData} // Use filtered data for display
+          originalRowData={originalRowData} // Pass original data for validation
           columns={columns}
           onPost={handlePost}
           onSave={handleSave}
@@ -392,6 +450,8 @@ export default function BranchRFC() {
           columnFilters={columnFilters}
           onFilterChange={handleFilterChange}
           onApplyFilters={handleApplyFilters}
+          editedValues={editedValues}
+          onEditedValuesChange={handleEditedValuesChange}
         />
       </div>
     </div>
