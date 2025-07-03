@@ -20,6 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { getNextMonthAndYear } from "@/lib/utils";
 
 interface UploadedData {
   Material: string;
@@ -44,8 +45,8 @@ export default function Offerings() {
   });
   const [uploadedData, setUploadedData] = useState<UploadedData[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
-  const [selectedYear, setSelectedYear] = useState<number>();
-  const [selectedMonth, setSelectedMonth] = useState<number>();
+  const [selectedYear, setSelectedYear] = useState<string>();
+  const [selectedMonth, setSelectedMonth] = useState<string>();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [apiResponse, setApiResponse] = useState<{
     message?: string;
@@ -53,16 +54,22 @@ export default function Offerings() {
     errors?: string[];
   } | null>(null);
 
+  // useEffect(() => {
+  //   const now = new Date();
+  //   const currentMonth = now.getMonth();
+
+  //   const nextMonth = (currentMonth + 1) % 12;
+  //   const nextYear =
+  //     currentMonth === 11 ? now.getFullYear() + 1 : now.getFullYear();
+
+  //   setSelectedMonth(nextMonth + 1);
+  //   setSelectedYear(nextYear);
+  // }, []);
+
   useEffect(() => {
-    const now = new Date();
-    const currentMonth = now.getMonth();
-
-    const nextMonth = (currentMonth + 1) % 12;
-    const nextYear =
-      currentMonth === 11 ? now.getFullYear() + 1 : now.getFullYear();
-
-    setSelectedMonth(nextMonth + 1);
-    setSelectedYear(nextYear);
+    const { month, year } = getNextMonthAndYear();
+    setSelectedMonth(month);
+    setSelectedYear(year);
   }, []);
 
   useEffect(() => {
@@ -298,8 +305,9 @@ export default function Offerings() {
                 </label>
                 <Select
                   value={selectedYear?.toString()}
-                  onValueChange={(value) =>
-                    setSelectedYear(Number.parseInt(value))
+                  onValueChange={
+                    (value) => setSelectedYear(value)
+                    // setSelectedYear(Number.parseInt(value))
                   }
                 >
                   <SelectTrigger className="w-24">
@@ -319,8 +327,9 @@ export default function Offerings() {
                 </label>
                 <Select
                   value={selectedMonth?.toString()}
-                  onValueChange={(value) =>
-                    setSelectedMonth(Number.parseInt(value))
+                  onValueChange={
+                    (value) => setSelectedMonth(value)
+                    // setSelectedMonth(Number.parseInt(value))
                   }
                 >
                   <SelectTrigger className="w-32">

@@ -37,7 +37,7 @@ export function DataTableBody({
     );
   }
 
-  console.log("the coliumns", data);
+  // console.log("the coliumns", data);
 
   return (
     <TableBody>

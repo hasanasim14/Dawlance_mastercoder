@@ -11,16 +11,16 @@ import {
 import { Input } from "@/components/ui/input";
 import { Filter, Search, X } from "lucide-react";
 import { ScrollArea } from "../ui/scrollarea";
-// import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface ColumnFilterProps {
   columnKey: string;
   columnLabel: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   data: any[];
   selectedFilters: string[];
   onFilterChange: (columnKey: string, selectedValues: string[]) => void;
-  onApplyFilter: () => void; // Simplified - just trigger frontend filtering
-  allFilters: Record<string, string[]>;
+  onApplyFilter: () => void;
+  // allFilters: Record<string, string[]>;
 }
 
 export const ColumnFilter: React.FC<ColumnFilterProps> = ({
@@ -30,7 +30,7 @@ export const ColumnFilter: React.FC<ColumnFilterProps> = ({
   selectedFilters,
   onFilterChange,
   onApplyFilter,
-  allFilters,
+  // allFilters,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");

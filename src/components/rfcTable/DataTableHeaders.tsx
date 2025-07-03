@@ -13,6 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Save, Send, Loader2, FilterX } from "lucide-react";
 import type { RowDataType } from "@/lib/types";
+import { getNextMonthAndYear } from "@/lib/utils";
 
 interface BranchOption {
   salesOffice: string;
@@ -36,12 +37,12 @@ interface HeadersProps {
   isSaving?: boolean;
   isPosting?: boolean;
   rowData: RowDataType[];
-  originalRowData: RowDataType[]; // Add original data
-  editedValues: Record<string, string>; // Now keyed by unique row identifier
-  modifiedRows: Set<string>; // Now using unique keys
+  originalRowData: RowDataType[];
+  editedValues: Record<string, string>;
+  modifiedRows: Set<string>;
   rfcColumnKey?: string;
   columnFilters?: Record<string, string[]>;
-  getRowKey: (row: RowDataType) => string; // Function to get unique row key
+  getRowKey: (row: RowDataType) => string;
 }
 
 export const RFCTableHeaders: React.FC<HeadersProps> = ({
@@ -66,11 +67,6 @@ export const RFCTableHeaders: React.FC<HeadersProps> = ({
     null
   );
 
-  // Add this useEffect at the beginning of the component
-  useEffect(() => {
-    console.log("Headers: editedValues prop changed:", editedValues);
-  }, [editedValues]);
-
   // Generate years array (current year ± 5 years)
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 11 }, (_, i) => currentYear - 5 + i);
@@ -91,28 +87,6 @@ export const RFCTableHeaders: React.FC<HeadersProps> = ({
     { value: "12", label: "December" },
   ];
 
-  // Function to get next month and year
-  const getNextMonthAndYear = () => {
-    const now = new Date();
-    const currentMonth = now.getMonth(); // 0-based (0 = January)
-    const currentYear = now.getFullYear();
-
-    let nextMonth = currentMonth + 1; // Add 1 for next month
-    let nextYear = currentYear;
-
-    // If current month is December (11), next month should be January (0) of next year
-    if (nextMonth > 11) {
-      nextMonth = 0;
-      nextYear = currentYear + 1;
-    }
-
-    // Convert to 1-based month for display (01-12)
-    const monthString = String(nextMonth + 1).padStart(2, "0");
-    const yearString = String(nextYear);
-
-    return { month: monthString, year: yearString };
-  };
-
   // Set default values on component mount
   useEffect(() => {
     const { month, year } = getNextMonthAndYear();
@@ -120,8 +94,10 @@ export const RFCTableHeaders: React.FC<HeadersProps> = ({
     setSelectedYear(year);
   }, []);
 
-  // Fetch branches on mount
+  // fetch branches
   useEffect(() => {
+    const localBranches = localStorage.getItem("branches");
+
     const fetchBranches = async () => {
       try {
         const res = await fetch(
@@ -135,8 +111,20 @@ export const RFCTableHeaders: React.FC<HeadersProps> = ({
         );
 
         const data = await res.json();
-        // Transform the data to include both Sales Office and Sales Branch
-        const branchOptions: BranchOption[] = data.data.map((branch: any) => ({
+        let branchList = data.data;
+
+        if (localBranches?.length) {
+          const storedBranchCodes = localBranches
+            .split(",")
+            .map((code) => code.trim());
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          branchList = branchList.filter((branch: any) =>
+            storedBranchCodes.includes(branch["Branch Code"])
+          );
+        }
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const branchOptions: BranchOption[] = branchList.map((branch: any) => ({
           salesOffice: branch["Sales Office"],
           salesBranch: branch["Sales Branch"] || branch["Sales Office"],
         }));
@@ -150,7 +138,7 @@ export const RFCTableHeaders: React.FC<HeadersProps> = ({
     fetchBranches();
   }, []);
 
-  // Fetch data when selections change (with debouncing) - but NOT when filters change
+  // Fetch data when selections change (with debouncing)
   useEffect(() => {
     // Clear existing timeout
     if (debounceTimeout) {
@@ -160,10 +148,8 @@ export const RFCTableHeaders: React.FC<HeadersProps> = ({
     // Set new timeout - ONLY when branch/month/year changes
     if (selectedBranch && selectedMonth && selectedYear) {
       const timeout = setTimeout(() => {
-        console.log("Fetching new data due to branch/month/year change");
         onFetchData(selectedBranch, selectedMonth, selectedYear);
-      }, 500); // 500ms delay
-
+      }, 500);
       setDebounceTimeout(timeout);
     }
 
@@ -173,7 +159,7 @@ export const RFCTableHeaders: React.FC<HeadersProps> = ({
         clearTimeout(debounceTimeout);
       }
     };
-  }, [selectedBranch, selectedMonth, selectedYear, onFetchData]); // ONLY these dependencies
+  }, [selectedBranch, selectedMonth, selectedYear, onFetchData]);
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -184,24 +170,18 @@ export const RFCTableHeaders: React.FC<HeadersProps> = ({
     };
   }, []);
 
-  // Get current value for a cell (edited value or original) - now works with original data
+  // Get current value for a cell
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const getCellValue = (row: RowDataType, originalValue: any) => {
     const rowKey = getRowKey(row);
     const editedValue = editedValues[rowKey];
     const finalValue =
       editedValue !== undefined ? editedValue : String(originalValue ?? "");
 
-    console.log("Headers getCellValue:", {
-      rowKey,
-      editedValue,
-      originalValue,
-      finalValue,
-    });
-
     return finalValue;
   };
 
-  // Validate if all RFC values are filled for POST - check ORIGINAL data, not filtered
+  // Validate if all RFC values are filled for POST
   const validateAllRFCFilled = () => {
     if (!rfcColumnKey) return false;
 

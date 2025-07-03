@@ -71,6 +71,10 @@ export function LoginForm({
         localStorage.setItem("user_name", data?.user_name);
         localStorage.setItem("user_role", data?.user_role);
 
+        if (data?.user_role === "branch") {
+          localStorage.setItem("branches", data?.branch);
+        }
+
         setTimeout(() => {
           router.push("/master-coding");
         }, 1000);

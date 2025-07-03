@@ -109,18 +109,18 @@ export const RFCTable: React.FC<DataTableProps> = ({
   // Handle cell value change
   const handleCellChange = (row: RowDataType, value: string) => {
     const rowKey = getRowKey(row);
-    console.log("Cell change:", {
-      rowKey,
-      value,
-      currentEditedValues: editedValues,
-    });
+    // console.log("Cell change:", {
+    //   rowKey,
+    //   value,
+    //   currentEditedValues: editedValues,
+    // });
 
     const newEditedValues = {
       ...editedValues,
       [rowKey]: value,
     };
 
-    console.log("New edited values:", newEditedValues);
+    // console.log("New edited values:", newEditedValues);
 
     if (onEditedValuesChange) {
       onEditedValuesChange(newEditedValues);
@@ -141,18 +141,19 @@ export const RFCTable: React.FC<DataTableProps> = ({
   };
 
   // Get current value for a cell (edited value or original)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const getCellValue = (row: RowDataType, originalValue: any) => {
     const rowKey = getRowKey(row);
     const editedValue = editedValues[rowKey];
     const finalValue =
       editedValue !== undefined ? editedValue : String(originalValue ?? "");
 
-    console.log("Getting cell value:", {
-      rowKey,
-      editedValue,
-      originalValue,
-      finalValue,
-    });
+    // console.log("Getting cell value:", {
+    //   rowKey,
+    //   editedValue,
+    //   originalValue,
+    //   finalValue,
+    // });
 
     return finalValue;
   };
@@ -188,9 +189,9 @@ export const RFCTable: React.FC<DataTableProps> = ({
   };
 
   // Add this useEffect after the existing ones
-  useEffect(() => {
-    console.log("DataTable editedValues changed:", editedValues);
-  }, [editedValues]);
+  // useEffect(() => {
+  //   console.log("DataTable editedValues changed:", editedValues);
+  // }, [editedValues]);
 
   const rfcColumn = getRFCColumn();
 
@@ -254,7 +255,7 @@ export const RFCTable: React.FC<DataTableProps> = ({
                           selectedFilters={columnFilters[column.key] || []}
                           onFilterChange={handleFilterChange}
                           onApplyFilter={handleApplyFilter}
-                          allFilters={columnFilters}
+                          // allFilters={columnFilters}
                         />
                       </div>
                     )}
@@ -279,7 +280,7 @@ export const RFCTable: React.FC<DataTableProps> = ({
                 RFC data.
               </div>
             ) : (
-              rowData.map((row, rowIndex) => (
+              rowData.map((row) => (
                 <div
                   key={getRowKey(row)} // Use unique key instead of index
                   className={`grid border-b hover:bg-muted/50 ${

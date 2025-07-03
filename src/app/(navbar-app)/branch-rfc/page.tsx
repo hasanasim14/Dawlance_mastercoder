@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useMemo, useEffect } from "react";
+import { useState, useCallback, useEffect } from "react";
 import type { RowDataType, ColumnConfig } from "@/lib/types";
 import { transformArrayFromApiFormat } from "@/lib/data-transformers";
 import { RFCTable } from "@/components/rfcTable/DataTable";
@@ -8,30 +8,20 @@ import { RFCTable } from "@/components/rfcTable/DataTable";
 export default function BranchRFC() {
   // Original data from API (unfiltered)
   const [originalRowData, setOriginalRowData] = useState<RowDataType[]>([]);
-  // Filtered data for display
+  // Store the filtered data
   const [filteredRowData, setFilteredRowData] = useState<RowDataType[]>([]);
-
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [posting, setPosting] = useState(false);
   const [columns, setColumns] = useState<readonly ColumnConfig[]>([]);
-
   // State for column filters
   const [columnFilters, setColumnFilters] = useState<Record<string, string[]>>(
     {}
   );
-
-  // State for edited values - now keyed by unique row identifier
+  // Store which rows are edited
   const [editedValues, setEditedValues] = useState<Record<string, string>>({});
-
-  // Define which columns should have filters (make this dynamic)
-  const filterableColumns = ["Product", "Material", "Branch"]; // Add more columns as needed
-
-  // Helper function to create unique row key
-  const getRowKey = (row: RowDataType): string => {
-    // Use Material + Branch as unique identifier (adjust based on your data structure)
-    return `${row["Material"] || ""}_${row["Branch"] || ""}`;
-  };
+  // which columns to have the filter on
+  const filterableColumns = ["Product"];
 
   // Generate columns from API response data
   const generateColumnsFromData = (
@@ -100,7 +90,7 @@ export default function BranchRFC() {
     }));
   };
 
-  // Frontend filtering function
+  // Filtering function
   const applyFiltersToData = useCallback(
     (data: RowDataType[], filters: Record<string, string[]>) => {
       if (!data || data.length === 0) return data;
@@ -112,9 +102,8 @@ export default function BranchRFC() {
       if (!hasActiveFilters) return data;
 
       return data.filter((row) => {
-        // Check each filter
         for (const [columnKey, selectedValues] of Object.entries(filters)) {
-          if (selectedValues.length === 0) continue; // Skip empty filters
+          if (selectedValues.length === 0) continue;
 
           const cellValue = String(row[columnKey] || "").trim();
 
@@ -123,27 +112,21 @@ export default function BranchRFC() {
             return false;
           }
         }
-        return true; // Row passes all filters
+        return true;
       });
     },
     []
   );
 
-  // Apply filters whenever filters change - DON'T clear edited values
+  // Apply filters whenever filters change
   const applyCurrentFilters = useCallback(() => {
     const filtered = applyFiltersToData(originalRowData, columnFilters);
     setFilteredRowData(filtered);
-
-    console.log("Filters applied:", columnFilters);
-    console.log("Original data count:", originalRowData.length);
-    console.log("Filtered data count:", filtered.length);
-    console.log("Edited values preserved:", editedValues); // Show actual values, not just count
   }, [originalRowData, columnFilters, applyFiltersToData, editedValues]);
 
-  // FIXED: Remove columnFilters from dependency array to prevent API calls on filter changes
+  // Get the branch-rfc data
   const fetchBranchRFCData = useCallback(
     async (branch: string, month: string, year: string) => {
-      console.log("🚀 API CALL: Fetching data for", { branch, month, year });
       setLoading(true);
       try {
         const queryParams = new URLSearchParams({
@@ -155,13 +138,13 @@ export default function BranchRFC() {
         const endpoint = `${
           process.env.NEXT_PUBLIC_BASE_URL
         }/branch-rfc?${queryParams.toString()}`;
-        const authToken = localStorage.getItem("token");
+        // const authToken = localStorage.getItem("token");
 
         const res = await fetch(endpoint, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${authToken}`,
+            // Authorization: `Bearer ${authToken}`,
           },
         });
 
@@ -173,26 +156,14 @@ export default function BranchRFC() {
             parsedData.data
           ) as RowDataType[];
 
-          // Store original data
           setOriginalRowData(transformedData);
-
-          // Apply current filters to the new data (but don't trigger new API call)
           const filtered = applyFiltersToData(transformedData, columnFilters);
           setFilteredRowData(filtered);
 
           // Generate columns based on actual response data
           const generatedColumns = generateColumnsFromData(transformedData);
           setColumns(generatedColumns);
-
-          // ONLY clear edited values when NEW data is loaded (branch/month/year change)
-          console.log("🔄 New data loaded - clearing edited values");
           setEditedValues({});
-
-          console.log(
-            "✅ Data fetched successfully:",
-            transformedData.length,
-            "rows"
-          );
         } else {
           console.error("Invalid data structure received:", parsedData);
           setOriginalRowData([]);
@@ -208,52 +179,39 @@ export default function BranchRFC() {
         setLoading(false);
       }
     },
-    [] // REMOVED columnFilters and applyFiltersToData from dependencies
+    []
   );
 
-  // Apply filters when columnFilters change (separate from data fetching)
+  // Apply filters when columnFilters change
   useEffect(() => {
-    console.log(
-      "🔍 Filter change detected - applying filters without API call"
-    );
     applyCurrentFilters();
   }, [applyCurrentFilters]);
 
-  // Handle filter changes (this just updates local state)
+  // Handle filter changes - update the local state
   const handleFilterChange = useCallback(
     (filters: Record<string, string[]>) => {
-      console.log("🎛️ Filter change:", filters);
       setColumnFilters(filters);
     },
     []
   );
 
-  // Handle apply filters (this triggers frontend filtering ONLY)
   const handleApplyFilters = useCallback(() => {
-    console.log("✨ Applying filters - preserving edited values");
     applyCurrentFilters();
   }, [applyCurrentFilters]);
 
   // Handle edited values change
   const handleEditedValuesChange = useCallback(
     (newEditedValues: Record<string, string>) => {
-      console.log(
-        "📝 Page: Edited values changing from:",
-        editedValues,
-        "to:",
-        newEditedValues
-      );
       setEditedValues(newEditedValues);
     },
     [editedValues]
   ); // Add editedValues as dependency to see current state
 
   // Clear all filters
-  const clearAllFilters = useCallback(() => {
-    console.log("🧹 Clearing all filters - preserving edited values");
-    setColumnFilters({});
-    setFilteredRowData(originalRowData);
-  }, [originalRowData]);
+  // const clearAllFilters = useCallback(() => {
+  //   setColumnFilters({});
+  //   setFilteredRowData(originalRowData);
+  // }, [originalRowData]);
 
   const handlePost = useCallback(
     async (
@@ -270,7 +228,7 @@ export default function BranchRFC() {
           year,
         }).toString();
 
-        const authToken = localStorage.getItem("token");
+        // const authToken = localStorage.getItem("token");
 
         // Find the RFC column (same logic as in RFCTable component)
         const rfcColumn = columns.find(
@@ -287,33 +245,29 @@ export default function BranchRFC() {
           rfc: String(row[rfcColumn.key] || ""),
         }));
 
-        // First API call - existing branch-rfc endpoint
-        const branchRfcEndpoint = `${process.env.NEXT_PUBLIC_BASE_URL}/branch-rfc?${query}`;
+        const branchRFCPostEndpoint = `${process.env.NEXT_PUBLIC_BASE_URL}/branch-rfc?${query}`;
+        const branchRFCSaveEndpoint = `${process.env.NEXT_PUBLIC_BASE_URL}/branch-rfc-save?${query}`;
 
-        // Second API call - add your second endpoint here
-        const secondApiEndpoint = `${process.env.NEXT_PUBLIC_BASE_URL}/branch-rfc-save?${query}`;
-
-        // Call both APIs in parallel for better performance
+        // Calling both APIs in parallel
         const [branchRfcResponse, secondApiResponse] = await Promise.all([
-          fetch(branchRfcEndpoint, {
+          fetch(branchRFCPostEndpoint, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              Authorization: `Bearer ${authToken}`,
+              // Authorization: `Bearer ${authToken}`,
             },
             body: JSON.stringify(postData),
           }),
-          fetch(secondApiEndpoint, {
+          fetch(branchRFCSaveEndpoint, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              Authorization: `Bearer ${authToken}`,
+              // Authorization: `Bearer ${authToken}`,
             },
             body: JSON.stringify(postData),
           }),
         ]);
 
-        // Check if both responses are successful
         if (!branchRfcResponse.ok) {
           throw new Error(
             `Branch RFC API error! status: ${branchRfcResponse.status}`
@@ -326,14 +280,9 @@ export default function BranchRFC() {
           );
         }
 
-        // Parse both responses
-        const branchRfcResult = await branchRfcResponse.json();
-        const secondApiResult = await secondApiResponse.json();
+        // const branchRfcResult = await branchRfcResponse.json();
+        // const secondApiResult = await secondApiResponse.json();
 
-        console.log("Branch RFC API result:", branchRfcResult);
-        console.log("Second API result:", secondApiResult);
-
-        // Refresh data after both successful posts
         await fetchBranchRFCData(branch, month, year);
       } catch (error) {
         console.error("Error posting RFC data:", error);
@@ -356,8 +305,6 @@ export default function BranchRFC() {
         const query = new URLSearchParams({ branch, month, year }).toString();
         const authToken = localStorage.getItem("token");
         const endpoint = `${process.env.NEXT_PUBLIC_BASE_URL}/branch-rfc-save?${query}`;
-
-        console.log("the response is", changedData);
 
         const response = await fetch(endpoint, {
           method: "POST",
@@ -383,62 +330,12 @@ export default function BranchRFC() {
     [fetchBranchRFCData]
   );
 
-  // Get filter summary for display
-  const filterSummary = useMemo(() => {
-    const activeFilters = Object.entries(columnFilters).filter(
-      ([_, values]) => values.length > 0
-    );
-    const totalFiltered = activeFilters.reduce(
-      (sum, [_, values]) => sum + values.length,
-      0
-    );
-    return {
-      activeFilters: activeFilters.length,
-      totalFiltered,
-      showing: filteredRowData.length,
-      total: originalRowData.length,
-    };
-  }, [columnFilters, filteredRowData.length, originalRowData.length]);
-
-  // Add this useEffect after the existing ones
-  useEffect(() => {
-    console.log("📊 Page: editedValues state changed:", editedValues);
-  }, [editedValues]);
-
   return (
     <div className="w-full h-[85vh] p-4 overflow-hidden">
       <div className="w-full h-full overflow-hidden">
-        {/* Filter Summary */}
-        {filterSummary.activeFilters > 0 && (
-          <div className="mb-2 flex items-center justify-between text-sm text-muted-foreground">
-            <div>
-              Showing {filterSummary.showing} of {filterSummary.total} rows (
-              {filterSummary.activeFilters} filter
-              {filterSummary.activeFilters !== 1 ? "s" : ""} applied)
-            </div>
-            <button
-              onClick={clearAllFilters}
-              className="text-blue-600 hover:text-blue-800 underline"
-            >
-              Clear all filters
-            </button>
-          </div>
-        )}
-
-        {/* Debug info - remove in production */}
-        {process.env.NODE_ENV === "development" && (
-          <div className="mb-2 text-xs text-gray-500 bg-gray-100 p-2 rounded">
-            Debug: Edited values count: {Object.keys(editedValues).length} |
-            Original rows: {originalRowData.length} | Filtered rows:{" "}
-            {filteredRowData.length}
-            <br />
-            Edited values: {JSON.stringify(editedValues)}
-          </div>
-        )}
-
         <RFCTable
-          rowData={filteredRowData} // Use filtered data for display
-          originalRowData={originalRowData} // Pass original data for validation
+          rowData={filteredRowData}
+          originalRowData={originalRowData}
           columns={columns}
           onPost={handlePost}
           onSave={handleSave}
