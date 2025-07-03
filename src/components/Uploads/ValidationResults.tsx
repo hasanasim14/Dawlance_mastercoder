@@ -15,7 +15,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { ValidationData } from "@/app/(navbar-app)/upload/page";
+import type { ValidationData } from "@/app/(navbar-app)/upload/page";
 
 // Modal content component for detailed error display
 function ErrorDetailsModal({
@@ -429,16 +429,19 @@ function ValidationItem({
 }
 
 interface ValidationResultsProps {
+  setNoValidationErrors: React.Dispatch<React.SetStateAction<boolean>>;
   validationData: ValidationData;
   uploadType: string;
 }
 
 const ValidationResults: React.FC<ValidationResultsProps> = ({
+  setNoValidationErrors,
   validationData,
   uploadType,
 }) => {
   // Get all keys from the validation data and sort them for consistent display
-  const allKeys = Object.keys(validationData).sort();
+  // const allKeys = Object.keys(validationData).sort();
+  const allKeys = Object.keys(validationData);
 
   // Filter out common non-validation fields if needed
   const validationKeys = allKeys.filter(
@@ -464,6 +467,7 @@ const ValidationResults: React.FC<ValidationResultsProps> = ({
   }).length;
 
   const totalCount = validationKeys.length;
+  setNoValidationErrors(passedCount / totalCount! === 1);
 
   return (
     <div className="space-y-4">

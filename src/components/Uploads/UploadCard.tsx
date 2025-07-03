@@ -5,9 +5,22 @@ import ValidationResults from "./ValidationResults";
 import { Card, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { CloudUpload, CheckCircle2, Clock, AlertCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  CloudUpload,
+  CheckCircle2,
+  Clock,
+  AlertCircle,
+  Send,
+  Loader2,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
-import { UploadCardData, UploadStatus } from "@/app/(navbar-app)/upload/page";
+import type {
+  UploadCardData,
+  UploadStatus,
+  PostStatus,
+} from "@/app/(navbar-app)/upload/page";
+import { useState } from "react";
 
 interface UploadCardProps {
   card: UploadCardData;
@@ -17,6 +30,7 @@ interface UploadCardProps {
   ) => void;
   onFileDrop: (cardId: string, e: React.DragEvent<HTMLDivElement>) => void;
   onDragOver: (e: React.DragEvent<HTMLDivElement>) => void;
+  onPost: (cardId: string) => void;
 }
 
 function UploadCard({
@@ -24,10 +38,13 @@ function UploadCard({
   onFileChange,
   onFileDrop,
   onDragOver,
+  onPost,
 }: UploadCardProps) {
   if (!card) {
     return null;
   }
+
+  const [noValidationErrors, setNoValidationErrors] = useState(false);
 
   const getStatusBadge = (status: UploadStatus) => {
     switch (status) {
@@ -66,6 +83,48 @@ function UploadCard({
     }
   };
 
+  const getPostStatusBadge = (status: PostStatus) => {
+    switch (status) {
+      case "success":
+        return (
+          <Badge
+            variant="outline"
+            className="bg-green-50 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-400 dark:border-green-800"
+          >
+            <CheckCircle2 className="h-3 w-3 mr-1" />
+            Posted
+          </Badge>
+        );
+      case "error":
+        return (
+          <Badge
+            variant="outline"
+            className="bg-red-50 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-400 dark:border-red-800"
+          >
+            <AlertCircle className="h-3 w-3 mr-1" />
+            Post Failed
+          </Badge>
+        );
+      case "pending":
+        return (
+          <Badge
+            variant="outline"
+            className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-400 dark:border-blue-800"
+          >
+            <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+            Posting...
+          </Badge>
+        );
+      default:
+        return null;
+    }
+  };
+
+  const canPost =
+    card.status === "success" &&
+    card.uploadedFile &&
+    card.postStatus !== "pending";
+
   return (
     <Card
       className="overflow-hidden border-l-4 transition-all hover:shadow-md"
@@ -95,19 +154,30 @@ function UploadCard({
                 {card.description}
               </CardDescription>
             </div>
-            <div className="ml-auto">{getStatusBadge(card.status)}</div>
+            <div className="ml-auto flex gap-2">
+              {getStatusBadge(card.status)}
+              {getPostStatusBadge(card.postStatus)}
+            </div>
           </div>
 
-          {card.lastUploaded && (
-            <div className="flex items-center text-xs text-muted-foreground mb-4">
-              <Clock className="h-3 w-3 mr-1" />
-              <span>Last uploaded: {card.lastUploaded}</span>
-            </div>
-          )}
+          <div className="space-y-2 mb-4">
+            {card.lastUploaded && (
+              <div className="flex items-center text-xs text-muted-foreground">
+                <Clock className="h-3 w-3 mr-1" />
+                <span>Last uploaded: {card.lastUploaded}</span>
+              </div>
+            )}
+            {card.lastPosted && (
+              <div className="flex items-center text-xs text-muted-foreground">
+                <Send className="h-3 w-3 mr-1" />
+                <span>Last posted: {card.lastPosted}</span>
+              </div>
+            )}
+          </div>
 
           <div
             className={cn(
-              "border-2 border-dashed rounded-lg p-6 text-center flex flex-col items-center justify-center min-h-[180px] transition-colors duration-200",
+              "border-2 border-dashed rounded-lg p-6 text-center flex flex-col items-center justify-center min-h-[140px] transition-colors duration-200",
               "border-gray-300 dark:border-gray-600 hover:border-primary/50 cursor-pointer",
               card.status === "pending" ? "opacity-50 pointer-events-none" : ""
             )}
@@ -137,14 +207,52 @@ function UploadCard({
 
         {/* Results Section */}
         <div className="p-5 bg-muted/10">
-          <div className="flex items-center mb-4">
-            <h3 className="text-base font-medium">Validation Results</h3>
-            {card.status === "pending" && (
-              <Badge variant="outline" className="ml-auto animate-pulse">
-                <Clock className="h-3 w-3 mr-1" />
-                Processing...
-              </Badge>
-            )}
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-800">
+              Validation Results
+            </h3>
+
+            <div className="flex items-center space-x-3">
+              {card.status === "pending" && (
+                <Badge
+                  variant="outline"
+                  className="animate-pulse text-sm px-2 py-1"
+                >
+                  <Clock className="h-3 w-3 mr-1" />
+                  Processing...
+                </Badge>
+              )}
+
+              {canPost && (
+                <Button
+                  onClick={() => onPost(card.id)}
+                  disabled={
+                    card.postStatus === "pending" || !noValidationErrors
+                  }
+                  className="h-8 px-4 text-sm"
+                  variant={
+                    card.postStatus === "success" ? "outline" : "default"
+                  }
+                >
+                  {card.postStatus === "pending" ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Posting...
+                    </>
+                  ) : card.postStatus === "success" ? (
+                    <>
+                      <CheckCircle2 className="h-4 w-4 mr-2" />
+                      Post Again
+                    </>
+                  ) : (
+                    <>
+                      Post
+                      <Send className="h-4 w-4 ml-2" />
+                    </>
+                  )}
+                </Button>
+              )}
+            </div>
           </div>
 
           {card.status === "pending" ? (
@@ -175,6 +283,7 @@ function UploadCard({
           ) : card.validationData && card.status === "success" ? (
             <div className="p-4 bg-background rounded-lg border border-border/50 max-h-[400px] overflow-y-auto">
               <ValidationResults
+                setNoValidationErrors={setNoValidationErrors}
                 validationData={card.validationData}
                 uploadType={card.id}
               />
@@ -210,7 +319,7 @@ function UploadCard({
         </div>
       </div>
 
-      {card.status === "pending" && (
+      {(card.status === "pending" || card.postStatus === "pending") && (
         <Progress value={50} className="h-1 rounded-none animate-pulse" />
       )}
     </Card>
