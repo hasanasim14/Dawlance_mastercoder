@@ -1,11 +1,8 @@
 "use client";
 
 import { useState, useCallback } from "react";
-
 import type { RowDataType, ColumnConfig } from "@/lib/types";
-
 import { transformArrayFromApiFormat } from "@/lib/data-transformers";
-
 import { RFCTable } from "@/components/rfcTable/DataTable";
 
 // import { toast } from "@/hooks/use-toast";
@@ -15,6 +12,7 @@ export default function BranchRFC() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [posting, setPosting] = useState(false);
+
   const [columns, setColumns] = useState<readonly ColumnConfig[]>([]);
 
   // Generate columns from API response data
@@ -189,34 +187,32 @@ export default function BranchRFC() {
         // Second API call - add your second endpoint here
         const secondApiEndpoint = `${process.env.NEXT_PUBLIC_BASE_URL}/branch-rfc-save?${query}`;
 
-        // Sequential API calls (if second API depends on first)
-        const branchRfcResponse = await fetch(branchRfcEndpoint, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${authToken}`,
-          },
-          body: JSON.stringify(postData),
-        });
+        // Call both APIs in parallel for better performance
+        const [branchRfcResponse, secondApiResponse] = await Promise.all([
+          fetch(branchRfcEndpoint, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${authToken}`,
+            },
+            body: JSON.stringify(postData),
+          }),
+          fetch(secondApiEndpoint, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${authToken}`,
+            },
+            body: JSON.stringify(postData), // You can modify this data structure if needed
+          }),
+        ]);
 
+        // Check if both responses are successful
         if (!branchRfcResponse.ok) {
           throw new Error(
             `Branch RFC API error! status: ${branchRfcResponse.status}`
           );
         }
-
-        const branchRfcResult = await branchRfcResponse.json();
-        console.log("Branch RFC API result:", branchRfcResult);
-
-        // Second API call - can use data from first API if needed
-        const secondApiResponse = await fetch(secondApiEndpoint, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${authToken}`,
-          },
-          body: JSON.stringify(postData),
-        });
 
         if (!secondApiResponse.ok) {
           throw new Error(
@@ -224,7 +220,11 @@ export default function BranchRFC() {
           );
         }
 
+        // Parse both responses
+        const branchRfcResult = await branchRfcResponse.json();
         const secondApiResult = await secondApiResponse.json();
+
+        console.log("Branch RFC API result:", branchRfcResult);
         console.log("Second API result:", secondApiResult);
 
         // toast({
