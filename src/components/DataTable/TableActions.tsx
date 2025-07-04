@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Plus, Trash2, Loader2 } from "lucide-react";
 
 interface TableActionsProps {
-  tableName: string;
   btnName: string;
   selectedRowsCount: number;
   deleting: boolean;
@@ -13,7 +12,6 @@ interface TableActionsProps {
 }
 
 export function TableActions({
-  tableName,
   btnName,
   selectedRowsCount,
   deleting,
@@ -23,7 +21,6 @@ export function TableActions({
   return (
     <div className="p-4 border-b flex justify-between items-center flex-shrink-0">
       <div className="flex items-center gap-4">
-        <h3 className="font-semibold">{tableName}</h3>
         {selectedRowsCount > 0 && (
           <span className="text-sm text-muted-foreground">
             {selectedRowsCount} record{selectedRowsCount > 1 ? "s" : ""}{" "}

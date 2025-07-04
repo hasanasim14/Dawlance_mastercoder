@@ -433,7 +433,6 @@ export default function MasterCoding() {
 
         <div className="flex-1 h-full overflow-hidden min-w-0">
           <DataTable
-            tableName="Master Coding"
             selectionValue="Master ID"
             loading={loading}
             deleting={deleting}

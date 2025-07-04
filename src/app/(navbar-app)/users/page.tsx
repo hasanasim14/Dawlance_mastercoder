@@ -283,7 +283,6 @@ export default function Users() {
       <div className="w-full h-full flex flex-col lg:flex-row gap-4 overflow-hidden">
         <div className="flex-1 h-full overflow-hidden min-w-0">
           <DataTable
-            tableName="Users"
             selectionValue="User"
             loading={loading}
             deleting={deleting}

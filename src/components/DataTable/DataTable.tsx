@@ -9,7 +9,6 @@ import { DataTableBody } from "./DataTableBody";
 import { Pagination } from "./Pagination";
 
 interface DataTableProps {
-  tableName: string;
   selectionValue: keyof RowDataType;
   loading: boolean;
   deleting: boolean;
@@ -30,7 +29,6 @@ interface DataTableProps {
 }
 
 export function DataTable({
-  tableName,
   selectionValue,
   loading,
   deleting,
@@ -57,9 +55,7 @@ export function DataTable({
     <div className="rounded-lg border bg-card shadow-sm h-full w-full flex flex-col overflow-hidden">
       {/* Fixed header section */}
       <TableActions
-        tableName={tableName}
         btnName={selectionValue as string}
-        // btnName={selectionValue}
         selectedRowsCount={selectedRows.length}
         deleting={deleting}
         onDeleteClick={onDeleteClick}

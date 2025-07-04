@@ -280,7 +280,6 @@ export default function Branchmaster() {
       <div className="w-full h-full flex flex-col lg:flex-row gap-4 overflow-hidden">
         <div className="flex-1 h-full overflow-hidden min-w-0">
           <DataTable
-            tableName="Branch Master"
             selectionValue="Branch"
             loading={loading}
             deleting={deleting}
