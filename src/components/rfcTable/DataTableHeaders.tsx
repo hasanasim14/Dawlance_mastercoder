@@ -22,6 +22,7 @@ interface BranchOption {
 
 interface HeadersProps {
   tableName: string;
+  branchFilter: boolean;
   onPost: (
     branch: string,
     month: string,
@@ -47,6 +48,7 @@ interface HeadersProps {
 }
 
 export const RFCTableHeaders: React.FC<HeadersProps> = ({
+  branchFilter,
   tableName,
   onPost,
   onSave,
@@ -62,7 +64,10 @@ export const RFCTableHeaders: React.FC<HeadersProps> = ({
   getRowKey,
 }) => {
   const [branches, setBranches] = useState<BranchOption[]>([]);
-  const [selectedBranch, setSelectedBranch] = useState<string>("");
+  // const [selectedBranch, setSelectedBranch] = useState<string>("");
+  const [selectedBranch, setSelectedBranch] = useState<string>(
+    branchFilter ? "" : "DEFAULT_BRANCH"
+  );
   const [selectedMonth, setSelectedMonth] = useState<string>("");
   const [selectedYear, setSelectedYear] = useState<string>("");
   const [debounceTimeout, setDebounceTimeout] = useState<NodeJS.Timeout | null>(
@@ -94,7 +99,11 @@ export const RFCTableHeaders: React.FC<HeadersProps> = ({
     const { month, year } = getNextMonthAndYear();
     setSelectedMonth(month);
     setSelectedYear(year);
-  }, []);
+
+    if (!branchFilter && branches.length > 0) {
+      setSelectedBranch(branches[0].salesOffice);
+    }
+  }, [branchFilter, branches]);
 
   // fetch branches
   useEffect(() => {
@@ -132,6 +141,11 @@ export const RFCTableHeaders: React.FC<HeadersProps> = ({
         }));
 
         setBranches(branchOptions);
+
+        // If branchFilter is false, set the first branch as default
+        if (!branchFilter && branchOptions.length > 0) {
+          setSelectedBranch(branchOptions[0].salesOffice);
+        }
       } catch (error) {
         console.error("Error fetching branches:", error);
       }
@@ -147,8 +161,12 @@ export const RFCTableHeaders: React.FC<HeadersProps> = ({
       clearTimeout(debounceTimeout);
     }
 
-    // Set new timeout - ONLY when branch/month/year changes
-    if (selectedBranch && selectedMonth && selectedYear) {
+    // Set new timeout - ONLY when month/year changes (and branch if branchFilter is true)
+    const shouldFetch = branchFilter
+      ? selectedBranch && selectedMonth && selectedYear
+      : selectedMonth && selectedYear;
+
+    if (shouldFetch) {
       const timeout = setTimeout(() => {
         onFetchData(selectedBranch, selectedMonth, selectedYear);
       }, 500);
@@ -161,7 +179,7 @@ export const RFCTableHeaders: React.FC<HeadersProps> = ({
         clearTimeout(debounceTimeout);
       }
     };
-  }, [selectedBranch, selectedMonth, selectedYear, onFetchData]);
+  }, [selectedBranch, selectedMonth, selectedYear, onFetchData, branchFilter]);
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -289,6 +307,11 @@ export const RFCTableHeaders: React.FC<HeadersProps> = ({
   return (
     <div className="flex items-center gap-4 p-4 justify-between border-b bg-background/50 flex-shrink-0">
       <div className="flex items-center gap-4">
+        {branchFilter && (
+          // <h3
+          <h3 className="font-semibold">{selectedBranch}</h3>
+        )}
+
         <h3 className="font-semibold">{tableName}</h3>
 
         {/* Active Filters Indicator */}
@@ -314,20 +337,25 @@ export const RFCTableHeaders: React.FC<HeadersProps> = ({
 
       <div className="flex items-center gap-3 flex-wrap">
         {/* Branch Select */}
-        <Select value={selectedBranch} onValueChange={setSelectedBranch}>
-          <SelectTrigger className="w-[280px] min-w-[200px]">
-            <SelectValue placeholder="Select a Branch" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectGroup>
-              {branches?.map((branch) => (
-                <SelectItem key={branch.salesOffice} value={branch.salesOffice}>
-                  {branch.salesBranch}
-                </SelectItem>
-              ))}
-            </SelectGroup>
-          </SelectContent>
-        </Select>
+        {branchFilter && (
+          <Select value={selectedBranch} onValueChange={setSelectedBranch}>
+            <SelectTrigger className="w-[280px] min-w-[200px]">
+              <SelectValue placeholder="Select a Branch" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                {branches?.map((branch) => (
+                  <SelectItem
+                    key={branch.salesOffice}
+                    value={branch.salesOffice}
+                  >
+                    {branch.salesBranch}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+        )}
 
         {/* Month Select */}
         <Select value={selectedMonth} onValueChange={setSelectedMonth}>

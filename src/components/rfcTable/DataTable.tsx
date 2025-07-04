@@ -18,6 +18,7 @@ import { ColumnFilter } from "./ColumnFilter";
 
 interface DataTableProps {
   tableName: string;
+  branchFilter: boolean;
   rowData: RowDataType[];
   originalRowData: RowDataType[];
   columns: readonly ColumnConfig[];
@@ -47,6 +48,7 @@ interface DataTableProps {
 
 export const RFCTable: React.FC<DataTableProps> = ({
   tableName,
+  branchFilter,
   rowData,
   originalRowData,
   columns,
@@ -63,13 +65,12 @@ export const RFCTable: React.FC<DataTableProps> = ({
   editedValues = {},
   onEditedValuesChange,
 }) => {
-  // State for tracking which rows have been modified (now using unique keys)
+  // State for tracking which rows have been modified
   const [modifiedRows, setModifiedRows] = useState<Set<string>>(new Set());
   const [editingCell, setEditingCell] = useState<string | null>(null);
 
   // Helper function to create unique row key
   const getRowKey = (row: RowDataType): string => {
-    // Use Material + Branch as unique identifier (adjust based on your data structure)
     return `${row["Material"] || ""}_${row["Branch"] || ""}`;
   };
 
@@ -77,39 +78,38 @@ export const RFCTable: React.FC<DataTableProps> = ({
   useEffect(() => {
     setModifiedRows(new Set());
     setEditingCell(null);
-  }, [originalRowData]); // Only reset when original data changes, not filtered data
+  }, [originalRowData]);
 
-  // Helper function to determine column classes for responsive design
+  // Function for responsive designs
   const getColumnClasses = (columnKey: string): string => {
     const baseClasses = "text-left";
 
     switch (columnKey) {
       case "Branch":
-        return `${baseClasses} min-w-[140px] w-[140px]`; // Always visible
+        return `${baseClasses} min-w-[140px] w-[140px]`;
       case "Material":
-        return `${baseClasses} min-w-[120px] w-[120px]`; // Always visible
+        return `${baseClasses} min-w-[120px] w-[120px]`;
       case "Material Description":
-        return `${baseClasses} min-w-[200px] w-[200px] hidden md:table-cell`; // Show on medium and up
+        return `${baseClasses} min-w-[200px] w-[200px] hidden md:table-cell`;
       case "Product":
-        return `${baseClasses} min-w-[120px] w-[120px] hidden lg:table-cell`; // Show on large and up
+        return `${baseClasses} min-w-[120px] w-[120px] hidden lg:table-cell`;
       case "Last RFC":
-        return `${baseClasses} min-w-[80px] w-[80px] hidden sm:table-cell`; // Show on small and up
+        return `${baseClasses} min-w-[80px] w-[80px] hidden sm:table-cell`;
       default:
-        // For dynamic columns (Sales, RFC, etc.)
         if (columnKey.includes("Sales")) {
-          return `${baseClasses} min-w-[100px] w-[100px] hidden lg:table-cell`; // Show on large and up
+          return `${baseClasses} min-w-[100px] w-[100px] hidden lg:table-cell`;
         }
         if (columnKey.includes("RFC") && !columnKey.includes("Last")) {
-          return `${baseClasses} min-w-[120px] w-[120px]`; // Always visible (editable column)
+          return `${baseClasses} min-w-[120px] w-[120px]`;
         }
         if (columnKey.includes("YTD")) {
-          return `${baseClasses} min-w-[100px] w-[100px] hidden lg:table-cell`; // Show on large and up
+          return `${baseClasses} min-w-[100px] w-[100px] hidden lg:table-cell`;
         }
-        return `${baseClasses} min-w-[100px] w-[100px] hidden md:table-cell`; // Default: show on medium and up
+        return `${baseClasses} min-w-[100px] w-[100px] hidden md:table-cell`;
     }
   };
 
-  // Get the RFC column (last column)
+  // Get the RFC column
   const getRFCColumn = () => {
     return columns.find(
       (col) => col.key.includes("RFC") && !col.key.includes("Last")
@@ -143,7 +143,6 @@ export const RFCTable: React.FC<DataTableProps> = ({
     setEditingCell(null);
   };
 
-  // Get current value for a cell (edited value or original)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const getCellValue = (row: RowDataType, originalValue: any) => {
     const rowKey = getRowKey(row);
@@ -188,9 +187,9 @@ export const RFCTable: React.FC<DataTableProps> = ({
 
   return (
     <div className="rounded-lg border bg-card shadow-sm h-full w-full flex flex-col">
-      {/* Header with controls */}
       <RFCTableHeaders
         tableName={tableName}
+        branchFilter={branchFilter}
         onPost={onPost}
         onSave={onSave}
         onFetchData={onFetchData}
@@ -205,7 +204,6 @@ export const RFCTable: React.FC<DataTableProps> = ({
         getRowKey={getRowKey}
       />
 
-      {/* Responsive table container */}
       <div className="flex-1 overflow-hidden">
         <div className="h-full w-full overflow-auto">
           <div className="min-w-full">
@@ -359,17 +357,6 @@ export const RFCTable: React.FC<DataTableProps> = ({
               </TableBody>
             </Table>
           </div>
-        </div>
-      </div>
-
-      {/* Mobile responsive indicator */}
-      <div className="md:hidden p-2 text-xs text-muted-foreground border-t bg-muted/20">
-        <div className="flex items-center gap-1">
-          <span>📱</span>
-          <span>
-            Some columns hidden on smaller screens. Scroll horizontally to view
-            all data.
-          </span>
         </div>
       </div>
     </div>
