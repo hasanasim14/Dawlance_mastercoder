@@ -37,7 +37,7 @@ export default function BranchRFC() {
 
     // Define the preferred order of columns
     const columnOrder = [
-      "Branch",
+      // "Branch",
       "Material",
       "Material Description",
       "Product",
@@ -334,7 +334,8 @@ export default function BranchRFC() {
     <div className="w-full h-[85vh] p-4 overflow-hidden">
       <div className="w-full h-full overflow-hidden">
         <RFCTable
-          tableName="Branch RFC"
+          tableName=""
+          branchFilter={true}
           rowData={filteredRowData}
           originalRowData={originalRowData}
           columns={columns}
