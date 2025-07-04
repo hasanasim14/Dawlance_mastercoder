@@ -15,7 +15,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { ValidationData } from "@/app/(navbar-app)/upload/page";
+import type { ValidationData } from "@/app/(navbar-app)/upload-center/page";
 import { useEffect } from "react";
 
 // Modal content component for detailed error display

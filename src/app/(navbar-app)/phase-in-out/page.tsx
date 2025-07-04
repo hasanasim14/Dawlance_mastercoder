@@ -421,7 +421,6 @@ export default function PhaseIO() {
 
         <div className="flex-1 h-full overflow-hidden min-w-0">
           <DataTable
-            tableName="Phase In/Out"
             selectionValue="Material"
             loading={loading}
             deleting={deleting}

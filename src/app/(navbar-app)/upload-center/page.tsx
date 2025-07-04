@@ -1,9 +1,9 @@
 "use client";
 
 import type React from "react";
-import UploadCard from "@/components/Uploads/UploadCard";
 import { useState, useRef } from "react";
 import { ShoppingCart, Server, GanttChart, DollarSign } from "lucide-react";
+import UploadCard from "@/components/upload-center/UploadCard";
 
 // Server Action for handling file upload
 async function uploadFileAction(formData: FormData) {

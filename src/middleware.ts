@@ -21,10 +21,10 @@ export const config = {
   matcher: [
     "/dashboard",
     "/master-coding",
-    "/phaseIO",
+    "/phase-in-out",
     "/production",
     "/results",
-    "/upload",
+    "/upload-center",
     "/branch-master",
     "/branch-rfc",
     "/roles",

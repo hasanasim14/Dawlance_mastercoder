@@ -19,7 +19,7 @@ import type {
   UploadCardData,
   UploadStatus,
   PostStatus,
-} from "@/app/(navbar-app)/upload/page";
+} from "@/app/(navbar-app)/upload-center/page";
 import { useState } from "react";
 
 interface UploadCardProps {

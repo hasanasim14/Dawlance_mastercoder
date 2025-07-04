@@ -63,7 +63,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
     },
     {
       title: "Phase In/Out",
-      url: "/phaseIO",
+      url: "/phase-in-out",
       icon: Repeat,
     },
     {
@@ -83,7 +83,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
     },
     {
       title: "Upload Files",
-      url: "/upload",
+      url: "/upload-center",
       icon: Upload,
     },
     {
