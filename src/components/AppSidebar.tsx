@@ -97,6 +97,16 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
       icon: Store,
     },
     {
+      title: "Marketing RFC",
+      url: "/marketing-rfc",
+      icon: Store,
+    },
+    {
+      title: "Dawlance RFC",
+      url: "/dawlance-rfc",
+      icon: Store,
+    },
+    {
       title: "Users",
       url: "/users",
       icon: Users,

@@ -27,6 +27,8 @@ export const config = {
     "/upload-center",
     "/branch-master",
     "/branch-rfc",
+    "/marketing-rfc",
+    "/dawlance-rfc",
     "/roles",
     "/users",
   ],
