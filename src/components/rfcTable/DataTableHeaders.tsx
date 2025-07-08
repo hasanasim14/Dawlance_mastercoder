@@ -1,5 +1,4 @@
 "use client";
-
 import type React from "react";
 import { useEffect, useState } from "react";
 import {
@@ -12,7 +11,7 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Save, Send, Loader2, FilterX } from "lucide-react";
-import type { RowDataType } from "@/lib/types";
+import type { RowDataType, ColumnConfig } from "@/lib/types";
 import { getNextMonthAndYear } from "@/lib/utils";
 
 interface BranchOption {
@@ -33,18 +32,23 @@ interface HeadersProps {
     branch: string,
     month: string,
     year: string,
-    changedData: Array<{ material: string; rfc: string }>
+    changedData: Array<{ material: string; [key: string]: any }>
   ) => Promise<void>;
   onFetchData: (branch: string, month: string, year: string) => Promise<void>;
   isSaving?: boolean;
   isPosting?: boolean;
   rowData: RowDataType[];
   originalRowData: RowDataType[];
-  editedValues: Record<string, string>;
+  editedValues: Record<string, Record<string, string>>;
   modifiedRows: Set<string>;
-  rfcColumnKey?: string;
+  rfcColumns: readonly ColumnConfig[];
   columnFilters?: Record<string, string[]>;
   getRowKey: (row: RowDataType) => string;
+  getCellValue: (
+    row: RowDataType,
+    columnKey: string,
+    originalValue: any
+  ) => string;
 }
 
 export const RFCTableHeaders: React.FC<HeadersProps> = ({
@@ -59,12 +63,12 @@ export const RFCTableHeaders: React.FC<HeadersProps> = ({
   originalRowData,
   editedValues,
   modifiedRows,
-  rfcColumnKey,
+  rfcColumns,
   columnFilters = {},
   getRowKey,
+  getCellValue,
 }) => {
   const [branches, setBranches] = useState<BranchOption[]>([]);
-  // const [selectedBranch, setSelectedBranch] = useState<string>("");
   const [selectedBranch, setSelectedBranch] = useState<string>(
     branchFilter ? "" : "DEFAULT_BRANCH"
   );
@@ -99,7 +103,6 @@ export const RFCTableHeaders: React.FC<HeadersProps> = ({
     const { month, year } = getNextMonthAndYear();
     setSelectedMonth(month);
     setSelectedYear(year);
-
     if (!branchFilter && branches.length > 0) {
       setSelectedBranch(branches[0].salesOffice);
     }
@@ -108,7 +111,6 @@ export const RFCTableHeaders: React.FC<HeadersProps> = ({
   // fetch branches
   useEffect(() => {
     const localBranches = localStorage.getItem("branches");
-
     const fetchBranches = async () => {
       try {
         const res = await fetch(
@@ -120,29 +122,21 @@ export const RFCTableHeaders: React.FC<HeadersProps> = ({
             },
           }
         );
-
         const data = await res.json();
         let branchList = data.data;
-
         if (localBranches?.length) {
           const storedBranchCodes = localBranches
             .split(",")
             .map((code) => code.trim());
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           branchList = branchList.filter((branch: any) =>
             storedBranchCodes.includes(branch["Branch Code"])
           );
         }
-
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const branchOptions: BranchOption[] = branchList.map((branch: any) => ({
           salesOffice: branch["Sales Office"],
           salesBranch: branch["Sales Branch"] || branch["Sales Office"],
         }));
-
         setBranches(branchOptions);
-
-        // If branchFilter is false, set the first branch as default
         if (!branchFilter && branchOptions.length > 0) {
           setSelectedBranch(branchOptions[0].salesOffice);
         }
@@ -156,24 +150,18 @@ export const RFCTableHeaders: React.FC<HeadersProps> = ({
 
   // Fetch data when selections change (with debouncing)
   useEffect(() => {
-    // Clear existing timeout
     if (debounceTimeout) {
       clearTimeout(debounceTimeout);
     }
-
-    // Set new timeout - ONLY when month/year changes (and branch if branchFilter is true)
     const shouldFetch = branchFilter
       ? selectedBranch && selectedMonth && selectedYear
       : selectedMonth && selectedYear;
-
     if (shouldFetch) {
       const timeout = setTimeout(() => {
         onFetchData(selectedBranch, selectedMonth, selectedYear);
       }, 500);
       setDebounceTimeout(timeout);
     }
-
-    // Cleanup function
     return () => {
       if (debounceTimeout) {
         clearTimeout(debounceTimeout);
@@ -190,66 +178,87 @@ export const RFCTableHeaders: React.FC<HeadersProps> = ({
     };
   }, []);
 
-  // Get current value for a cell
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const getCellValue = (row: RowDataType, originalValue: any) => {
-    const rowKey = getRowKey(row);
-    const editedValue = editedValues[rowKey];
-    const finalValue =
-      editedValue !== undefined ? editedValue : String(originalValue ?? "");
+  // Validate if ALL rows have been edited (at least one RFC field per row)
+  const validateAllRowsEdited = () => {
+    if (rfcColumns.length === 0 || originalRowData.length === 0) return false;
 
-    return finalValue;
-  };
-
-  // Validate if all RFC values are filled for POST
-  const validateAllRFCFilled = () => {
-    if (!rfcColumnKey) return false;
-
+    // Check if every row has been edited (at least one RFC field modified)
     return originalRowData.every((row) => {
-      const currentValue = getCellValue(row, row[rfcColumnKey]);
-      return (
-        currentValue !== "" &&
-        currentValue !== null &&
-        currentValue !== undefined
-      );
+      const rowKey = getRowKey(row);
+      const rowEdits = editedValues[rowKey];
+
+      // If this row hasn't been edited at all, return false
+      if (!rowEdits) return false;
+
+      // Check if at least one RFC column has been edited for this row
+      return rfcColumns.some((rfcColumn) => {
+        const editedValue = rowEdits[rfcColumn.key];
+        // Must be explicitly edited (exists in editedValues) and not empty
+        return (
+          editedValue !== undefined &&
+          editedValue !== "" &&
+          editedValue !== null
+        );
+      });
     });
   };
 
   // Get changed records for SAVE - work with unique keys
   const getChangedRecords = () => {
-    if (!rfcColumnKey) return [];
+    if (rfcColumns.length === 0) return [];
+    const changedRecords: Array<{ material: string; [key: string]: any }> = [];
 
-    const changedRecords: Array<{ material: string; rfc: string }> = [];
-
-    // Go through all modified rows and find the corresponding original data
     modifiedRows.forEach((rowKey) => {
-      const editedValue = editedValues[rowKey];
-
-      // Find the original row that matches this key
+      const rowEdits = editedValues[rowKey];
       const originalRow = originalRowData.find(
         (row) => getRowKey(row) === rowKey
       );
 
-      if (
-        originalRow &&
-        editedValue !== undefined &&
-        editedValue !== "" &&
-        editedValue !== null
-      ) {
-        changedRecords.push({
+      if (originalRow && rowEdits) {
+        const record: { material: string; [key: string]: any } = {
           material: String(originalRow["Material"] || ""),
-          rfc: editedValue,
-        });
+        };
+
+        // Handle single RFC vs multiple RFCs
+        if (rfcColumns.length === 1) {
+          const rfcValue = rowEdits[rfcColumns[0].key];
+          if (rfcValue !== undefined && rfcValue !== "" && rfcValue !== null) {
+            record.rfc = Number(rfcValue) || 0;
+            changedRecords.push(record);
+          }
+        } else {
+          // Multiple RFCs
+          let hasValidRFC = false;
+          rfcColumns.forEach((rfcColumn, index) => {
+            const rfcValue = rowEdits[rfcColumn.key];
+            if (
+              rfcValue !== undefined &&
+              rfcValue !== "" &&
+              rfcValue !== null
+            ) {
+              record[`rfc${index}`] = Number(rfcValue) || 0;
+              hasValidRFC = true;
+            }
+          });
+          if (hasValidRFC) {
+            changedRecords.push(record);
+          }
+        }
       }
     });
 
     return changedRecords;
   };
 
-  // Check if save is allowed (has valid changes)
+  // Check if save is allowed (has valid changes but not all rows edited)
   const canSave = () => {
     const changedRecords = getChangedRecords();
-    return changedRecords.length > 0;
+    return changedRecords.length > 0 && !validateAllRowsEdited();
+  };
+
+  // Check if post is allowed (all rows have been edited)
+  const canPost = () => {
+    return validateAllRowsEdited();
   };
 
   // Check if there are active filters
@@ -267,9 +276,9 @@ export const RFCTableHeaders: React.FC<HeadersProps> = ({
 
   const handlePost = async () => {
     if (selectedBranch && selectedMonth && selectedYear) {
-      if (!validateAllRFCFilled()) {
+      if (!validateAllRowsEdited()) {
         alert(
-          "All RFC values must be filled before posting. You can use 0 but not leave any field empty. Please check all data including filtered rows."
+          "All rows must have at least one RFC field edited before posting. Please ensure you have modified at least one RFC field in every row."
         );
         return;
       }
@@ -277,11 +286,15 @@ export const RFCTableHeaders: React.FC<HeadersProps> = ({
       // Create updated data with edited values using ORIGINAL data
       const updatedData = originalRowData.map((row) => {
         const rowKey = getRowKey(row);
-        if (rfcColumnKey && editedValues[rowKey] !== undefined) {
-          return {
-            ...row,
-            [rfcColumnKey]: editedValues[rowKey],
-          };
+        const rowEdits = editedValues[rowKey];
+        if (rowEdits) {
+          const updatedRow = { ...row };
+          rfcColumns.forEach((rfcColumn) => {
+            if (rowEdits[rfcColumn.key] !== undefined) {
+              updatedRow[rfcColumn.key] = rowEdits[rfcColumn.key];
+            }
+          });
+          return updatedRow;
         }
         return row;
       });
@@ -296,7 +309,6 @@ export const RFCTableHeaders: React.FC<HeadersProps> = ({
         alert("No valid changes to save. Please edit some RFC values first.");
         return;
       }
-
       const changedRecords = getChangedRecords();
       await onSave(selectedBranch, selectedMonth, selectedYear, changedRecords);
     }
@@ -304,16 +316,40 @@ export const RFCTableHeaders: React.FC<HeadersProps> = ({
 
   const isFormValid = selectedBranch && selectedMonth && selectedYear;
 
+  // Get editing statistics for better user feedback
+  const getEditingStats = () => {
+    const totalRows = originalRowData.length;
+    let editedRows = 0;
+
+    originalRowData.forEach((row) => {
+      const rowKey = getRowKey(row);
+      const rowEdits = editedValues[rowKey];
+      if (rowEdits) {
+        // Check if at least one RFC field has been edited in this row
+        const hasEditedRFC = rfcColumns.some((rfcColumn) => {
+          const editedValue = rowEdits[rfcColumn.key];
+          return (
+            editedValue !== undefined &&
+            editedValue !== "" &&
+            editedValue !== null
+          );
+        });
+        if (hasEditedRFC) {
+          editedRows++;
+        }
+      }
+    });
+
+    return { totalRows, editedRows };
+  };
+
+  const { totalRows, editedRows } = getEditingStats();
+
   return (
     <div className="flex items-center gap-4 p-4 justify-between border-b bg-background/50 flex-shrink-0">
       <div className="flex items-center gap-4">
-        {branchFilter && (
-          // <h3
-          <h3 className="font-semibold">{selectedBranch}</h3>
-        )}
-
+        {branchFilter && <h3 className="font-semibold">{selectedBranch}</h3>}
         <h3 className="font-semibold">{tableName}</h3>
-
         {/* Active Filters Indicator */}
         {hasActiveFilters() && (
           <div className="flex items-center gap-2 px-2 py-1 bg-blue-100 dark:bg-blue-900/20 rounded-md text-sm">
@@ -324,13 +360,12 @@ export const RFCTableHeaders: React.FC<HeadersProps> = ({
             </span>
           </div>
         )}
-
         {/* Show validation info */}
         {originalRowData.length > 0 && (
           <div className="text-xs text-muted-foreground">
             Total rows: {originalRowData.length} | Showing: {rowData.length} |
-            Modified: {modifiedRows.size}
-            {Object.keys(editedValues).length}
+            Modified: {modifiedRows.size} | Rows Edited: {editedRows}/
+            {totalRows}
           </div>
         )}
       </div>
@@ -409,12 +444,9 @@ export const RFCTableHeaders: React.FC<HeadersProps> = ({
               </>
             )}
           </Button>
-
           <Button
             onClick={handlePost}
-            disabled={
-              !isFormValid || !validateAllRFCFilled() || isSaving || isPosting
-            }
+            disabled={!isFormValid || !canPost() || isSaving || isPosting}
             size="sm"
           >
             {isPosting ? (
@@ -425,7 +457,7 @@ export const RFCTableHeaders: React.FC<HeadersProps> = ({
             ) : (
               <>
                 <Send className="w-4 h-4 mr-2" />
-                Post
+                Post ({editedRows}/{totalRows})
               </>
             )}
           </Button>

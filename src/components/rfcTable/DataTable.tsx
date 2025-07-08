@@ -32,7 +32,7 @@ interface DataTableProps {
     branch: string,
     month: string,
     year: string,
-    changedData: Array<{ material: string; rfc: string }>
+    changedData: Array<{ material: string; [key: string]: any }>
   ) => Promise<void>;
   onFetchData: (branch: string, month: string, year: string) => Promise<void>;
   isLoading?: boolean;
@@ -42,8 +42,10 @@ interface DataTableProps {
   columnFilters?: Record<string, string[]>;
   onFilterChange?: (filters: Record<string, string[]>) => void;
   onApplyFilters?: () => void;
-  editedValues?: Record<string, string>;
-  onEditedValuesChange?: (editedValues: Record<string, string>) => void;
+  editedValues?: Record<string, Record<string, string>>;
+  onEditedValuesChange?: (
+    editedValues: Record<string, Record<string, string>>
+  ) => void;
 }
 
 export const RFCTable: React.FC<DataTableProps> = ({
@@ -83,7 +85,6 @@ export const RFCTable: React.FC<DataTableProps> = ({
   // Function for responsive designs
   const getColumnClasses = (columnKey: string): string => {
     const baseClasses = "text-left";
-
     switch (columnKey) {
       case "Branch":
         return `${baseClasses} min-w-[140px] w-[140px]`;
@@ -109,33 +110,48 @@ export const RFCTable: React.FC<DataTableProps> = ({
     }
   };
 
-  // Get the RFC column
-  const getRFCColumn = () => {
-    return columns.find(
-      (col) => col.key.includes("RFC") && !col.key.includes("Last")
-    );
+  // Get all RFC columns (excluding "Last RFC")
+  const getRFCColumns = () => {
+    return columns.filter((col) => {
+      const key = col.key;
+      // Must contain "RFC" and end with " RFC" (not "Branch RFC" or "Marketing RFC")
+      return (
+        key.includes("RFC") &&
+        key.endsWith(" RFC") &&
+        !key.includes("Branch") &&
+        !key.includes("Marketing") &&
+        !key.includes("Last")
+      );
+    });
   };
 
-  // Handle cell value change
-  const handleCellChange = (row: RowDataType, value: string) => {
+  // Handle cell value change for specific RFC column
+  const handleCellChange = (
+    row: RowDataType,
+    columnKey: string,
+    value: string
+  ) => {
     const rowKey = getRowKey(row);
+    const currentRowEdits = editedValues[rowKey] || {};
 
     const newEditedValues = {
       ...editedValues,
-      [rowKey]: value,
+      [rowKey]: {
+        ...currentRowEdits,
+        [columnKey]: value,
+      },
     };
 
     if (onEditedValuesChange) {
       onEditedValuesChange(newEditedValues);
     }
-
     setModifiedRows((prev) => new Set([...prev, rowKey]));
   };
 
   // Handle cell edit start
-  const handleCellEdit = (row: RowDataType) => {
+  const handleCellEdit = (row: RowDataType, columnKey: string) => {
     const rowKey = getRowKey(row);
-    setEditingCell(rowKey);
+    setEditingCell(`${rowKey}_${columnKey}`);
   };
 
   // Handle cell edit end
@@ -143,13 +159,17 @@ export const RFCTable: React.FC<DataTableProps> = ({
     setEditingCell(null);
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const getCellValue = (row: RowDataType, originalValue: any) => {
+  // Get cell value for specific column
+  const getCellValue = (
+    row: RowDataType,
+    columnKey: string,
+    originalValue: any
+  ) => {
     const rowKey = getRowKey(row);
-    const editedValue = editedValues[rowKey];
+    const rowEdits = editedValues[rowKey];
+    const editedValue = rowEdits?.[columnKey];
     const finalValue =
       editedValue !== undefined ? editedValue : String(originalValue ?? "");
-
     return finalValue;
   };
 
@@ -159,10 +179,10 @@ export const RFCTable: React.FC<DataTableProps> = ({
     return modifiedRows.has(rowKey);
   };
 
-  // Check if a cell is being edited
-  const isCellEditing = (row: RowDataType): boolean => {
+  // Check if a specific cell is being edited
+  const isCellEditing = (row: RowDataType, columnKey: string): boolean => {
     const rowKey = getRowKey(row);
-    return editingCell === rowKey;
+    return editingCell === `${rowKey}_${columnKey}`;
   };
 
   // Handle filter change (this just updates local state)
@@ -183,7 +203,7 @@ export const RFCTable: React.FC<DataTableProps> = ({
     }
   };
 
-  const rfcColumn = getRFCColumn();
+  const rfcColumns = getRFCColumns();
 
   return (
     <div className="rounded-lg border bg-card shadow-sm h-full w-full flex flex-col">
@@ -199,9 +219,10 @@ export const RFCTable: React.FC<DataTableProps> = ({
         originalRowData={originalRowData}
         editedValues={editedValues}
         modifiedRows={modifiedRows}
-        rfcColumnKey={rfcColumn?.key}
+        rfcColumns={rfcColumns}
         columnFilters={columnFilters}
         getRowKey={getRowKey}
+        getCellValue={getCellValue}
       />
 
       <div className="flex-1 overflow-hidden">
@@ -215,6 +236,12 @@ export const RFCTable: React.FC<DataTableProps> = ({
                     const hasActiveFilter =
                       columnFilters[column.key]?.length > 0;
                     const columnClasses = getColumnClasses(column.key);
+                    const isRFCColumn =
+                      column.key.includes("RFC") &&
+                      column.key.endsWith(" RFC") &&
+                      !column.key.includes("Branch") &&
+                      !column.key.includes("Marketing") &&
+                      !column.key.includes("Last");
 
                     return (
                       <TableHead
@@ -224,15 +251,13 @@ export const RFCTable: React.FC<DataTableProps> = ({
                         <div className="flex items-center justify-between gap-2">
                           <div className="flex items-center gap-2 min-w-0">
                             <span className="truncate">{column.label}</span>
-                            {colIndex === columns.length - 1 &&
-                              column.key.includes("RFC") && (
-                                <Edit3 className="w-3 h-3 text-muted-foreground flex-shrink-0" />
-                              )}
+                            {isRFCColumn && (
+                              <Edit3 className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+                            )}
                             {hasActiveFilter && (
                               <div className="w-2 h-2 bg-blue-600 rounded-full flex-shrink-0" />
                             )}
                           </div>
-
                           {isFilterable && (
                             <div className="flex-shrink-0">
                               <ColumnFilter
@@ -253,7 +278,6 @@ export const RFCTable: React.FC<DataTableProps> = ({
                   })}
                 </TableRow>
               </TableHeader>
-
               <TableBody>
                 {isLoading ? (
                   <TableRow>
@@ -288,13 +312,20 @@ export const RFCTable: React.FC<DataTableProps> = ({
                       }`}
                     >
                       {columns.map((column, colIndex) => {
-                        const isLastColumn = colIndex === columns.length - 1;
                         const isRFCColumn =
                           column.key.includes("RFC") &&
+                          column.key.endsWith(" RFC") &&
+                          !column.key.includes("Branch") &&
+                          !column.key.includes("Marketing") &&
                           !column.key.includes("Last");
-                        const isEditable = isLastColumn && isRFCColumn;
-                        const cellValue = getCellValue(row, row[column.key]);
-                        const isEditing = isCellEditing(row) && isEditable;
+                        const isEditable = isRFCColumn;
+                        const cellValue = getCellValue(
+                          row,
+                          column.key,
+                          row[column.key]
+                        );
+                        const isEditing =
+                          isCellEditing(row, column.key) && isEditable;
                         const columnClasses = getColumnClasses(column.key);
 
                         return (
@@ -304,45 +335,25 @@ export const RFCTable: React.FC<DataTableProps> = ({
                             title={String(row[column.key] ?? "")}
                           >
                             {isEditable ? (
-                              isEditing ? (
-                                <Input
-                                  type="number"
-                                  value={cellValue}
-                                  onChange={(e) =>
-                                    handleCellChange(row, e.target.value)
+                              <Input
+                                type="number"
+                                value={cellValue}
+                                onChange={(e) =>
+                                  handleCellChange(
+                                    row,
+                                    column.key,
+                                    e.target.value
+                                  )
+                                }
+                                onBlur={handleCellBlur}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter" || e.key === "Escape") {
+                                    handleCellBlur();
                                   }
-                                  onBlur={handleCellBlur}
-                                  onKeyDown={(e) => {
-                                    if (
-                                      e.key === "Enter" ||
-                                      e.key === "Escape"
-                                    ) {
-                                      handleCellBlur();
-                                    }
-                                  }}
-                                  className="w-full h-8 text-sm"
-                                  autoFocus
-                                  placeholder="Enter RFC value"
-                                />
-                              ) : (
-                                <div
-                                  className="cursor-pointer hover:bg-muted/50 p-1 rounded min-h-[24px] flex items-center w-full"
-                                  onClick={() => handleCellEdit(row)}
-                                >
-                                  <span
-                                    className={`truncate flex-1 ${
-                                      isRowModified(row)
-                                        ? "font-medium text-blue-600 dark:text-blue-400"
-                                        : ""
-                                    }`}
-                                  >
-                                    {cellValue || "Click to edit"}
-                                  </span>
-                                  {!cellValue && (
-                                    <Edit3 className="w-3 h-3 ml-1 text-muted-foreground flex-shrink-0" />
-                                  )}
-                                </div>
-                              )
+                                }}
+                                className="w-full h-8 text-sm"
+                                placeholder="Enter RFC value"
+                              />
                             ) : (
                               <div className="truncate text-sm w-full">
                                 {String(row[column.key] ?? "")}
