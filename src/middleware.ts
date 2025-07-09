@@ -22,7 +22,6 @@ export const config = {
     "/dashboard",
     "/master-coding",
     "/phase-in-out",
-    "/production",
     "/results",
     "/upload-center",
     "/branch-master",
