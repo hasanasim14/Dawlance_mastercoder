@@ -1,5 +1,4 @@
 "use client";
-
 import type React from "react";
 import ValidationResults from "./ValidationResults";
 import { Card, CardTitle, CardDescription } from "@/components/ui/card";
@@ -31,6 +30,8 @@ interface UploadCardProps {
   onFileDrop: (cardId: string, e: React.DragEvent<HTMLDivElement>) => void;
   onDragOver: (e: React.DragEvent<HTMLDivElement>) => void;
   onPost: (cardId: string) => void;
+  onFetch: (cardId: string) => void;
+  isLoading?: boolean;
 }
 
 function UploadCard({
@@ -39,6 +40,8 @@ function UploadCard({
   onFileDrop,
   onDragOver,
   onPost,
+  onFetch,
+  isLoading = false,
 }: UploadCardProps) {
   const [noValidationErrors, setNoValidationErrors] = useState(false);
 
@@ -142,24 +145,44 @@ function UploadCard({
       <div className="grid md:grid-cols-[1fr_1fr]">
         {/* Upload Section */}
         <div className="p-5 border-r border-border/50">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 rounded-full bg-primary/10 text-primary">
-              {card.icon}
+          <div className="flex items-start justify-between mb-4">
+            {/* Left side: Icon + Title + Description */}
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-full bg-primary/10 text-primary">
+                {card.icon}
+              </div>
+              <div>
+                <CardTitle className="text-lg font-medium">
+                  {card.title}
+                </CardTitle>
+                <CardDescription className="text-sm mt-1">
+                  {card.description}
+                </CardDescription>
+              </div>
             </div>
-            <div>
-              <CardTitle className="text-lg font-medium">
-                {card.title}
-              </CardTitle>
-              <CardDescription className="text-sm mt-1">
-                {card.description}
-              </CardDescription>
-            </div>
-            <div className="ml-auto flex gap-2">
-              {getStatusBadge(card.status)}
-              {getPostStatusBadge(card.postStatus)}
+            {/* Right side: Button + Badges */}
+            <div className="flex items-center gap-4">
+              <Button
+                className="text-xs"
+                onClick={() => onFetch(card.id)}
+                size="sm"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                    Loading...
+                  </>
+                ) : (
+                  "View Last Uploaded File"
+                )}
+              </Button>
+              <div className="flex gap-2">
+                {getStatusBadge(card.status)}
+                {getPostStatusBadge(card.postStatus)}
+              </div>
             </div>
           </div>
-
           <div className="space-y-2 mb-4">
             {card.lastUploaded && (
               <div className="flex items-center text-xs text-muted-foreground">
@@ -174,7 +197,6 @@ function UploadCard({
               </div>
             )}
           </div>
-
           <div
             className={cn(
               "border-2 border-dashed rounded-lg p-6 text-center flex flex-col items-center justify-center min-h-[140px] transition-colors duration-200",
@@ -204,14 +226,12 @@ function UploadCard({
             />
           </div>
         </div>
-
         {/* Results Section */}
         <div className="p-5 bg-muted/10">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-800">
               Validation Results
             </h3>
-
             <div className="flex items-center space-x-3">
               {card.status === "pending" && (
                 <Badge
@@ -222,7 +242,6 @@ function UploadCard({
                   Processing...
                 </Badge>
               )}
-
               {canPost && (
                 <Button
                   onClick={() => onPost(card.id)}
@@ -256,7 +275,6 @@ function UploadCard({
               )}
             </div>
           </div>
-
           {card.status === "pending" ? (
             <div className="flex flex-col items-center justify-center h-[180px] text-center">
               <div className="animate-spin mb-4">
@@ -320,7 +338,6 @@ function UploadCard({
           )}
         </div>
       </div>
-
       {(card.status === "pending" || card.postStatus === "pending") && (
         <Progress value={50} className="h-1 rounded-none animate-pulse" />
       )}

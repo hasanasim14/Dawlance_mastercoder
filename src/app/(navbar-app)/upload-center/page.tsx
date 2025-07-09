@@ -1,5 +1,4 @@
 "use client";
-
 import type React from "react";
 import { useState, useRef, useEffect } from "react";
 import { ShoppingCart, Server, GanttChart, DollarSign } from "lucide-react";
@@ -12,13 +11,17 @@ import {
 } from "@/components/ui/select";
 import UploadCard from "@/components/upload-center/UploadCard";
 import { getNextMonthAndYear, months } from "@/lib/utils";
+import type { PaginationData } from "@/lib/types";
+import DataTable from "@/components/upload-center/FileData";
+
+// eslint-disable-next-line
+export type PreviousCardData = Record<string, any>;
 
 // Server Action for posting file to API
 async function postFileAction(formData: FormData) {
   try {
     const file = formData.get("file") as File;
     const option = formData.get("type") as string;
-
     if (!file) {
       return { success: false, error: "No file provided" };
     }
@@ -81,7 +84,7 @@ export interface UploadCardData {
   uploadedFile: File | null;
 }
 
-function UploadCards() {
+function UploadCenter() {
   const SalesInputRef = useRef<HTMLInputElement>(null);
   const StocksInputRef = useRef<HTMLInputElement>(null);
   const ProductionInputRef = useRef<HTMLInputElement>(null);
@@ -97,6 +100,25 @@ function UploadCards() {
     label: (currentYear - 5 + i).toString(),
   }));
 
+  // Pagination states
+  const [pagination, setPagination] = useState<PaginationData>({
+    total_records: 0,
+    records_per_page: 50,
+    page: 1,
+    total_pages: 0,
+  });
+  // eslint-disable-next-line
+  const [pageSize, setPageSize] = useState(50);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // Table data and modal states
+  const [previousFileData, setPreviousFileData] = useState<PreviousCardData[]>(
+    []
+  );
+  const [showTable, setShowTable] = useState(false);
+  const [tableLoading, setTableLoading] = useState(false);
+  const [currentTableType, setCurrentTableType] = useState<string>("");
+
   // Set default values on component mount
   useEffect(() => {
     const { month, year } = getNextMonthAndYear();
@@ -109,7 +131,6 @@ function UploadCards() {
     try {
       const file = formData.get("file") as File;
       const option = formData.get("type") as string;
-
       if (!file) {
         return { success: false, error: "No file provided" };
       }
@@ -218,7 +239,6 @@ function UploadCards() {
     setCards((prev) =>
       prev.map((card) => {
         if (!card || card.id !== cardId) return card;
-
         return {
           ...card,
           status: "pending" as UploadStatus,
@@ -242,7 +262,6 @@ function UploadCards() {
         setCards((prev) =>
           prev.map((card) => {
             if (!card || card.id !== cardId) return card;
-
             return {
               ...card,
               status: "success" as UploadStatus,
@@ -263,7 +282,6 @@ function UploadCards() {
         setCards((prev) =>
           prev.map((card) => {
             if (!card || card.id !== cardId) return card;
-
             return {
               ...card,
               status: "error" as UploadStatus,
@@ -278,7 +296,6 @@ function UploadCards() {
       setCards((prev) =>
         prev.map((card) => {
           if (!card || card.id !== cardId) return card;
-
           return {
             ...card,
             status: "error" as UploadStatus,
@@ -301,7 +318,6 @@ function UploadCards() {
     setCards((prev) =>
       prev.map((card) => {
         if (!card || card.id !== cardId) return card;
-
         return {
           ...card,
           postStatus: "pending" as PostStatus,
@@ -323,7 +339,6 @@ function UploadCards() {
         setCards((prev) =>
           prev.map((card) => {
             if (!card || card.id !== cardId) return card;
-
             return {
               ...card,
               postStatus: "success" as PostStatus,
@@ -343,7 +358,6 @@ function UploadCards() {
         setCards((prev) =>
           prev.map((card) => {
             if (!card || card.id !== cardId) return card;
-
             return {
               ...card,
               postStatus: "error" as PostStatus,
@@ -356,7 +370,6 @@ function UploadCards() {
       setCards((prev) =>
         prev.map((card) => {
           if (!card || card.id !== cardId) return card;
-
           return {
             ...card,
             postStatus: "error" as PostStatus,
@@ -406,6 +419,50 @@ function UploadCards() {
     e.preventDefault();
   };
 
+  // fetch previously uploaded file data
+  const fetchFileData = async (cardId: string, page = 1, limit = pageSize) => {
+    try {
+      setTableLoading(true);
+      setCurrentTableType(cardId);
+
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/upload/${cardId}?page=${page}&limit=${limit}`,
+        {
+          method: "GET",
+        }
+      );
+
+      const data = await res.json();
+      setPreviousFileData(data?.data || []);
+      setPagination(data?.pagination || {});
+      setCurrentPage(page);
+      setShowTable(true);
+    } catch (error) {
+      console.error("Failed to fetch file data:", error);
+      setPreviousFileData([]);
+    } finally {
+      setTableLoading(false);
+    }
+  };
+
+  const handlePageChange = (newPage: number) => {
+    if (currentTableType) {
+      fetchFileData(currentTableType, newPage, pageSize);
+    }
+  };
+
+  const handleCloseTable = () => {
+    setShowTable(false);
+    setPreviousFileData([]);
+    setCurrentTableType("");
+    setCurrentPage(1);
+  };
+
+  const getTableTitle = (type: string) => {
+    const card = cards.find((c) => c.id === type);
+    return card ? `${card.title} Upload Preview` : "Upload Preview";
+  };
+
   return (
     <div className="w-full max-w-6xl mx-auto p-4 space-y-6">
       <div className="flex flex-col items-center justify-center mb-8">
@@ -438,7 +495,6 @@ function UploadCards() {
                 <SelectValue placeholder="Select year" />
               </SelectTrigger>
               <SelectContent>
-                {/* <SelectItem value="all">All Years</SelectItem> */}
                 {years.map((year) => (
                   <SelectItem key={year.value} value={year.value}>
                     {year.label}
@@ -459,11 +515,28 @@ function UploadCards() {
             onFileDrop={handleFileDrop}
             onDragOver={handleDragOver}
             onPost={postFile}
+            onFetch={fetchFileData}
+            isLoading={tableLoading && currentTableType === card.id}
           />
         ))}
       </div>
+
+      {showTable && (
+        <DataTable
+          data={previousFileData}
+          type={currentTableType}
+          title={getTableTitle(currentTableType)}
+          pageSize={pageSize}
+          currentPage={currentPage}
+          totalRecords={pagination.total_records}
+          totalPages={pagination.total_pages}
+          onPageChange={handlePageChange}
+          onClose={handleCloseTable}
+          isLoading={tableLoading}
+        />
+      )}
     </div>
   );
 }
 
-export default UploadCards;
+export default UploadCenter;
