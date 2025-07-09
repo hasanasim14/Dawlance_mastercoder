@@ -1,55 +1,17 @@
 "use client";
 
 import type React from "react";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { ShoppingCart, Server, GanttChart, DollarSign } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import UploadCard from "@/components/upload-center/UploadCard";
-
-// Server Action for handling file upload
-async function uploadFileAction(formData: FormData) {
-  try {
-    const file = formData.get("file") as File;
-    const option = formData.get("type") as string;
-
-    if (!file) {
-      return { success: false, error: "No file provided" };
-    }
-
-    // Validate file type
-    if (!file.name.endsWith(".xlsx")) {
-      return { success: false, error: "Only .xlsx files are supported" };
-    }
-
-    const newFormData = new FormData();
-    newFormData.append("file", formData.get("file") as File);
-
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_BASE_URL}/upload/${option}`,
-      {
-        method: "POST",
-        body: newFormData,
-      }
-    );
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`API Error (${response.status}): ${errorText}`);
-    }
-
-    const result = await response.json();
-    return {
-      success: true,
-      message: result.message || `Successfully processed ${file.name}`,
-      validationData: result,
-    };
-  } catch (error) {
-    console.error("Upload error:", error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : "Upload failed",
-    };
-  }
-}
+import { getNextMonthAndYear, months } from "@/lib/utils";
 
 // Server Action for posting file to API
 async function postFileAction(formData: FormData) {
@@ -64,7 +26,6 @@ async function postFileAction(formData: FormData) {
     const newFormData = new FormData();
     newFormData.append("file", file);
 
-    // Replace with your actual post API endpoint
     const response = await fetch(
       `${process.env.NEXT_PUBLIC_BASE_URL}/upload/post/${option}`,
       {
@@ -125,6 +86,69 @@ function UploadCards() {
   const StocksInputRef = useRef<HTMLInputElement>(null);
   const ProductionInputRef = useRef<HTMLInputElement>(null);
   const ProductionPlanInputRef = useRef<HTMLInputElement>(null);
+
+  // Filter state
+  const [selectedMonth, setSelectedMonth] = useState<string>("");
+  const [selectedYear, setSelectedYear] = useState<string>("");
+
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: 10 }, (_, i) => ({
+    value: (currentYear - 5 + i).toString(),
+    label: (currentYear - 5 + i).toString(),
+  }));
+
+  // Set default values on component mount
+  useEffect(() => {
+    const { month, year } = getNextMonthAndYear();
+    setSelectedMonth(month);
+    setSelectedYear(year);
+  }, []);
+
+  // Server Action for handling file upload
+  async function uploadFileAction(formData: FormData) {
+    try {
+      const file = formData.get("file") as File;
+      const option = formData.get("type") as string;
+
+      if (!file) {
+        return { success: false, error: "No file provided" };
+      }
+
+      // Validate file type
+      if (!file.name.endsWith(".xlsx")) {
+        return { success: false, error: "Only .xlsx files are supported" };
+      }
+
+      const newFormData = new FormData();
+      newFormData.append("file", formData.get("file") as File);
+
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/upload/${option}/${selectedMonth}/${selectedYear}`,
+        {
+          method: "POST",
+          body: newFormData,
+        }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`API Error (${response.status}): ${errorText}`);
+      }
+
+      const result = await response.json();
+      return {
+        success: true,
+        message: result.message || `Successfully processed ${file.name}`,
+        validationData: result,
+      };
+    } catch (error) {
+      console.error("Upload error:", error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Upload failed",
+      };
+    }
+  }
 
   const [cards, setCards] = useState<UploadCardData[]>([
     {
@@ -390,6 +414,40 @@ function UploadCards() {
           Upload your Excel files to update your business data. Click on a card
           or drag and drop files.
         </p>
+      </div>
+
+      <div className="flex items-center gap-4 flex-wrap">
+        <div className="flex items-center gap-3">
+          <div className="flex flex-col gap-1">
+            <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+              <SelectTrigger id="month-select" className="w-[140px]">
+                <SelectValue placeholder="Select month" />
+              </SelectTrigger>
+              <SelectContent>
+                {months.map((month) => (
+                  <SelectItem key={month.value} value={month.value}>
+                    {month.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex flex-col gap-1">
+            <Select value={selectedYear} onValueChange={setSelectedYear}>
+              <SelectTrigger id="year-select" className="w-[100px]">
+                <SelectValue placeholder="Select year" />
+              </SelectTrigger>
+              <SelectContent>
+                {/* <SelectItem value="all">All Years</SelectItem> */}
+                {years.map((year) => (
+                  <SelectItem key={year.value} value={year.value}>
+                    {year.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
       </div>
 
       <div className="flex flex-col space-y-6">
