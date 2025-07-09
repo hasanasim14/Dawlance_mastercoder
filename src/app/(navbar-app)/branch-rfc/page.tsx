@@ -19,7 +19,10 @@ export default function BranchRFC() {
     {}
   );
   // Store which rows are edited
-  const [editedValues, setEditedValues] = useState<Record<string, string>>({});
+  // const [editedValues, setEditedValues] = useState<Record<string, string>>({});
+  const [editedValues, setEditedValues] = useState<
+    Record<string, Record<string, string>>
+  >({});
   // which columns to have the filter on
   const filterableColumns = ["Product"];
 
@@ -201,7 +204,7 @@ export default function BranchRFC() {
 
   // Handle edited values change
   const handleEditedValuesChange = useCallback(
-    (newEditedValues: Record<string, string>) => {
+    (newEditedValues: Record<string, Record<string, string>>) => {
       setEditedValues(newEditedValues);
     },
     [editedValues]
@@ -298,7 +301,9 @@ export default function BranchRFC() {
       branch: string,
       month: string,
       year: string,
-      changedData: Array<{ material: string; rfc: string }>
+      // eslint-disable-next-line
+      changedData: Array<{ material: string; [key: string]: any }>
+      // changedData: Array<{ material: string; rfc: string }>
     ) => {
       setSaving(true);
       try {
@@ -331,8 +336,8 @@ export default function BranchRFC() {
   );
 
   return (
-    <div className="w-full h-[85vh] p-4 overflow-hidden">
-      <div className="w-full h-full overflow-hidden">
+    <div className="@container/main flex flex-1 flex-col gap-2">
+      <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
         <RFCTable
           tableName=""
           branchFilter={true}

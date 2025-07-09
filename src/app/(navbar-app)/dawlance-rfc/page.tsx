@@ -1,5 +1,4 @@
 "use client";
-
 import { useState, useCallback, useEffect } from "react";
 import type { RowDataType, ColumnConfig } from "@/lib/types";
 import { transformArrayFromApiFormat } from "@/lib/data-transformers";
@@ -14,12 +13,10 @@ export default function DawlanceRFC() {
   const [saving, setSaving] = useState(false);
   const [posting, setPosting] = useState(false);
   const [columns, setColumns] = useState<readonly ColumnConfig[]>([]);
-
   // State for column filters
   const [columnFilters, setColumnFilters] = useState<Record<string, string[]>>(
     {}
   );
-
   // Store which rows are edited - now supports multiple RFC columns per row
   const [editedValues, setEditedValues] = useState<
     Record<string, Record<string, string>>
@@ -111,6 +108,7 @@ export default function DawlanceRFC() {
           if (selectedValues.length === 0) continue;
 
           const cellValue = String(row[columnKey] || "").trim();
+
           // If the cell value is not in the selected values, exclude this row
           if (!selectedValues.includes(cellValue)) {
             return false;
@@ -218,12 +216,6 @@ export default function DawlanceRFC() {
     ) => {
       setPosting(true);
       try {
-        const query = new URLSearchParams({
-          branch,
-          month,
-          year,
-        }).toString();
-
         // Find all RFC columns that are month-year RFC format
         const rfcColumns = columns.filter((col) => {
           const key = col.key;
@@ -243,21 +235,6 @@ export default function DawlanceRFC() {
         // Helper function to get row key (same as in DataTable)
         const getRowKey = (row: RowDataType): string => {
           return `${row["Material"] || ""}_${row["Branch"] || ""}`;
-        };
-
-        // Helper function to get cell value with edited values
-        const getCellValue = (
-          row: RowDataType,
-          columnKey: string,
-          // eslint-disable-next-line
-          originalValue: any
-        ) => {
-          const rowKey = getRowKey(row);
-          const rowEdits = editedValues[rowKey];
-          const editedValue = rowEdits?.[columnKey];
-          return editedValue !== undefined
-            ? editedValue
-            : String(originalValue ?? "");
         };
 
         // Only include rows that have been modified and have valid RFC changes
@@ -371,7 +348,6 @@ export default function DawlanceRFC() {
     ) => {
       setSaving(true);
       try {
-        const query = new URLSearchParams({ branch, month, year }).toString();
         const authToken = localStorage.getItem("token");
 
         const endpoint = `${process.env.NEXT_PUBLIC_BASE_URL}/dawlance-rfc-save`;
@@ -401,8 +377,8 @@ export default function DawlanceRFC() {
   );
 
   return (
-    <div className="w-full h-[85vh] p-4 overflow-hidden">
-      <div className="w-full h-full overflow-hidden">
+    <div className="@container/main flex flex-1 flex-col gap-2">
+      <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
         <RFCTable
           tableName="Dawlance RFC"
           branchFilter={false}
