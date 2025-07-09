@@ -20,7 +20,6 @@ interface ColumnFilterProps {
   selectedFilters: string[];
   onFilterChange: (columnKey: string, selectedValues: string[]) => void;
   onApplyFilter: () => void;
-  // allFilters: Record<string, string[]>;
 }
 
 export const ColumnFilter: React.FC<ColumnFilterProps> = ({
@@ -30,14 +29,13 @@ export const ColumnFilter: React.FC<ColumnFilterProps> = ({
   selectedFilters,
   onFilterChange,
   onApplyFilter,
-  // allFilters,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [localSelectedFilters, setLocalSelectedFilters] =
     useState<string[]>(selectedFilters);
 
-  // Get unique values from the column
+  // Get all unique values from the column
   const uniqueValues = React.useMemo(() => {
     const values = data
       .map((row) => String(row[columnKey] || ""))
@@ -47,12 +45,12 @@ export const ColumnFilter: React.FC<ColumnFilterProps> = ({
     return values;
   }, [data, columnKey]);
 
-  // Filter values based on search term
+  // filtering
   const filteredValues = uniqueValues.filter((value) =>
     value.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Update local state when props change
+  // changing local state of data
   useEffect(() => {
     setLocalSelectedFilters(selectedFilters);
   }, [selectedFilters]);
@@ -74,14 +72,14 @@ export const ColumnFilter: React.FC<ColumnFilterProps> = ({
 
   const handleApply = () => {
     onFilterChange(columnKey, localSelectedFilters);
-    onApplyFilter(); // This will trigger frontend filtering
+    onApplyFilter();
     setIsOpen(false);
   };
 
   const handleClear = () => {
     setLocalSelectedFilters([]);
     onFilterChange(columnKey, []);
-    onApplyFilter(); // This will trigger frontend filtering
+    onApplyFilter();
     setIsOpen(false);
   };
 
