@@ -102,6 +102,8 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
       url: "/dawlance-rfc",
       icon: () => (
         <Image
+          width={8}
+          height={8}
           src="/dawlance.svg"
           alt="Dawlance"
           className="w-5 h-5 object-contain"
