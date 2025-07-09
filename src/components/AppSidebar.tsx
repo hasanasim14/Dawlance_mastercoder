@@ -14,7 +14,6 @@ import {
 import { cn } from "@/lib/utils";
 import {
   Atom,
-  Factory,
   Repeat,
   TrendingUp,
   Upload,
@@ -70,11 +69,6 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
       title: "Offerings",
       url: "/offerings",
       icon: Gift,
-    },
-    {
-      title: "Production",
-      url: "/production",
-      icon: Factory,
     },
     {
       title: "Results",

@@ -2,7 +2,6 @@ export const rolePages = {
   admin: [
     "/master-coding",
     "/dashboard-admin",
-    "/production",
     "/offerings",
     "/results",
     "/upload-center",
