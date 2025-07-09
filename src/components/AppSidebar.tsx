@@ -23,12 +23,14 @@ import {
   Users,
   Gift,
   Store,
+  Presentation,
 } from "lucide-react";
 import { mockUser } from "@/lib/mockUser";
 import { rolePages } from "@/lib/rolePages";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import Link from "next/link";
+import Image from "next/image";
 
 type Role = keyof typeof rolePages;
 
@@ -93,12 +95,18 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
     {
       title: "Marketing RFC",
       url: "/marketing-rfc",
-      icon: Store,
+      icon: Presentation,
     },
     {
       title: "Dawlance RFC",
       url: "/dawlance-rfc",
-      icon: Store,
+      icon: () => (
+        <Image
+          src="/dawlance.svg"
+          alt="Dawlance"
+          className="w-5 h-5 object-contain"
+        />
+      ),
     },
     {
       title: "Users",
