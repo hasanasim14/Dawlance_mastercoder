@@ -106,7 +106,7 @@ export const ColumnFilter: React.FC<ColumnFilterProps> = ({
           <Filter className="h-3 w-3" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-80 p-0" align="start">
+      <PopoverContent className="w-80 p-0" side="right" align="start">
         <div className="p-4 border-b">
           <div className="flex items-center justify-between mb-3">
             <h4 className="font-medium text-sm">Filter {columnLabel}</h4>
@@ -156,7 +156,7 @@ export const ColumnFilter: React.FC<ColumnFilterProps> = ({
           </div>
 
           {/* Values List */}
-          <ScrollArea className="h-48">
+          <ScrollArea className="h-45">
             <div className="space-y-2">
               {filteredValues.length === 0 ? (
                 <div className="text-sm text-muted-foreground text-center py-4">

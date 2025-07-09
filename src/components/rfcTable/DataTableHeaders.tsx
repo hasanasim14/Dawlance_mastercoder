@@ -12,7 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Save, Send, Loader2, FilterX } from "lucide-react";
 import type { RowDataType, ColumnConfig } from "@/lib/types";
-import { getNextMonthAndYear } from "@/lib/utils";
+import { getNextMonthAndYear, months } from "@/lib/utils";
 
 interface BranchOption {
   salesOffice: string;
@@ -32,6 +32,7 @@ interface HeadersProps {
     branch: string,
     month: string,
     year: string,
+    // eslint-disable-next-line
     changedData: Array<{ material: string; [key: string]: any }>
   ) => Promise<void>;
   onFetchData: (branch: string, month: string, year: string) => Promise<void>;
@@ -47,6 +48,7 @@ interface HeadersProps {
   getCellValue: (
     row: RowDataType,
     columnKey: string,
+    // eslint-disable-next-line
     originalValue: any
   ) => string;
 }
@@ -82,22 +84,6 @@ export const RFCTableHeaders: React.FC<HeadersProps> = ({
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 11 }, (_, i) => currentYear - 5 + i);
 
-  // Months array
-  const months = [
-    { value: "01", label: "January" },
-    { value: "02", label: "February" },
-    { value: "03", label: "March" },
-    { value: "04", label: "April" },
-    { value: "05", label: "May" },
-    { value: "06", label: "June" },
-    { value: "07", label: "July" },
-    { value: "08", label: "August" },
-    { value: "09", label: "September" },
-    { value: "10", label: "October" },
-    { value: "11", label: "November" },
-    { value: "12", label: "December" },
-  ];
-
   // Set default values on component mount
   useEffect(() => {
     const { month, year } = getNextMonthAndYear();
@@ -128,10 +114,12 @@ export const RFCTableHeaders: React.FC<HeadersProps> = ({
           const storedBranchCodes = localBranches
             .split(",")
             .map((code) => code.trim());
+          // eslint-disable-next-line
           branchList = branchList.filter((branch: any) =>
             storedBranchCodes.includes(branch["Branch Code"])
           );
         }
+        // eslint-disable-next-line
         const branchOptions: BranchOption[] = branchList.map((branch: any) => ({
           salesOffice: branch["Sales Office"],
           salesBranch: branch["Sales Branch"] || branch["Sales Office"],
@@ -203,9 +191,10 @@ export const RFCTableHeaders: React.FC<HeadersProps> = ({
     });
   };
 
-  // Get changed records for SAVE - work with unique keys
+  // Get changed records for SAVE - include ALL RFC fields for modified rows
   const getChangedRecords = () => {
     if (rfcColumns.length === 0) return [];
+    // eslint-disable-next-line
     const changedRecords: Array<{ material: string; [key: string]: any }> = [];
 
     modifiedRows.forEach((rowKey) => {
@@ -215,34 +204,33 @@ export const RFCTableHeaders: React.FC<HeadersProps> = ({
       );
 
       if (originalRow && rowEdits) {
+        // eslint-disable-next-line
         const record: { material: string; [key: string]: any } = {
           material: String(originalRow["Material"] || ""),
         };
 
         // Handle single RFC vs multiple RFCs
         if (rfcColumns.length === 1) {
-          const rfcValue = rowEdits[rfcColumns[0].key];
-          if (rfcValue !== undefined && rfcValue !== "" && rfcValue !== null) {
-            record.rfc = Number(rfcValue) || 0;
-            changedRecords.push(record);
-          }
+          // For single RFC, get the current value (edited or original)
+          const currentValue = getCellValue(
+            originalRow,
+            rfcColumns[0].key,
+            originalRow[rfcColumns[0].key]
+          );
+          record.rfc = Number(currentValue) || 0;
+          changedRecords.push(record);
         } else {
-          // Multiple RFCs
-          let hasValidRFC = false;
+          // Multiple RFCs - include ALL RFC fields for this row
           rfcColumns.forEach((rfcColumn, index) => {
-            const rfcValue = rowEdits[rfcColumn.key];
-            if (
-              rfcValue !== undefined &&
-              rfcValue !== "" &&
-              rfcValue !== null
-            ) {
-              record[`rfc${index}`] = Number(rfcValue) || 0;
-              hasValidRFC = true;
-            }
+            // Get current value (edited value if exists, otherwise original value)
+            const currentValue = getCellValue(
+              originalRow,
+              rfcColumn.key,
+              originalRow[rfcColumn.key]
+            );
+            record[`rfc${index}`] = Number(currentValue) || 0;
           });
-          if (hasValidRFC) {
-            changedRecords.push(record);
-          }
+          changedRecords.push(record);
         }
       }
     });
@@ -440,7 +428,8 @@ export const RFCTableHeaders: React.FC<HeadersProps> = ({
             ) : (
               <>
                 <Save className="w-4 h-4 mr-2" />
-                Save ({modifiedRows.size})
+                {/* Save ({modifiedRows.size}) */}
+                Save
               </>
             )}
           </Button>
@@ -457,7 +446,8 @@ export const RFCTableHeaders: React.FC<HeadersProps> = ({
             ) : (
               <>
                 <Send className="w-4 h-4 mr-2" />
-                Post ({editedRows}/{totalRows})
+                {/* Post ({editedRows}/{totalRows}) */}
+                Post
               </>
             )}
           </Button>
