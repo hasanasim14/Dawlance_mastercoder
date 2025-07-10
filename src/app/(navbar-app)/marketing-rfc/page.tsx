@@ -233,10 +233,6 @@ export default function MarketingRFC() {
           year,
         }).toString();
 
-        console.log("the query is ", query);
-
-        // const authToken = localStorage.getItem("token");
-
         // Find the RFC column (same logic as in RFCTable component)
         const rfcColumn = columns.find(
           (col) => col.key.includes("RFC") && !col.key.includes("Last")

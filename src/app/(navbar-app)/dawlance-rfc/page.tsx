@@ -293,8 +293,6 @@ export default function DawlanceRFC() {
           return;
         }
 
-        console.log("the post data, ", postData);
-
         const dawlanceRFCPost = `${process.env.NEXT_PUBLIC_BASE_URL}/dawlance-rfc`;
         const dawlanceRFCSave = `${process.env.NEXT_PUBLIC_BASE_URL}/dawlance-rfc-save`;
 
