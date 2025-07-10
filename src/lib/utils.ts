@@ -40,3 +40,9 @@ export const months = [
   { value: "11", label: "November" },
   { value: "12", label: "December" },
 ];
+
+const currentYear = new Date().getFullYear();
+export const years = Array.from({ length: 10 }, (_, i) => ({
+  value: (currentYear - 5 + i).toString(),
+  label: (currentYear - 5 + i).toString(),
+}));

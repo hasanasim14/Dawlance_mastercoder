@@ -1,7 +1,6 @@
 "use client";
 import type React from "react";
 import { useState, useRef, useEffect } from "react";
-import { ShoppingCart, Server, GanttChart, DollarSign } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -9,9 +8,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import UploadCard from "@/components/upload-center/UploadCard";
-import { getNextMonthAndYear, months } from "@/lib/utils";
+import { getNextMonthAndYear, months, years } from "@/lib/utils";
 import type { PaginationData } from "@/lib/types";
+import { ShoppingCart, Server, GanttChart, DollarSign } from "lucide-react";
+import UploadCard from "@/components/upload-center/UploadCard";
 import DataTable from "@/components/upload-center/FileData";
 
 // eslint-disable-next-line
@@ -93,12 +93,6 @@ function UploadCenter() {
   // Filter state
   const [selectedMonth, setSelectedMonth] = useState<string>("");
   const [selectedYear, setSelectedYear] = useState<string>("");
-
-  const currentYear = new Date().getFullYear();
-  const years = Array.from({ length: 10 }, (_, i) => ({
-    value: (currentYear - 5 + i).toString(),
-    label: (currentYear - 5 + i).toString(),
-  }));
 
   // Pagination states
   const [pagination, setPagination] = useState<PaginationData>({
@@ -254,8 +248,6 @@ function UploadCenter() {
       const formData = new FormData();
       formData.append("file", file);
       formData.append("type", cardId);
-
-      // Call the server action
       const result = await uploadFileAction(formData);
 
       if (result.success) {
@@ -331,8 +323,6 @@ function UploadCenter() {
       const formData = new FormData();
       formData.append("file", card.uploadedFile);
       formData.append("type", cardId);
-
-      // Call the post server action
       const result = await postFileAction(formData);
 
       if (result.success) {
@@ -395,7 +385,6 @@ function UploadCenter() {
     }
 
     await processFile(cardId, file);
-    // Clear the input
     e.target.value = "";
   };
 
@@ -419,7 +408,6 @@ function UploadCenter() {
     e.preventDefault();
   };
 
-  // fetch previously uploaded file data
   const fetchFileData = async (cardId: string, page = 1, limit = pageSize) => {
     try {
       setTableLoading(true);

@@ -1,7 +1,6 @@
 "use client";
 
 import type React from "react";
-
 import { useState, useRef, useCallback, useEffect } from "react";
 import { Upload, Clock, CheckCircle, AlertCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { getNextMonthAndYear } from "@/lib/utils";
+import { getNextMonthAndYear, months, years } from "@/lib/utils";
 
 interface UploadedData {
   Material: string;
@@ -54,18 +53,6 @@ export default function Offerings() {
     errors?: string[];
   } | null>(null);
 
-  // useEffect(() => {
-  //   const now = new Date();
-  //   const currentMonth = now.getMonth();
-
-  //   const nextMonth = (currentMonth + 1) % 12;
-  //   const nextYear =
-  //     currentMonth === 11 ? now.getFullYear() + 1 : now.getFullYear();
-
-  //   setSelectedMonth(nextMonth + 1);
-  //   setSelectedYear(nextYear);
-  // }, []);
-
   useEffect(() => {
     const { month, year } = getNextMonthAndYear();
     setSelectedMonth(month);
@@ -74,8 +61,6 @@ export default function Offerings() {
 
   useEffect(() => {
     const fetchOffering = async () => {
-      const authToken = localStorage.getItem("token");
-
       try {
         const res = await fetch(
           `${process.env.NEXT_PUBLIC_BASE_URL}/offerings/${selectedMonth}/${selectedYear}`,
@@ -83,11 +68,9 @@ export default function Offerings() {
             method: "GET",
             headers: {
               "Content-Type": "application/json",
-              Authorization: `Bearer ${authToken}`,
             },
           }
         );
-
         const data = await res.json();
 
         setUploadedData(data?.data);
@@ -135,8 +118,6 @@ export default function Offerings() {
       }));
       return;
     }
-
-    // Reset previous API response
     setApiResponse(null);
 
     setUploadStatus({
@@ -167,7 +148,7 @@ export default function Offerings() {
           method: "POST",
           headers: {
             Authorization: `Bearer ${authToken}`,
-          }, // Remove the Content-Type header - browser will set it automatically for FormData
+          },
           body: formData,
         }
       );
@@ -188,13 +169,10 @@ export default function Offerings() {
         throw new Error(errorMessage);
       }
 
-      // Use 'data' instead of calling response.json() again
-      // Update the uploaded data with the API response
       if (data.data && Array.isArray(data.data)) {
         setUploadedData(data.data);
       }
 
-      // After setting uploadedData, also set the API response
       setApiResponse({
         message: data.message || "File processed successfully",
         recordsProcessed: data.data?.length || 0,
@@ -303,21 +281,16 @@ export default function Offerings() {
                 <label className="text-sm font-medium text-gray-700">
                   Year:
                 </label>
-                <Select
-                  value={selectedYear?.toString()}
-                  onValueChange={
-                    (value) => setSelectedYear(value)
-                    // setSelectedYear(Number.parseInt(value))
-                  }
-                >
-                  <SelectTrigger className="w-24">
-                    <SelectValue />
+                <Select value={selectedYear} onValueChange={setSelectedYear}>
+                  <SelectTrigger id="year-select" className="w-[100px]">
+                    <SelectValue placeholder="Select year" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="2023">2023</SelectItem>
-                    <SelectItem value="2024">2024</SelectItem>
-                    <SelectItem value="2025">2025</SelectItem>
-                    <SelectItem value="2026">2026</SelectItem>
+                    {years.map((year) => (
+                      <SelectItem key={year.value} value={year.value}>
+                        {year.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -325,29 +298,16 @@ export default function Offerings() {
                 <label className="text-sm font-medium text-gray-700">
                   Month:
                 </label>
-                <Select
-                  value={selectedMonth?.toString()}
-                  onValueChange={
-                    (value) => setSelectedMonth(value)
-                    // setSelectedMonth(Number.parseInt(value))
-                  }
-                >
-                  <SelectTrigger className="w-32">
-                    <SelectValue />
+                <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                  <SelectTrigger id="month-select" className="w-[140px]">
+                    <SelectValue placeholder="Select month" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="1">January</SelectItem>
-                    <SelectItem value="2">February</SelectItem>
-                    <SelectItem value="3">March</SelectItem>
-                    <SelectItem value="4">April</SelectItem>
-                    <SelectItem value="5">May</SelectItem>
-                    <SelectItem value="6">June</SelectItem>
-                    <SelectItem value="7">July</SelectItem>
-                    <SelectItem value="8">August</SelectItem>
-                    <SelectItem value="9">September</SelectItem>
-                    <SelectItem value="10">October</SelectItem>
-                    <SelectItem value="11">November</SelectItem>
-                    <SelectItem value="12">December</SelectItem>
+                    {months.map((month) => (
+                      <SelectItem key={month.value} value={month.value}>
+                        {month.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
