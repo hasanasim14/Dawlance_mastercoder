@@ -1,6 +1,6 @@
 "use client";
 import type React from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { Input } from "@/components/ui/input";
 import {
   Table,
@@ -11,7 +11,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import type { ColumnConfig, RowDataType } from "@/lib/types";
-import { Loader2, Edit3 } from "lucide-react";
+import { Loader2, Edit3, Save, Clock } from "lucide-react";
 import { RFCTableHeaders } from "./DataTableHeaders";
 import { ColumnFilter } from "./ColumnFilter";
 
@@ -31,13 +31,16 @@ interface DataTableProps {
     branch: string,
     month: string,
     year: string,
-    // eslint-disable-next-line
+    changedData: Array<{ material: string; [key: string]: any }>
+  ) => Promise<void>;
+  onAutoSave?: (
     changedData: Array<{ material: string; [key: string]: any }>
   ) => Promise<void>;
   onFetchData: (branch: string, month: string, year: string) => Promise<void>;
   isLoading?: boolean;
   isSaving?: boolean;
   isPosting?: boolean;
+  isAutoSaving?: boolean;
   filterableColumns?: string[];
   columnFilters?: Record<string, string[]>;
   onFilterChange?: (filters: Record<string, string[]>) => void;
@@ -49,17 +52,18 @@ interface DataTableProps {
 }
 
 export const RFCTable: React.FC<DataTableProps> = ({
-  tableName,
   branchFilter,
   rowData,
   originalRowData,
   columns,
   onPost,
   onSave,
+  onAutoSave,
   onFetchData,
   isLoading = false,
   isSaving = false,
   isPosting = false,
+  isAutoSaving = false,
   filterableColumns = [],
   columnFilters = {},
   onFilterChange,
@@ -69,8 +73,11 @@ export const RFCTable: React.FC<DataTableProps> = ({
 }) => {
   // State for tracking which rows have been modified
   const [modifiedRows, setModifiedRows] = useState<Set<string>>(new Set());
-  // eslint-disable-next-line
   const [editingCell, setEditingCell] = useState<string | null>(null);
+
+  // Debounce timer ref
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const DEBOUNCE_DELAY = 1000; // 1 second delay
 
   // Helper function to create unique row key
   const getRowKey = (row: RowDataType): string => {
@@ -126,6 +133,59 @@ export const RFCTable: React.FC<DataTableProps> = ({
     });
   };
 
+  // Prepare changed data for API call
+  const prepareChangedData = useCallback(() => {
+    const changedData: Array<{ material: string; [key: string]: any }> = [];
+
+    Object.entries(editedValues).forEach(([rowKey, rowEdits]) => {
+      // Find the original row data
+      const originalRow = originalRowData.find(
+        (row) => getRowKey(row) === rowKey
+      );
+      if (!originalRow) return;
+
+      const material = String(originalRow["Material"] || "");
+      if (!material) return;
+
+      // Find the RFC column
+      const rfcColumn = getRFCColumns()[0]; // Assuming single RFC column for now
+      if (!rfcColumn) return;
+
+      const rfcValue = rowEdits[rfcColumn.key];
+      if (rfcValue !== undefined) {
+        changedData.push({
+          material,
+          rfc: rfcValue,
+        });
+      }
+    });
+
+    return changedData;
+  }, [editedValues, originalRowData]);
+
+  // Debounced autosave function
+  const debouncedAutoSave = useCallback(() => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    debounceTimerRef.current = setTimeout(() => {
+      const changedData = prepareChangedData();
+      if (changedData.length > 0 && onAutoSave) {
+        onAutoSave(changedData);
+      }
+    }, DEBOUNCE_DELAY);
+  }, [prepareChangedData, onAutoSave]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, []);
+
   // Handle cell value change for specific RFC column
   const handleCellChange = (
     row: RowDataType,
@@ -134,7 +194,6 @@ export const RFCTable: React.FC<DataTableProps> = ({
   ) => {
     const rowKey = getRowKey(row);
     const currentRowEdits = editedValues[rowKey] || {};
-
     const newEditedValues = {
       ...editedValues,
       [rowKey]: {
@@ -148,6 +207,9 @@ export const RFCTable: React.FC<DataTableProps> = ({
     }
 
     setModifiedRows((prev) => new Set([...prev, rowKey]));
+
+    // Trigger debounced autosave
+    debouncedAutoSave();
   };
 
   // Handle cell edit end
@@ -159,7 +221,6 @@ export const RFCTable: React.FC<DataTableProps> = ({
   const getCellValue = (
     row: RowDataType,
     columnKey: string,
-    // eslint-disable-next-line
     originalValue: any
   ) => {
     const rowKey = getRowKey(row);
@@ -199,7 +260,7 @@ export const RFCTable: React.FC<DataTableProps> = ({
   return (
     <div className="rounded-lg border bg-card shadow-sm h-full w-full flex flex-col overflow-hidden">
       <RFCTableHeaders
-        tableName={tableName}
+        // tableName={tableName}
         branchFilter={branchFilter}
         onPost={onPost}
         onSave={onSave}
@@ -242,9 +303,6 @@ export const RFCTable: React.FC<DataTableProps> = ({
                           <span className="truncate text-xs sm:text-sm">
                             {column.label}
                           </span>
-                          {isRFCColumn && (
-                            <Edit3 className="w-3 h-3 text-muted-foreground flex-shrink-0" />
-                          )}
                           {hasActiveFilter && (
                             <div className="w-2 h-2 bg-blue-600 rounded-full flex-shrink-0" />
                           )}
@@ -311,36 +369,36 @@ export const RFCTable: React.FC<DataTableProps> = ({
                         column.key,
                         row[column.key]
                       );
-                      // const isEditing =
-                      //   isCellEditing(row, column.key) && isEditable;
                       const columnClasses = getColumnClasses(column.key);
 
                       return (
                         <TableCell
                           key={column.key}
-                          className={`${columnClasses} min-h-[40px] sm:min-h-[48px]`}
+                          className={`${columnClasses} min-h-[40px] sm:min-h-[48px] relative`}
                           title={String(row[column.key] ?? "")}
                         >
                           {isEditable ? (
-                            <Input
-                              type="number"
-                              value={cellValue}
-                              onChange={(e) =>
-                                handleCellChange(
-                                  row,
-                                  column.key,
-                                  e.target.value
-                                )
-                              }
-                              onBlur={handleCellBlur}
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter" || e.key === "Escape") {
-                                  handleCellBlur();
+                            <div className="relative">
+                              <Input
+                                type="number"
+                                value={cellValue}
+                                onChange={(e) =>
+                                  handleCellChange(
+                                    row,
+                                    column.key,
+                                    e.target.value
+                                  )
                                 }
-                              }}
-                              className="w-full h-7 sm:h-8 text-xs sm:text-sm"
-                              placeholder="Enter RFC value"
-                            />
+                                onBlur={handleCellBlur}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter" || e.key === "Escape") {
+                                    handleCellBlur();
+                                  }
+                                }}
+                                className="w-full h-7 sm:h-8 text-xs sm:text-sm pr-8"
+                                placeholder="Enter RFC value"
+                              />
+                            </div>
                           ) : (
                             <div className="truncate text-xs sm:text-sm w-full">
                               {String(row[column.key] ?? "")}
