@@ -19,7 +19,7 @@ export function TableActions({
   onAddClick,
 }: TableActionsProps) {
   return (
-    <div className="p-4 border-b flex justify-between items-center flex-shrink-0">
+    <div className="p-2 border-b flex justify-between items-center flex-shrink-0">
       <div className="flex items-center gap-4">
         {selectedRowsCount > 0 && (
           <span className="text-sm text-muted-foreground">

@@ -55,13 +55,11 @@ interface HeadersProps {
 
 export const RFCTableHeaders: React.FC<HeadersProps> = ({
   branchFilter,
-  tableName,
   onPost,
   onSave,
   onFetchData,
   isSaving = false,
   isPosting = false,
-  rowData,
   originalRowData,
   editedValues,
   modifiedRows,
@@ -304,154 +302,131 @@ export const RFCTableHeaders: React.FC<HeadersProps> = ({
 
   const isFormValid = selectedBranch && selectedMonth && selectedYear;
 
-  // Get editing statistics for better user feedback
-  const getEditingStats = () => {
-    const totalRows = originalRowData.length;
-    let editedRows = 0;
-
-    originalRowData.forEach((row) => {
-      const rowKey = getRowKey(row);
-      const rowEdits = editedValues[rowKey];
-      if (rowEdits) {
-        // Check if at least one RFC field has been edited in this row
-        const hasEditedRFC = rfcColumns.some((rfcColumn) => {
-          const editedValue = rowEdits[rfcColumn.key];
-          return (
-            editedValue !== undefined &&
-            editedValue !== "" &&
-            editedValue !== null
-          );
-        });
-        if (hasEditedRFC) {
-          editedRows++;
-        }
-      }
-    });
-
-    return { totalRows, editedRows };
-  };
-
-  const { totalRows, editedRows } = getEditingStats();
-
   return (
-    <div className="flex items-center gap-4 p-4 justify-between border-b bg-background/50 flex-shrink-0">
-      <div className="flex items-center gap-4">
-        {branchFilter && <h3 className="font-semibold">{selectedBranch}</h3>}
-        <h3 className="font-semibold">{tableName}</h3>
-        {/* Active Filters Indicator */}
-        {hasActiveFilters() && (
-          <div className="flex items-center gap-2 px-2 py-1 bg-blue-100 dark:bg-blue-900/20 rounded-md text-sm">
-            <FilterX className="w-3 h-3 text-blue-600" />
-            <span className="text-blue-600 font-medium">
-              {getActiveFilterCount()} filter
-              {getActiveFilterCount() !== 1 ? "s" : ""} active
-            </span>
-          </div>
-        )}
-        {/* Show validation info */}
-        {originalRowData.length > 0 && (
-          <div className="text-xs text-muted-foreground">
-            Total rows: {originalRowData.length} | Showing: {rowData.length} |
-            Modified: {modifiedRows.size} | Rows Edited: {editedRows}/
-            {totalRows}
-          </div>
-        )}
-      </div>
+    <div>
+      <div className="flex items-center gap-4 p-2 justify-between border-b bg-background/50 flex-shrink-0">
+        <div className="flex items-center gap-4">
+          {branchFilter && <h3 className="font-semibold">{selectedBranch}</h3>}
+          {hasActiveFilters() && (
+            <div className="flex items-center gap-2 px-2 py-1 bg-blue-100 dark:bg-blue-900/20 rounded-md text-sm">
+              <FilterX className="w-3 h-3 text-blue-600" />
+              <span className="text-blue-600 font-medium">
+                {getActiveFilterCount()} filter
+                {getActiveFilterCount() !== 1 ? "s" : ""} active
+              </span>
+            </div>
+          )}
+        </div>
 
-      <div className="flex items-center gap-3 flex-wrap">
-        {/* Branch Select */}
-        {branchFilter && (
-          <Select value={selectedBranch} onValueChange={setSelectedBranch}>
-            <SelectTrigger className="w-[280px] min-w-[200px]">
-              <SelectValue placeholder="Select a Branch" />
+        <div className="flex items-center gap-3 flex-wrap">
+          {/* Branch Select */}
+          {branchFilter && (
+            <Select value={selectedBranch} onValueChange={setSelectedBranch}>
+              <SelectTrigger className="w-[280px] min-w-[200px]">
+                <SelectValue placeholder="Select a Branch" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  {branches?.map((branch) => (
+                    <SelectItem
+                      key={branch.salesOffice}
+                      value={branch.salesOffice}
+                    >
+                      {branch.salesBranch}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          )}
+
+          {/* Month Select */}
+          <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+            <SelectTrigger className="w-[140px]">
+              <SelectValue placeholder="Select Month" />
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
-                {branches?.map((branch) => (
-                  <SelectItem
-                    key={branch.salesOffice}
-                    value={branch.salesOffice}
-                  >
-                    {branch.salesBranch}
+                {months.map((month) => (
+                  <SelectItem key={month.value} value={month.value}>
+                    {month.label}
                   </SelectItem>
                 ))}
               </SelectGroup>
             </SelectContent>
           </Select>
-        )}
 
-        {/* Month Select */}
-        <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-          <SelectTrigger className="w-[140px]">
-            <SelectValue placeholder="Select Month" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectGroup>
-              {months.map((month) => (
-                <SelectItem key={month.value} value={month.value}>
-                  {month.label}
-                </SelectItem>
-              ))}
-            </SelectGroup>
-          </SelectContent>
-        </Select>
+          {/* Year Select */}
+          <Select value={selectedYear} onValueChange={setSelectedYear}>
+            <SelectTrigger className="w-[100px]">
+              <SelectValue placeholder="Year" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                {years.map((year) => (
+                  <SelectItem key={year} value={year.toString()}>
+                    {year}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
 
-        {/* Year Select */}
-        <Select value={selectedYear} onValueChange={setSelectedYear}>
-          <SelectTrigger className="w-[100px]">
-            <SelectValue placeholder="Year" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectGroup>
-              {years.map((year) => (
-                <SelectItem key={year} value={year.toString()}>
-                  {year}
-                </SelectItem>
-              ))}
-            </SelectGroup>
-          </SelectContent>
-        </Select>
-
-        {/* Action Buttons */}
-        <div className="flex items-center gap-2 ml-4">
-          <Button
-            onClick={handleSave}
-            disabled={!isFormValid || !canSave() || isSaving || isPosting}
-            variant="outline"
-            size="sm"
-          >
-            {isSaving ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Saving...
-              </>
-            ) : (
-              <>
-                <Save className="w-4 h-4 mr-2" />
-                {/* Save ({modifiedRows.size}) */}
-                Save
-              </>
-            )}
-          </Button>
-          <Button
-            onClick={handlePost}
-            disabled={!isFormValid || !canPost() || isSaving || isPosting}
-            size="sm"
-          >
-            {isPosting ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Posting...
-              </>
-            ) : (
-              <>
-                <Send className="w-4 h-4 mr-2" />
-                {/* Post ({editedRows}/{totalRows}) */}
-                Post
-              </>
-            )}
-          </Button>
+          {/* Action Buttons */}
+          <div className="flex items-center gap-2 ml-4">
+            <Button
+              onClick={handleSave}
+              disabled={!isFormValid || !canSave() || isSaving || isPosting}
+              variant="outline"
+              size="sm"
+            >
+              {isSaving ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4 mr-2" />
+                  Save
+                </>
+              )}
+            </Button>
+            <Button
+              onClick={handlePost}
+              disabled={!isFormValid || !canPost() || isSaving || isPosting}
+              size="sm"
+            >
+              {isPosting ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Posting...
+                </>
+              ) : (
+                <>
+                  <Send className="w-4 h-4 mr-2" />
+                  Post
+                </>
+              )}
+            </Button>
+          </div>
         </div>
+      </div>
+      {/* Summary Table */}
+      <div className="bg-[#f4f4f4] border border-gray-200 rounded-xl p-2 m-2">
+        <h2 className="text-sm font-medium text-gray-600 mb-2">
+          Summary (Product RFC)
+        </h2>
+        <ul className="space-y-1 text-sm text-gray-800">
+          <li className="flex">
+            <span>Refrigerator RFC</span>
+            <span className="font-semibold"> :150</span>
+          </li>
+          <li className="flex">
+            <span>Air Conditioner RFC</span>
+            <span className="font-semibold"> :150</span>
+          </li>
+        </ul>
       </div>
     </div>
   );
