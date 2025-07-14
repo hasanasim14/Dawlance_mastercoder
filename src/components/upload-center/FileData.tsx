@@ -88,7 +88,7 @@ const DataTable: React.FC<DataTableProps> = ({
 
   // eslint-disable-next-line
   const formatValue = (value: any, key: string) => {
-    if (value === null || value === undefined) return "N/A";
+    if (value === null || value === undefined) return "";
     if (key.toLowerCase().includes("date") && typeof value === "number") {
       return new Date(value).toLocaleDateString("en-US", {
         year: "numeric",
@@ -97,7 +97,7 @@ const DataTable: React.FC<DataTableProps> = ({
       });
     }
     if (key.toLowerCase().includes("value") || key === "Payer") {
-      return typeof value === "number" ? value.toLocaleString() : value;
+      return value;
     }
     return String(value);
   };
@@ -110,14 +110,6 @@ const DataTable: React.FC<DataTableProps> = ({
             <DialogTitle className="flex items-center gap-2">
               {title}
             </DialogTitle>
-            {/* <Button
-              variant="ghost"
-              size="icon"
-              onClick={onClose}
-              className="h-6 w-6"
-            >
-              <X className="h-4 w-4" />
-            </Button> */}
           </div>
         </DialogHeader>
         <div className="px-6 pb-6 flex-1 overflow-hidden">

@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/select";
 import { getNextMonthAndYear, months, years } from "@/lib/utils";
 import type { PaginationData } from "@/lib/types";
-import { ShoppingCart, Server, GanttChart, DollarSign } from "lucide-react";
+import { ShoppingCart, Server, DollarSign } from "lucide-react";
 import UploadCard from "@/components/upload-center/UploadCard";
 import DataTable from "@/components/upload-center/FileData";
 
@@ -88,7 +88,6 @@ function UploadCenter() {
   const SalesInputRef = useRef<HTMLInputElement>(null);
   const StocksInputRef = useRef<HTMLInputElement>(null);
   const ProductionInputRef = useRef<HTMLInputElement>(null);
-  const ProductionPlanInputRef = useRef<HTMLInputElement>(null);
 
   // Filter state
   const [selectedMonth, setSelectedMonth] = useState<string>("");
@@ -206,21 +205,6 @@ function UploadCenter() {
       lastPosted: null,
       inputRef: ProductionInputRef,
       icon: <Server className="h-5 w-5" />,
-      result: null,
-      postResult: null,
-      validationData: null,
-      uploadedFile: null,
-    },
-    {
-      id: "production_plan",
-      title: "Production Plan",
-      description: "Upload Production Plans information spreadsheet",
-      status: "idle",
-      postStatus: "idle",
-      lastUploaded: null,
-      lastPosted: null,
-      inputRef: ProductionPlanInputRef,
-      icon: <GanttChart className="h-5 w-5" />,
       result: null,
       postResult: null,
       validationData: null,
