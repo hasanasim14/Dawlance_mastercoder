@@ -35,7 +35,7 @@ interface FileUploadStatus {
   error?: string;
 }
 
-export default function Offerings() {
+export default function SKUOfferings() {
   const [uploadStatus, setUploadStatus] = useState<FileUploadStatus>({
     file: null,
     status: "idle",
@@ -484,7 +484,7 @@ export default function Offerings() {
         {uploadedData?.length > 0 && (
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Offerings</CardTitle>
+              <CardTitle>SKU Offerings</CardTitle>
               <div className="flex space-x-2"></div>
             </CardHeader>
             <CardContent>

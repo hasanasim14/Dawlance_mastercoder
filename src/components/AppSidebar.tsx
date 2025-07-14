@@ -68,8 +68,8 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
       icon: Repeat,
     },
     {
-      title: "Offerings",
-      url: "/offerings",
+      title: "SKU Offerings",
+      url: "/sku-offerings",
       icon: Gift,
     },
     {
