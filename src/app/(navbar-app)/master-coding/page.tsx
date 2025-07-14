@@ -50,7 +50,8 @@ export default function MasterCoding() {
       type: "number",
       readOnly: true,
     },
-    { key: "Product", label: "Product", type: "text", required: true },
+    // { key: "Product", label: "Product", type: "text", required: true },
+    { key: "Model", label: "Model", type: "text", required: true },
     {
       key: "Material",
       label: "Material",
@@ -410,7 +411,7 @@ export default function MasterCoding() {
   );
 
   return (
-    <div className="w-full h-[85vh] p-4 overflow-hidden">
+    <div className="w-full h-[85vh] p-2 overflow-hidden">
       <div className="w-full h-full flex flex-col lg:flex-row gap-4 overflow-hidden">
         <div
           className={cn(

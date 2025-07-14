@@ -279,7 +279,7 @@ export default function Users() {
   );
 
   return (
-    <div className="w-full h-[85vh] p-4 overflow-hidden">
+    <div className="w-full h-[85vh] p-2 overflow-hidden">
       <div className="w-full h-full flex flex-col lg:flex-row gap-4 overflow-hidden">
         <div className="flex-1 h-full overflow-hidden min-w-0">
           <DataTable

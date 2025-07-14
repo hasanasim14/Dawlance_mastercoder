@@ -398,7 +398,7 @@ export default function PhaseIO() {
   };
 
   return (
-    <div className="w-full h-[85vh] p-4 overflow-hidden">
+    <div className="w-full h-[85vh] p-2 overflow-hidden">
       <div className="w-full h-full flex flex-col lg:flex-row gap-4 overflow-hidden">
         <div
           className={cn(
