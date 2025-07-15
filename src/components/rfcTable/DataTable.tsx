@@ -1,5 +1,7 @@
 "use client";
+
 import type React from "react";
+import debounce from "lodash.debounce";
 import { useEffect, useState, useRef, useCallback } from "react";
 import { Input } from "@/components/ui/input";
 import {
@@ -11,7 +13,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import type { ColumnConfig, RowDataType } from "@/lib/types";
-import { Loader2, Edit3, Save, Clock } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { RFCTableHeaders } from "./DataTableHeaders";
 import { ColumnFilter } from "./ColumnFilter";
 
@@ -40,7 +42,6 @@ interface DataTableProps {
   isLoading?: boolean;
   isSaving?: boolean;
   isPosting?: boolean;
-  isAutoSaving?: boolean;
   filterableColumns?: string[];
   columnFilters?: Record<string, string[]>;
   onFilterChange?: (filters: Record<string, string[]>) => void;
@@ -64,7 +65,6 @@ export const RFCTable: React.FC<DataTableProps> = ({
   isLoading = false,
   isSaving = false,
   isPosting = false,
-  isAutoSaving = false,
   filterableColumns = [],
   columnFilters = {},
   onFilterChange,
@@ -74,11 +74,13 @@ export const RFCTable: React.FC<DataTableProps> = ({
 }) => {
   // State for tracking which rows have been modified
   const [modifiedRows, setModifiedRows] = useState<Set<string>>(new Set());
+  // eslint-disable-next-line
   const [editingCell, setEditingCell] = useState<string | null>(null);
 
-  // Debounce timer ref
+  // Debounce settings
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const DEBOUNCE_DELAY = 2000; // 1 second delay
+  const debouncedAutoSaveRef = useRef<() => void>(() => {});
+  const DEBOUNCE_DELAY = 3000;
 
   // Helper function to create unique row key
   const getRowKey = (row: RowDataType): string => {
@@ -90,34 +92,6 @@ export const RFCTable: React.FC<DataTableProps> = ({
     setModifiedRows(new Set());
     setEditingCell(null);
   }, [originalRowData]);
-
-  // Function for responsive designs - Updated for better responsiveness
-  const getColumnClasses = (columnKey: string): string => {
-    const baseClasses = "text-left px-2 py-1";
-    switch (columnKey) {
-      case "Branch":
-        return `${baseClasses} min-w-[100px] w-auto`;
-      case "Material":
-        return `${baseClasses} min-w-[100px] w-auto`;
-      case "Material Description":
-        return `${baseClasses} min-w-[150px] w-auto hidden sm:table-cell`;
-      case "Product":
-        return `${baseClasses} min-w-[100px] w-auto hidden md:table-cell`;
-      case "Last RFC":
-        return `${baseClasses} min-w-[80px] w-auto hidden lg:table-cell`;
-      default:
-        if (columnKey.includes("Sales")) {
-          return `${baseClasses} min-w-[90px] w-auto hidden lg:table-cell`;
-        }
-        if (columnKey.includes("RFC") && !columnKey.includes("Last")) {
-          return `${baseClasses} min-w-[100px] w-auto`;
-        }
-        if (columnKey.includes("YTD")) {
-          return `${baseClasses} min-w-[90px] w-auto hidden lg:table-cell`;
-        }
-        return `${baseClasses} min-w-[90px] w-auto hidden md:table-cell`;
-    }
-  };
 
   // Get all RFC columns (excluding "Last RFC")
   const getRFCColumns = () => {
@@ -176,9 +150,7 @@ export const RFCTable: React.FC<DataTableProps> = ({
 
       // Only add if there are actual changes in this row
       const hasChanges = Object.keys(rowEdits).length > 0;
-      if (hasChanges) {
-        changedData.push(rowData);
-      }
+      if (hasChanges) changedData.push(rowData);
     });
 
     return changedData;
@@ -198,6 +170,22 @@ export const RFCTable: React.FC<DataTableProps> = ({
     }, DEBOUNCE_DELAY);
   }, [prepareChangedData, onAutoSave]);
 
+  // Setup the debounced autosave function on mount/update
+  useEffect(() => {
+    debouncedAutoSaveRef.current = () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+
+      debounceTimerRef.current = setTimeout(() => {
+        const changedData = prepareChangedData();
+        if (changedData.length > 0 && onAutoSave) {
+          onAutoSave(changedData);
+        }
+      }, DEBOUNCE_DELAY);
+    };
+  }, [prepareChangedData, onAutoSave]);
+
   // Cleanup timeout on unmount
   useEffect(() => {
     return () => {
@@ -208,7 +196,7 @@ export const RFCTable: React.FC<DataTableProps> = ({
   }, []);
 
   // Handle cell value change for specific RFC column
-  const handleCellChange = (
+  const handleCellChange = async (
     row: RowDataType,
     columnKey: string,
     value: string
@@ -228,10 +216,6 @@ export const RFCTable: React.FC<DataTableProps> = ({
     }
 
     setModifiedRows((prev) => new Set([...prev, rowKey]));
-
-    console.log(
-      `Cell changed - Row: ${rowKey}, Column: ${columnKey}, Value: ${value}`
-    );
 
     // Trigger debounced autosave
     debouncedAutoSave();
@@ -285,7 +269,6 @@ export const RFCTable: React.FC<DataTableProps> = ({
   return (
     <div className="rounded-lg border bg-card shadow-sm h-full w-full flex flex-col overflow-hidden">
       <RFCTableHeaders
-        // tableName={tableName}
         permission={permission}
         branchFilter={branchFilter}
         onPost={onPost}
@@ -303,14 +286,6 @@ export const RFCTable: React.FC<DataTableProps> = ({
         getCellValue={getCellValue}
       />
 
-      {/* Autosave indicator */}
-      {isAutoSaving && (
-        <div className="flex items-center gap-2 px-4 py-2 bg-blue-50 dark:bg-blue-950/20 border-b text-sm text-blue-700 dark:text-blue-300">
-          <Save className="w-4 h-4 animate-pulse" />
-          Auto-saving changes...
-        </div>
-      )}
-
       <div className="flex-1 overflow-hidden">
         <div className="h-full w-full overflow-auto">
           <Table className="relative w-full">
@@ -319,33 +294,17 @@ export const RFCTable: React.FC<DataTableProps> = ({
                 {columns.map((column) => {
                   const isFilterable = filterableColumns.includes(column.key);
                   const hasActiveFilter = columnFilters[column.key]?.length > 0;
-                  const columnClasses = getColumnClasses(column.key);
-                  const isRFCColumn =
-                    column.key.includes("RFC") &&
-                    column.key.endsWith(" RFC") &&
-                    !column.key.includes("Branch") &&
-                    !column.key.includes("Marketing") &&
-                    !column.key.includes("Last");
 
                   return (
                     <TableHead
                       key={column.key}
-                      className={`${columnClasses} bg-background font-semibold text-sm whitespace-nowrap`}
+                      className="bg-background font-semibold text-sm whitespace-nowrap"
                     >
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2 min-w-0">
                           <span className="truncate text-xs sm:text-sm">
                             {column.label}
                           </span>
-                          {isRFCColumn && (
-                            <div className="flex items-center gap-1">
-                              <Edit3 className="w-3 h-3 text-muted-foreground flex-shrink-0" />
-                              <Clock
-                                className="w-3 h-3 text-green-600 flex-shrink-0"
-                                // title="Auto-save enabled"
-                              />
-                            </div>
-                          )}
                           {hasActiveFilter && (
                             <div className="w-2 h-2 bg-blue-600 rounded-full flex-shrink-0" />
                           )}
@@ -412,12 +371,11 @@ export const RFCTable: React.FC<DataTableProps> = ({
                         column.key,
                         row[column.key]
                       );
-                      const columnClasses = getColumnClasses(column.key);
 
                       return (
                         <TableCell
                           key={column.key}
-                          className={`${columnClasses} min-h-[40px] sm:min-h-[48px] relative`}
+                          className="min-h-[40px] sm:min-h-[48px] relative"
                           title={String(row[column.key] ?? "")}
                         >
                           {isEditable ? (
@@ -442,11 +400,6 @@ export const RFCTable: React.FC<DataTableProps> = ({
                                 className="w-full h-7 sm:h-8 text-xs sm:text-sm"
                                 placeholder="Enter RFC value"
                               />
-                              {isAutoSaving && isRowModified(row) && (
-                                <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
-                                  <Save className="w-3 h-3 text-blue-600 animate-pulse" />
-                                </div>
-                              )}
                             </div>
                           ) : (
                             <div className="truncate text-xs sm:text-sm w-full">
