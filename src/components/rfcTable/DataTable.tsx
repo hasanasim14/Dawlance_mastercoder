@@ -33,9 +33,11 @@ interface DataTableProps {
     branch: string,
     month: string,
     year: string,
+    // eslint-disable-next-line
     changedData: Array<{ material: string; [key: string]: any }>
   ) => Promise<void>;
   onAutoSave?: (
+    // eslint-disable-next-line
     changedData: Array<{ material: string; [key: string]: any }>
   ) => Promise<void>;
   onFetchData: (branch: string, month: string, year: string) => Promise<void>;
@@ -77,10 +79,17 @@ export const RFCTable: React.FC<DataTableProps> = ({
   // eslint-disable-next-line
   const [editingCell, setEditingCell] = useState<string | null>(null);
 
-  // Debounce settings
-  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const debouncedAutoSaveRef = useRef<() => void>(() => {});
-  const DEBOUNCE_DELAY = 3000;
+  // Refs to track the latest values
+  const editedValuesRef = useRef(editedValues);
+  const originalRowDataRef = useRef(originalRowData);
+  const columnsRef = useRef(columns);
+
+  // Update refs when props change
+  useEffect(() => {
+    editedValuesRef.current = editedValues;
+    originalRowDataRef.current = originalRowData;
+    columnsRef.current = columns;
+  }, [editedValues, originalRowData, columns]);
 
   // Helper function to create unique row key
   const getRowKey = (row: RowDataType): string => {
@@ -94,8 +103,8 @@ export const RFCTable: React.FC<DataTableProps> = ({
   }, [originalRowData]);
 
   // Get all RFC columns (excluding "Last RFC")
-  const getRFCColumns = () => {
-    return columns.filter((col) => {
+  const getRFCColumns = useCallback(() => {
+    return columnsRef.current.filter((col) => {
       const key = col.key;
       // Must contain "RFC" and end with " RFC" (not "Branch RFC" or "Marketing RFC")
       return (
@@ -106,18 +115,19 @@ export const RFCTable: React.FC<DataTableProps> = ({
         !key.includes("Last")
       );
     });
-  };
+  }, []);
 
   // Prepare changed data for API call - collects all RFC values for modified rows
   const prepareChangedData = useCallback(() => {
+    // eslint-disable-next-line
     const changedData: Array<{ material: string; [key: string]: any }> = [];
 
     // Get all RFC columns
     const allRFCColumns = getRFCColumns();
 
-    Object.entries(editedValues).forEach(([rowKey, rowEdits]) => {
+    Object.entries(editedValuesRef.current).forEach(([rowKey, rowEdits]) => {
       // Find the original row data
-      const originalRow = originalRowData.find(
+      const originalRow = originalRowDataRef.current.find(
         (row) => getRowKey(row) === rowKey
       );
       if (!originalRow) return;
@@ -126,6 +136,7 @@ export const RFCTable: React.FC<DataTableProps> = ({
       if (!material) return;
 
       // Prepare row data with material
+      // eslint-disable-next-line
       const rowData: { material: string; [key: string]: any } = { material };
 
       // Collect all RFC values for this row (both edited and original)
@@ -154,46 +165,25 @@ export const RFCTable: React.FC<DataTableProps> = ({
     });
 
     return changedData;
-  }, [editedValues, originalRowData]);
+  }, [getRFCColumns]);
 
-  // Debounced autosave function
-  const debouncedAutoSave = useCallback(() => {
-    if (debounceTimerRef.current) {
-      clearTimeout(debounceTimerRef.current);
-    }
-
-    debounceTimerRef.current = setTimeout(() => {
+  // Create debounced autosave function
+  const debouncedAutoSave = useCallback(
+    debounce(() => {
       const changedData = prepareChangedData();
       if (changedData.length > 0 && onAutoSave) {
         onAutoSave(changedData);
       }
-    }, DEBOUNCE_DELAY);
-  }, [prepareChangedData, onAutoSave]);
+    }, 3000),
+    [prepareChangedData, onAutoSave]
+  );
 
-  // Setup the debounced autosave function on mount/update
-  useEffect(() => {
-    debouncedAutoSaveRef.current = () => {
-      if (debounceTimerRef.current) {
-        clearTimeout(debounceTimerRef.current);
-      }
-
-      debounceTimerRef.current = setTimeout(() => {
-        const changedData = prepareChangedData();
-        if (changedData.length > 0 && onAutoSave) {
-          onAutoSave(changedData);
-        }
-      }, DEBOUNCE_DELAY);
-    };
-  }, [prepareChangedData, onAutoSave]);
-
-  // Cleanup timeout on unmount
+  // Cleanup debounce on unmount
   useEffect(() => {
     return () => {
-      if (debounceTimerRef.current) {
-        clearTimeout(debounceTimerRef.current);
-      }
+      debouncedAutoSave.cancel();
     };
-  }, []);
+  }, [debouncedAutoSave]);
 
   // Handle cell value change for specific RFC column
   const handleCellChange = async (
@@ -224,12 +214,15 @@ export const RFCTable: React.FC<DataTableProps> = ({
   // Handle cell edit end
   const handleCellBlur = () => {
     setEditingCell(null);
+    // Flush the debounce to ensure the last change is saved immediately
+    debouncedAutoSave.flush();
   };
 
   // Get cell value for specific column
   const getCellValue = (
     row: RowDataType,
     columnKey: string,
+    // eslint-disable-next-line
     originalValue: any
   ) => {
     const rowKey = getRowKey(row);
