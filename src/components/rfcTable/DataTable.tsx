@@ -106,14 +106,16 @@ export const RFCTable: React.FC<DataTableProps> = ({
   const getRFCColumns = useCallback(() => {
     return columnsRef.current.filter((col) => {
       const key = col.key;
-      // Must contain "RFC" and end with " RFC" (not "Branch RFC" or "Marketing RFC")
-      return (
+
+      // Match if RFC appears at end OR has a trailing space after RFC
+      const isRFC =
         key.includes("RFC") &&
-        key.endsWith(" RFC") &&
+        (key.trimEnd().endsWith("RFC") || key.endsWith("RFC ")) &&
         !key.includes("Branch") &&
         !key.includes("Marketing") &&
-        !key.includes("Last")
-      );
+        !key.includes("Last");
+
+      return isRFC;
     });
   }, []);
 

@@ -64,31 +64,11 @@ export default function DawlanceRFC() {
       }
     });
 
-    // Sort known columns by preferred order
+    // Sort known columns only
     knownColumns.sort(
       (a, b) => columnOrder.indexOf(a) - columnOrder.indexOf(b)
     );
 
-    // Sort dynamic columns (sales columns first, then RFC columns)
-    dynamicColumns.sort((a, b) => {
-      const aIsSales = a.includes("Sales");
-      const bIsSales = b.includes("Sales");
-      const aIsRFC = a.includes("RFC");
-      const bIsRFC = b.includes("RFC");
-
-      // Sales columns come first
-      if (aIsSales && !bIsSales) return -1;
-      if (!aIsSales && bIsSales) return 1;
-
-      // Then RFC columns
-      if (aIsRFC && !bIsRFC) return 1;
-      if (!aIsRFC && bIsRFC) return -1;
-
-      // Alphabetical for same type
-      return a.localeCompare(b);
-    });
-
-    // Combine all columns in order
     const orderedKeys = [...knownColumns, ...dynamicColumns];
 
     // Convert to ColumnConfig format
