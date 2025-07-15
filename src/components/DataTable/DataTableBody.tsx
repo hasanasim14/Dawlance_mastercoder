@@ -55,7 +55,7 @@ export function DataTableBody({
           >
             <TableCell
               onClick={(e) => e.stopPropagation()}
-              className="left-0 bg-background z-10 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]"
+              className="sticky left-0 bg-background z-30 w-12"
             >
               <Checkbox
                 checked={isSelected}
@@ -63,6 +63,7 @@ export function DataTableBody({
                   onRowSelect(row, checked as boolean)
                 }
                 aria-label={`Select row ${row[selectionValue]}`}
+                className="mr-2"
               />
             </TableCell>
             {columns.map((column) => (

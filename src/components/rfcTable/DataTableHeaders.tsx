@@ -20,7 +20,7 @@ interface BranchOption {
 }
 
 interface HeadersProps {
-  tableName: string;
+  permission: number;
   branchFilter: boolean;
   onPost: (
     branch: string,
@@ -54,6 +54,7 @@ interface HeadersProps {
 }
 
 export const RFCTableHeaders: React.FC<HeadersProps> = ({
+  permission,
   branchFilter,
   onPost,
   onSave,
@@ -376,7 +377,13 @@ export const RFCTableHeaders: React.FC<HeadersProps> = ({
           <div className="flex items-center gap-2 ml-4">
             <Button
               onClick={handleSave}
-              disabled={!isFormValid || !canSave() || isSaving || isPosting}
+              disabled={
+                !isFormValid ||
+                !canSave() ||
+                isSaving ||
+                isPosting ||
+                permission == 0
+              }
               variant="outline"
               size="sm"
             >
@@ -394,7 +401,13 @@ export const RFCTableHeaders: React.FC<HeadersProps> = ({
             </Button>
             <Button
               onClick={handlePost}
-              disabled={!isFormValid || !canPost() || isSaving || isPosting}
+              disabled={
+                !isFormValid ||
+                !canPost() ||
+                isSaving ||
+                isPosting ||
+                permission == 0
+              }
               size="sm"
             >
               {isPosting ? (

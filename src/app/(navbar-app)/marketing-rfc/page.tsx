@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect } from "react";
 import type { RowDataType, ColumnConfig } from "@/lib/types";
 import { transformArrayFromApiFormat } from "@/lib/data-transformers";
 import { RFCTable } from "@/components/rfcTable/DataTable";
+import { toast } from "sonner";
 
 export default function MarketingRFC() {
   // Original data from API (unfiltered)
@@ -19,10 +20,17 @@ export default function MarketingRFC() {
     {}
   );
   // Store which rows are edited
-  // const [editedValues, setEditedValues] = useState<Record<string, string>>({});
   const [editedValues, setEditedValues] = useState<
     Record<string, Record<string, string>>
   >({});
+  const [permission, setPermission] = useState(0);
+
+  // Autosave state
+  // eslint-disable-next-line
+  const [autoSaving, setAutoSaving] = useState(false);
+  const [currentBranch, setCurrentBranch] = useState<string>("");
+  const [currentMonth, setCurrentMonth] = useState<string>("");
+  const [currentYear, setCurrentYear] = useState<string>("");
 
   // which columns to have the filter on
   const filterableColumns = ["Product"];
@@ -103,6 +111,7 @@ export default function MarketingRFC() {
       const hasActiveFilters = Object.values(filters).some(
         (filterValues) => filterValues.length > 0
       );
+
       if (!hasActiveFilters) return data;
 
       return data.filter((row) => {
@@ -126,33 +135,59 @@ export default function MarketingRFC() {
   const applyCurrentFilters = useCallback(() => {
     const filtered = applyFiltersToData(originalRowData, columnFilters);
     setFilteredRowData(filtered);
-  }, [originalRowData, columnFilters, applyFiltersToData, editedValues]);
+  }, [originalRowData, columnFilters, applyFiltersToData]);
 
   // Get the branch-rfc data
   const fetchBranchRFCData = useCallback(
     async (branch: string, month: string, year: string) => {
       setLoading(true);
+      setCurrentBranch(branch);
+      setCurrentMonth(month);
+      setCurrentYear(year);
+
       try {
         const queryParams = new URLSearchParams({
-          //   branch,
           month,
           year,
         });
 
-        const endpoint = `${
+        // get all data
+        const fetchEndpoint = `${
           process.env.NEXT_PUBLIC_BASE_URL
         }/marketing-rfc?${queryParams.toString()}`;
-        // const authToken = localStorage.getItem("token");
 
-        const res = await fetch(endpoint, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            // Authorization: `Bearer ${authToken}`,
-          },
-        });
+        // permission endpoint includes branch
+        const permissionParams = new URLSearchParams(queryParams);
+        permissionParams.append("branch", "Marketing");
 
-        const data = await res.json();
+        const permissionEndpoint = `${
+          process.env.NEXT_PUBLIC_BASE_URL
+        }/rfc/lock?${permissionParams.toString()}`;
+
+        const [fetchEndpointResponse, permissionEndpointResponse] =
+          await Promise.all([
+            fetch(fetchEndpoint, {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+                // Authorization: `Bearer ${authToken}`,
+              },
+            }),
+
+            fetch(permissionEndpoint, {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+                // Authorization: `Bearer ${authToken}`,
+              },
+            }),
+          ]);
+
+        const permissionData = await permissionEndpointResponse.json();
+        setPermission(permissionData?.data?.permission);
+        console.log("the permission is ", permission);
+
+        const data = await fetchEndpointResponse.json();
         const parsedData = typeof data === "string" ? JSON.parse(data) : data;
 
         if (parsedData && parsedData.data && Array.isArray(parsedData.data)) {
@@ -183,7 +218,7 @@ export default function MarketingRFC() {
         setLoading(false);
       }
     },
-    []
+    [applyFiltersToData, columnFilters]
   );
 
   // Apply filters when columnFilters change
@@ -206,17 +241,10 @@ export default function MarketingRFC() {
   // Handle edited values change
   const handleEditedValuesChange = useCallback(
     (newEditedValues: Record<string, Record<string, string>>) => {
-      // (newEditedValues: Record<string, string>) => {
       setEditedValues(newEditedValues);
     },
-    [editedValues]
-  ); // Add editedValues as dependency to see current state
-
-  // Clear all filters
-  // const clearAllFilters = useCallback(() => {
-  //   setColumnFilters({});
-  //   setFilteredRowData(originalRowData);
-  // }, [originalRowData]);
+    []
+  );
 
   const handlePost = useCallback(
     async (
@@ -228,7 +256,6 @@ export default function MarketingRFC() {
       setPosting(true);
       try {
         const query = new URLSearchParams({
-          //   branch,
           month,
           year,
         }).toString();
@@ -283,9 +310,6 @@ export default function MarketingRFC() {
           );
         }
 
-        // const branchRfcResult = await branchRfcResponse.json();
-        // const secondApiResult = await secondApiResponse.json();
-
         await fetchBranchRFCData(branch, month, year);
       } catch (error) {
         console.error("Error posting RFC data:", error);
@@ -311,6 +335,8 @@ export default function MarketingRFC() {
         const authToken = localStorage.getItem("token");
         const endpoint = `${process.env.NEXT_PUBLIC_BASE_URL}/marketing-rfc-save?${query}`;
 
+        console.log("the changed data", changedData);
+
         const response = await fetch(endpoint, {
           method: "POST",
           headers: {
@@ -321,13 +347,19 @@ export default function MarketingRFC() {
         });
 
         if (!response.ok) {
+          toast.error("Save failed");
           throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        if (response.ok) {
+          toast.success("Changes saved successfully");
         }
 
         // Refresh data after saving
         await fetchBranchRFCData(branch, month, year);
       } catch (error) {
         console.error("Error saving RFC data:", error);
+        toast.error("Failed to save changes");
       } finally {
         setSaving(false);
       }
@@ -335,17 +367,63 @@ export default function MarketingRFC() {
     [fetchBranchRFCData]
   );
 
+  // Autosave function
+  const handleAutoSave = useCallback(
+    // eslint-disable-next-line
+    async (changedData: Array<{ material: string; [key: string]: any }>) => {
+      if (
+        !currentBranch ||
+        !currentMonth ||
+        !currentYear ||
+        changedData.length === 0
+      ) {
+        return;
+      }
+
+      setAutoSaving(true);
+      try {
+        const query = new URLSearchParams({
+          branch: currentBranch,
+          month: currentMonth,
+          year: currentYear,
+        }).toString();
+
+        // const authToken = localStorage.getItem("token");
+        const endpoint = `${process.env.NEXT_PUBLIC_BASE_URL}/marketing-rfc-save?${query}`;
+
+        const response = await fetch(endpoint, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            // Authorization: `Bearer ${authToken}`,
+          },
+          body: JSON.stringify(changedData),
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+      } catch (error) {
+        console.error("Error auto-saving RFC data:", error);
+      } finally {
+        setAutoSaving(false);
+      }
+    },
+    [currentBranch, currentMonth, currentYear]
+  );
+
   return (
     <div className="@container/main flex flex-1 flex-col gap-2">
       <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
         <RFCTable
-          tableName="Marketing RFC"
+          permission={permission}
           branchFilter={false}
           rowData={filteredRowData}
           originalRowData={originalRowData}
           columns={columns}
           onPost={handlePost}
           onSave={handleSave}
+          onAutoSave={handleAutoSave}
           onFetchData={fetchBranchRFCData}
           isLoading={loading}
           isSaving={saving}

@@ -1,4 +1,5 @@
 "use client";
+
 import { useState, useCallback, useEffect } from "react";
 import type { RowDataType, ColumnConfig } from "@/lib/types";
 import { transformArrayFromApiFormat } from "@/lib/data-transformers";
@@ -21,6 +22,12 @@ export default function DawlanceRFC() {
   const [editedValues, setEditedValues] = useState<
     Record<string, Record<string, string>>
   >({});
+  // Autosave state
+  // eslint-disable-next-line
+  const [autoSaving, setAutoSaving] = useState(false);
+  const [currentBranch, setCurrentBranch] = useState<string>("");
+  const [currentMonth, setCurrentMonth] = useState<string>("");
+  const [currentYear, setCurrentYear] = useState<string>("");
 
   // which columns to have the filter on
   const filterableColumns = ["Product"];
@@ -127,9 +134,13 @@ export default function DawlanceRFC() {
   }, [originalRowData, columnFilters, applyFiltersToData]);
 
   // Get the branch-rfc data
-  const fetchBranchRFCData = useCallback(
+  const fetchDawlanceRFCData = useCallback(
     async (branch: string, month: string, year: string) => {
       setLoading(true);
+      setCurrentBranch(branch);
+      setCurrentMonth(month);
+      setCurrentYear(year);
+
       try {
         const queryParams = new URLSearchParams({
           branch,
@@ -179,7 +190,7 @@ export default function DawlanceRFC() {
         setLoading(false);
       }
     },
-    []
+    [applyFiltersToData, columnFilters]
   );
 
   // Apply filters when columnFilters change
@@ -326,14 +337,14 @@ export default function DawlanceRFC() {
           );
         }
 
-        await fetchBranchRFCData(branch, month, year);
+        await fetchDawlanceRFCData(branch, month, year);
       } catch (error) {
         console.error("Error posting RFC data:", error);
       } finally {
         setPosting(false);
       }
     },
-    [fetchBranchRFCData, columns, editedValues]
+    [fetchDawlanceRFCData, columns, editedValues]
   );
 
   const handleSave = useCallback(
@@ -364,31 +375,83 @@ export default function DawlanceRFC() {
         }
 
         // Refresh data after saving
-        await fetchBranchRFCData(branch, month, year);
+        await fetchDawlanceRFCData(branch, month, year);
       } catch (error) {
         console.error("Error saving RFC data:", error);
       } finally {
         setSaving(false);
       }
     },
-    [fetchBranchRFCData]
+    [fetchDawlanceRFCData]
+  );
+
+  // Autosave function
+  const handleAutoSave = useCallback(
+    // eslint-disable-next-line
+    async (changedData: Array<{ material: string; [key: string]: any }>) => {
+      if (
+        !currentBranch ||
+        !currentMonth ||
+        !currentYear ||
+        changedData.length === 0
+      ) {
+        return;
+      }
+
+      setAutoSaving(true);
+      try {
+        // eslint-disable-next-line
+        const query = new URLSearchParams({
+          branch: currentBranch,
+          month: currentMonth,
+          year: currentYear,
+        }).toString();
+
+        const authToken = localStorage.getItem("token");
+        const endpoint = `${process.env.NEXT_PUBLIC_BASE_URL}/dawlance-rfc-save`;
+
+        const response = await fetch(endpoint, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${authToken}`,
+          },
+          body: JSON.stringify(changedData),
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        // Don't refresh data on autosave to avoid disrupting user input
+        // await fetchDawlanceRFCData(currentBranch, currentMonth, currentYear);
+      } catch (error) {
+        console.error("Error auto-saving RFC data:", error);
+        // toast.error("Auto-save failed");
+      } finally {
+        setAutoSaving(false);
+      }
+    },
+    [currentBranch, currentMonth, currentYear]
   );
 
   return (
     <div className="@container/main flex flex-1 flex-col gap-2">
       <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
         <RFCTable
-          tableName="Dawlance RFC"
+          permission={1}
           branchFilter={false}
           rowData={filteredRowData}
           originalRowData={originalRowData}
           columns={columns}
           onPost={handlePost}
           onSave={handleSave}
-          onFetchData={fetchBranchRFCData}
+          onAutoSave={handleAutoSave}
+          onFetchData={fetchDawlanceRFCData}
           isLoading={loading}
           isSaving={saving}
           isPosting={posting}
+          // isAutoSaving={autoSaving}
           filterableColumns={filterableColumns}
           columnFilters={columnFilters}
           onFilterChange={handleFilterChange}

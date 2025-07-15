@@ -19,10 +19,18 @@ export default function BranchRFC() {
     {}
   );
   // Store which rows are edited
-  // const [editedValues, setEditedValues] = useState<Record<string, string>>({});
   const [editedValues, setEditedValues] = useState<
     Record<string, Record<string, string>>
   >({});
+  const [permission, setPermission] = useState(0);
+
+  //autosave state
+  // eslint-disable-next-line
+  const [autoSaving, setAutoSaving] = useState(false);
+  const [currentBranch, setCurrentBranch] = useState<string>("");
+  const [currentMonth, setCurrentMonth] = useState<string>("");
+  const [currentYear, setCurrentYear] = useState<string>("");
+
   // which columns to have the filter on
   const filterableColumns = ["Product"];
 
@@ -131,6 +139,9 @@ export default function BranchRFC() {
   const fetchBranchRFCData = useCallback(
     async (branch: string, month: string, year: string) => {
       setLoading(true);
+      setCurrentBranch(branch);
+      setCurrentMonth(month);
+      setCurrentYear(year);
       try {
         const queryParams = new URLSearchParams({
           branch,
@@ -138,20 +149,39 @@ export default function BranchRFC() {
           year,
         });
 
-        const endpoint = `${
+        // get all data
+        const fetchEndpoint = `${
           process.env.NEXT_PUBLIC_BASE_URL
         }/branch-rfc?${queryParams.toString()}`;
-        // const authToken = localStorage.getItem("token");
 
-        const res = await fetch(endpoint, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            // Authorization: `Bearer ${authToken}`,
-          },
-        });
+        // get post/save permission
+        const permissionEndpoint = `${
+          process.env.NEXT_PUBLIC_BASE_URL
+        }/rfc/lock?${queryParams.toString()}`;
 
-        const data = await res.json();
+        const [fetchEndpointResponse, permissionEndpointResponse] =
+          await Promise.all([
+            fetch(fetchEndpoint, {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+                // Authorization: `Bearer ${authToken}`,
+              },
+            }),
+
+            fetch(permissionEndpoint, {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+                // Authorization: `Bearer ${authToken}`,
+              },
+            }),
+          ]);
+
+        const permissionData = await permissionEndpointResponse.json();
+        setPermission(permissionData?.data?.permission);
+
+        const data = await fetchEndpointResponse.json();
         const parsedData = typeof data === "string" ? JSON.parse(data) : data;
 
         if (parsedData && parsedData.data && Array.isArray(parsedData.data)) {
@@ -182,7 +212,7 @@ export default function BranchRFC() {
         setLoading(false);
       }
     },
-    []
+    [applyFiltersToData, columnFilters]
   );
 
   // Apply filters when columnFilters change
@@ -208,13 +238,7 @@ export default function BranchRFC() {
       setEditedValues(newEditedValues);
     },
     [editedValues]
-  ); // Add editedValues as dependency to see current state
-
-  // Clear all filters
-  // const clearAllFilters = useCallback(() => {
-  //   setColumnFilters({});
-  //   setFilteredRowData(originalRowData);
-  // }, [originalRowData]);
+  );
 
   const handlePost = useCallback(
     async (
@@ -335,21 +359,59 @@ export default function BranchRFC() {
     [fetchBranchRFCData]
   );
 
+  // Autosave function
+  const handleAutoSave = useCallback(
+    // eslint-disable-next-line
+    async (changedData: Array<{ material: string; [key: string]: any }>) => {
+      setAutoSaving(true);
+      try {
+        const query = new URLSearchParams({
+          branch: currentBranch,
+          month: currentMonth,
+          year: currentYear,
+        }).toString();
+
+        // const authToken = localStorage.getItem("token");
+        const endpoint = `${process.env.NEXT_PUBLIC_BASE_URL}/branch-rfc-save?${query}`;
+
+        const response = await fetch(endpoint, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            // Authorization: `Bearer ${authToken}`,
+          },
+          body: JSON.stringify(changedData),
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+      } catch (error) {
+        console.error("Error auto-saving RFC data:", error);
+      } finally {
+        setAutoSaving(false);
+      }
+    },
+    [currentBranch, currentMonth, currentYear]
+  );
+
   return (
     <div className="@container/main flex flex-1 flex-col gap-2">
       <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
         <RFCTable
-          tableName=""
+          permission={permission}
           branchFilter={true}
           rowData={filteredRowData}
           originalRowData={originalRowData}
           columns={columns}
           onPost={handlePost}
           onSave={handleSave}
+          onAutoSave={handleAutoSave}
           onFetchData={fetchBranchRFCData}
           isLoading={loading}
           isSaving={saving}
           isPosting={posting}
+          // isAutoSaving={autoSaving}
           filterableColumns={filterableColumns}
           columnFilters={columnFilters}
           onFilterChange={handleFilterChange}
