@@ -24,6 +24,7 @@ export default function MarketingRFC() {
     Record<string, Record<string, string>>
   >({});
   const [permission, setPermission] = useState(0);
+  // eslint-disable-next-line
   const [summaryData, setSummaryData] = useState([]);
 
   // Autosave state
@@ -449,7 +450,7 @@ export default function MarketingRFC() {
           onApplyFilters={handleApplyFilters}
           editedValues={editedValues}
           onEditedValuesChange={handleEditedValuesChange}
-          summaryData={summaryData}
+          // summaryData={summaryData}
         />
       </div>
     </div>
