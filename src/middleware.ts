@@ -28,6 +28,7 @@ export const config = {
     "/branch-rfc",
     "/marketing-rfc",
     "/dawlance-rfc",
+    "/configure-dawlance-rfc",
     "/roles",
     "/users",
   ],

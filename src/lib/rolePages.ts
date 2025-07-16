@@ -10,6 +10,7 @@ export const rolePages = {
     "/branch-rfc",
     "/marketing-rfc",
     "/dawlance-rfc",
+    "/configure-dawlance-rfc",
     "/users",
     "/roles",
   ],

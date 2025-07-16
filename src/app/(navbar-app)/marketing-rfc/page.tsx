@@ -24,6 +24,7 @@ export default function MarketingRFC() {
     Record<string, Record<string, string>>
   >({});
   const [permission, setPermission] = useState(0);
+  const [summaryData, setSummaryData] = useState([]);
 
   // Autosave state
   // eslint-disable-next-line
@@ -164,28 +165,44 @@ export default function MarketingRFC() {
           process.env.NEXT_PUBLIC_BASE_URL
         }/rfc/lock?${permissionParams.toString()}`;
 
-        const [fetchEndpointResponse, permissionEndpointResponse] =
-          await Promise.all([
-            fetch(fetchEndpoint, {
-              method: "GET",
-              headers: {
-                "Content-Type": "application/json",
-                // Authorization: `Bearer ${authToken}`,
-              },
-            }),
+        // For summary table
+        const branchRFCProductEndpoint = `${process.env.NEXT_PUBLIC_BASE_URL}/marketing-rfc-product?${queryParams}`;
 
-            fetch(permissionEndpoint, {
-              method: "GET",
-              headers: {
-                "Content-Type": "application/json",
-                // Authorization: `Bearer ${authToken}`,
-              },
-            }),
-          ]);
+        const [
+          fetchEndpointResponse,
+          permissionEndpointResponse,
+          rfcProductResponse,
+        ] = await Promise.all([
+          fetch(fetchEndpoint, {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              // Authorization: `Bearer ${authToken}`,
+            },
+          }),
+
+          fetch(permissionEndpoint, {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              // Authorization: `Bearer ${authToken}`,
+            },
+          }),
+
+          fetch(branchRFCProductEndpoint, {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              // Authorization: `Bearer ${authToken}`,
+            },
+          }),
+        ]);
+
+        const productData = await rfcProductResponse.json();
+        setSummaryData(productData?.data);
 
         const permissionData = await permissionEndpointResponse.json();
         setPermission(permissionData?.data?.permission);
-        console.log("the permission is ", permission);
 
         const data = await fetchEndpointResponse.json();
         const parsedData = typeof data === "string" ? JSON.parse(data) : data;
@@ -335,8 +352,6 @@ export default function MarketingRFC() {
         const authToken = localStorage.getItem("token");
         const endpoint = `${process.env.NEXT_PUBLIC_BASE_URL}/marketing-rfc-save?${query}`;
 
-        console.log("the changed data", changedData);
-
         const response = await fetch(endpoint, {
           method: "POST",
           headers: {
@@ -434,6 +449,7 @@ export default function MarketingRFC() {
           onApplyFilters={handleApplyFilters}
           editedValues={editedValues}
           onEditedValuesChange={handleEditedValuesChange}
+          summaryData={summaryData}
         />
       </div>
     </div>

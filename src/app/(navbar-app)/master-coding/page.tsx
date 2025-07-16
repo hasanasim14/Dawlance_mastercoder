@@ -50,8 +50,7 @@ export default function MasterCoding() {
       type: "number",
       readOnly: true,
     },
-    // { key: "Product", label: "Product", type: "text", required: true },
-    { key: "Model", label: "Model", type: "text", required: true },
+    { key: "Product", label: "Product", type: "text", required: true },
     {
       key: "Material",
       label: "Material",
@@ -64,6 +63,7 @@ export default function MasterCoding() {
       type: "text",
       required: true,
     },
+    { key: "Model", label: "Model", type: "text", required: true },
     {
       key: "Measurement Instrument",
       label: "Measurement Instrument",
@@ -93,6 +93,7 @@ export default function MasterCoding() {
     { key: "Product", label: "Product" },
     { key: "Material", label: "Material" },
     { key: "Material Description", label: "Material Description" },
+    { key: "Model", label: "Model" },
     { key: "Measurement Instrument", label: "Measurement Instrument" },
     { key: "Colour Similarity", label: "Colour Similarity" },
     { key: "Product Type", label: "Product Type" },
