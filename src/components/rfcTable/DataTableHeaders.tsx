@@ -12,7 +12,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Save, Send, Loader2, FilterX } from "lucide-react";
 import type { RowDataType, ColumnConfig } from "@/lib/types";
-import { getNextMonthAndYear, months } from "@/lib/utils";
+import { getNextMonthAndYear } from "@/lib/utils";
+import DateFilter from "../DateFilter";
 
 interface BranchOption {
   salesOffice: string;
@@ -80,8 +81,8 @@ export const RFCTableHeaders: React.FC<HeadersProps> = ({
   );
 
   // Generate years array (current year ± 5 years)
-  const currentYear = new Date().getFullYear();
-  const years = Array.from({ length: 11 }, (_, i) => currentYear - 5 + i);
+  // const currentYear = new Date().getFullYear();
+  // const years = Array.from({ length: 11 }, (_, i) => currentYear - 5 + i);
 
   // Set default values on component mount
   useEffect(() => {
@@ -341,8 +342,7 @@ export const RFCTableHeaders: React.FC<HeadersProps> = ({
             </Select>
           )}
 
-          {/* Month Select */}
-          <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+          {/* <Select value={selectedMonth} onValueChange={setSelectedMonth}>
             <SelectTrigger className="w-[140px]">
               <SelectValue placeholder="Select Month" />
             </SelectTrigger>
@@ -357,7 +357,6 @@ export const RFCTableHeaders: React.FC<HeadersProps> = ({
             </SelectContent>
           </Select>
 
-          {/* Year Select */}
           <Select value={selectedYear} onValueChange={setSelectedYear}>
             <SelectTrigger className="w-[100px]">
               <SelectValue placeholder="Year" />
@@ -371,7 +370,14 @@ export const RFCTableHeaders: React.FC<HeadersProps> = ({
                 ))}
               </SelectGroup>
             </SelectContent>
-          </Select>
+          </Select> */}
+
+          <DateFilter
+            selectedMonth={selectedMonth}
+            setSelectedMonth={setSelectedMonth}
+            selectedYear={selectedYear}
+            setSelectedYear={setSelectedYear}
+          />
 
           {/* Action Buttons */}
           <div className="flex items-center gap-2 ml-4">

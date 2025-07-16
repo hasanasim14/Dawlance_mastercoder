@@ -24,6 +24,7 @@ import {
   Gift,
   Store,
   Presentation,
+  Settings,
 } from "lucide-react";
 import { mockUser } from "@/lib/mockUser";
 import { rolePages } from "@/lib/rolePages";
@@ -96,6 +97,11 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
       title: "Marketing RFC",
       url: "/marketing-rfc",
       icon: Presentation,
+    },
+    {
+      title: "Configure Dawlance RFC",
+      url: "/configure-dawlance-rfc",
+      icon: Settings,
     },
     {
       title: "Dawlance RFC",
