@@ -17,7 +17,10 @@ const SummaryTable = ({ summaryData }: SummaryDataProps) => {
   const headers = summaryData.length > 0 ? Object.keys(summaryData[0]) : [];
 
   return (
-    <div className="overflow-x-auto rounded-md border">
+    <div className="overflow-x-auto">
+      <span className="uppercase font-bold block text-center">
+        Summary Table
+      </span>
       <Table className="min-w-full text-sm">
         <TableHeader className="bg-muted">
           <TableRow>
@@ -37,7 +40,7 @@ const SummaryTable = ({ summaryData }: SummaryDataProps) => {
                   <TableCell key={key}>
                     {item[key] !== null && item[key] !== undefined
                       ? item[key]
-                      : "-"}
+                      : " "}
                   </TableCell>
                 ))}
               </TableRow>

@@ -265,7 +265,7 @@ export const RFCTable: React.FC<DataTableProps> = ({
   const rfcColumns = getRFCColumns();
 
   return (
-    <div className="rounded-lg border bg-card shadow-sm h-full w-full flex flex-col overflow-hidden">
+    <div className="h-full w-full flex flex-col overflow-hidden">
       <RFCTableHeaders
         permission={permission}
         branchFilter={branchFilter}
@@ -285,10 +285,10 @@ export const RFCTable: React.FC<DataTableProps> = ({
         summaryData={summaryData}
       />
 
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 overflow-hidden rounded-lg border bg-card shadow-sm m-2 p-2">
         <div className="h-full w-full overflow-auto">
           <Table className="relative w-full">
-            <TableHeader className="sticky top-0 z-50 bg-background">
+            <TableHeader className="sticky top-0 z-50 bg-muted">
               <TableRow className="hover:bg-transparent border-b shadow-sm">
                 {columns.map((column) => {
                   const isFilterable = filterableColumns.includes(column.key);
@@ -297,7 +297,16 @@ export const RFCTable: React.FC<DataTableProps> = ({
                   return (
                     <TableHead
                       key={column.key}
-                      className="bg-background font-semibold text-sm whitespace-nowrap"
+                      className={`text-sm whitespace-nowrap bg-[#f5f5f4]
+  ${
+    column.key === "Material" &&
+    "sticky left-0 z-30 w-[120px] min-w-[120px] max-w-[120px]"
+  }
+  ${
+    column.key === "Material Description" &&
+    "sticky left-[120px] z-20 w-[240px] min-w-[240px] max-w-[240px]"
+  }
+`}
                     >
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2 min-w-0">
@@ -374,7 +383,17 @@ export const RFCTable: React.FC<DataTableProps> = ({
                       return (
                         <TableCell
                           key={column.key}
-                          className="min-h-[40px] sm:min-h-[48px] relative"
+                          className={`
+  bg-background text-sm whitespace-nowrap
+  ${
+    column.key === "Material" &&
+    "sticky left-0 z-30 bg-background w-[120px] min-w-[120px] max-w-[120px]"
+  }
+  ${
+    column.key === "Material Description" &&
+    "sticky left-[120px] z-20 bg-background w-[240px] min-w-[240px] max-w-[240px]"
+  }
+`}
                           title={String(row[column.key] ?? "")}
                         >
                           {isEditable ? (
