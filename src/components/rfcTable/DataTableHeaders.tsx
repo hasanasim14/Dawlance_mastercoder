@@ -306,7 +306,7 @@ export const RFCTableHeaders: React.FC<HeadersProps> = ({
 
   return (
     <div>
-      <div className="flex items-center gap-4 p-2 justify-between border-b bg-background/50 flex-shrink-0">
+      <div className="flex items-center gap-4 p-2 justify-between bg-background/50 flex-shrink-0">
         <div className="flex items-center gap-4">
           {branchFilter && <h3 className="font-semibold">{selectedBranch}</h3>}
           {hasActiveFilters() && (
@@ -402,7 +402,7 @@ export const RFCTableHeaders: React.FC<HeadersProps> = ({
         </div>
       </div>
       {/* Summary Table */}
-      <div className="bg-[#f4f4f4] border border-gray-200 rounded-xl p-2 m-2">
+      <div className="border border-gray-200 rounded-xl p-2 m-2">
         <SummaryTable summaryData={summaryData} />
       </div>
     </div>
