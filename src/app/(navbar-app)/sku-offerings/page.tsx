@@ -13,6 +13,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { getNextMonthAndYear } from "@/lib/utils";
+import { PaginationData } from "@/lib/types";
 import DateFilter from "@/components/DateFilter";
 
 interface UploadedData {
@@ -46,6 +47,13 @@ export default function SKUOfferings() {
     recordsProcessed?: number;
     errors?: string[];
   } | null>(null);
+  // Pagination states
+  const [pagination, setPagination] = useState<PaginationData>({
+    total_records: 0,
+    records_per_page: 50,
+    page: 1,
+    total_pages: 0,
+  });
 
   useEffect(() => {
     const { month, year } = getNextMonthAndYear("Non-RFC");
@@ -56,12 +64,20 @@ export default function SKUOfferings() {
   useEffect(() => {
     const fetchOffering = async () => {
       try {
+        if (!selectedMonth || !selectedYear) return;
+
+        const queryParams = new URLSearchParams();
+        queryParams.append("page", pagination.page.toString());
+        queryParams.append("limit", pagination.records_per_page.toString());
+        const authToken = localStorage.getItem("token");
+
         const res = await fetch(
-          `${process.env.NEXT_PUBLIC_BASE_URL}/offerings/${selectedMonth}/${selectedYear}`,
+          `${process.env.NEXT_PUBLIC_BASE_URL}/offerings/${selectedMonth}/${selectedYear}?${queryParams}`,
           {
             method: "GET",
             headers: {
               "Content-Type": "application/json",
+              Authorization: `Bearer ${authToken}`,
             },
           }
         );

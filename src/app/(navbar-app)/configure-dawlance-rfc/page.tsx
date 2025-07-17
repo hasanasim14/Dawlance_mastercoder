@@ -73,8 +73,6 @@ export default function ConfigureDawlanceRFC() {
       if (!res.ok) {
         throw new Error("Failed to save RFC");
       }
-
-      console.log("RFC saved:", updatedRow);
     } catch (error) {
       console.error("Save error: ", error);
     }

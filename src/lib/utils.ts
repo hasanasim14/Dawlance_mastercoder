@@ -9,7 +9,6 @@ export function cn(...inputs: ClassValue[]) {
 export const getNextMonthAndYear = (type: string) => {
   const now = new Date();
   const currentMonth = now.getMonth();
-  console.log("current month", currentMonth);
   const currentYear = now.getFullYear();
 
   let nextMonth;
