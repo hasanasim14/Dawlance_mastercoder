@@ -6,12 +6,19 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 // Function to get the current month and year
-export const getNextMonthAndYear = () => {
+export const getNextMonthAndYear = (type: string) => {
   const now = new Date();
   const currentMonth = now.getMonth();
+  console.log("current month", currentMonth);
   const currentYear = now.getFullYear();
 
-  let nextMonth = currentMonth + 1;
+  let nextMonth;
+  if (type === "RFC") {
+    nextMonth = currentMonth + 4;
+  } else {
+    nextMonth = currentMonth + 1;
+  }
+
   let nextYear = currentYear;
 
   if (nextMonth > 11) {

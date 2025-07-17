@@ -80,13 +80,9 @@ export const RFCTableHeaders: React.FC<HeadersProps> = ({
     null
   );
 
-  // Generate years array (current year ± 5 years)
-  // const currentYear = new Date().getFullYear();
-  // const years = Array.from({ length: 11 }, (_, i) => currentYear - 5 + i);
-
   // Set default values on component mount
   useEffect(() => {
-    const { month, year } = getNextMonthAndYear();
+    const { month, year } = getNextMonthAndYear("RFC");
     setSelectedMonth(month);
     setSelectedYear(year);
     if (!branchFilter && branches.length > 0) {
@@ -341,36 +337,6 @@ export const RFCTableHeaders: React.FC<HeadersProps> = ({
               </SelectContent>
             </Select>
           )}
-
-          {/* <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-            <SelectTrigger className="w-[140px]">
-              <SelectValue placeholder="Select Month" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                {months.map((month) => (
-                  <SelectItem key={month.value} value={month.value}>
-                    {month.label}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-
-          <Select value={selectedYear} onValueChange={setSelectedYear}>
-            <SelectTrigger className="w-[100px]">
-              <SelectValue placeholder="Year" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                {years.map((year) => (
-                  <SelectItem key={year} value={year.toString()}>
-                    {year}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select> */}
 
           <DateFilter
             selectedMonth={selectedMonth}

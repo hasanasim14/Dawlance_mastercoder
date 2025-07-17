@@ -52,6 +52,8 @@ interface DataTableProps {
   onEditedValuesChange?: (
     editedValues: Record<string, Record<string, string>>
   ) => void;
+  // eslint-disable-next-line
+  summaryData: any[];
 }
 
 export const RFCTable: React.FC<DataTableProps> = ({

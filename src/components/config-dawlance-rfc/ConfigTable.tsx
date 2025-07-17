@@ -9,8 +9,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import DateFilter from "../DateFilter";
-import { useEffect, useState } from "react";
 import { Input } from "../ui/input";
+import { useEffect, useRef, useState } from "react";
 
 interface RFCRow {
   Product: string | null;
@@ -19,12 +19,15 @@ interface RFCRow {
   RFC: number;
 }
 
+type EditableRFCRow = Omit<RFCRow, "RFC"> & { RFC: number | string };
+
 interface ConfigTableProps {
   selectedMonth: string;
   setSelectedMonth: (month: string) => void;
   selectedYear: string;
   setSelectedYear: (year: string) => void;
   tableData: RFCRow[];
+  onRFCChange: (index: number, updatedRow: RFCRow) => void;
 }
 
 const ConfigTable = ({
@@ -33,21 +36,37 @@ const ConfigTable = ({
   selectedYear,
   setSelectedYear,
   tableData,
+  onRFCChange,
 }: ConfigTableProps) => {
-  const [editableData, setEditableData] = useState<RFCRow[]>([]);
+  const [editableData, setEditableData] = useState<EditableRFCRow[]>([]);
+  const debounceTimeouts = useRef<{ [key: number]: NodeJS.Timeout }>({});
 
   useEffect(() => {
     setEditableData(tableData);
   }, [tableData]);
 
-  const handleRFCChange = (index: number, value: number) => {
+  const handleRFCChange = (index: number, value: string) => {
     const updated = [...editableData];
     updated[index].RFC = value;
     setEditableData(updated);
+
+    if (debounceTimeouts.current[index]) {
+      clearTimeout(debounceTimeouts.current[index]);
+    }
+
+    debounceTimeouts.current[index] = setTimeout(() => {
+      const rfcNumber = Number(value);
+      if (!isNaN(rfcNumber) && value !== "") {
+        onRFCChange(index, {
+          ...updated[index],
+          RFC: rfcNumber,
+        });
+      }
+    }, 800);
   };
 
   return (
-    <div className="rounded-lg border bg-card shadow-sm w-full flex flex-col overflow-hidden p-4 space-y-4">
+    <div className="w-full flex flex-col overflow-hidden p-4 space-y-4">
       <div className="flex justify-end gap-3">
         <DateFilter
           selectedMonth={selectedMonth}
@@ -71,8 +90,8 @@ const ConfigTable = ({
           </TableHeader>
 
           <TableBody>
-            {editableData.length > 0 ? (
-              editableData.map((item, idx) => (
+            {editableData?.length > 0 ? (
+              editableData?.map((item, idx) => (
                 <TableRow key={idx} className="hover:bg-muted/50">
                   <TableCell>{item.Product ?? " "}</TableCell>
                   <TableCell>{item.Month}</TableCell>
@@ -81,10 +100,8 @@ const ConfigTable = ({
                     <Input
                       type="number"
                       className="py-0"
-                      value={item.RFC}
-                      onChange={(e) =>
-                        handleRFCChange(idx, Number(e.target.value))
-                      }
+                      value={item.RFC === "" ? "" : item.RFC}
+                      onChange={(e) => handleRFCChange(idx, e.target.value)}
                     />
                   </TableCell>
                 </TableRow>

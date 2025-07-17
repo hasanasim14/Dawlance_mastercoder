@@ -1,18 +1,13 @@
 "use client";
+
 import type React from "react";
-import { useState, useRef, useEffect } from "react";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { getNextMonthAndYear, months, years } from "@/lib/utils";
 import type { PaginationData } from "@/lib/types";
+import { useState, useRef, useEffect } from "react";
+import { getNextMonthAndYear } from "@/lib/utils";
 import { ShoppingCart, Server, DollarSign } from "lucide-react";
 import UploadCard from "@/components/upload-center/UploadCard";
 import DataTable from "@/components/upload-center/FileData";
+import DateFilter from "@/components/DateFilter";
 
 // eslint-disable-next-line
 export type PreviousCardData = Record<string, any>;
@@ -101,7 +96,7 @@ function UploadCenter() {
     total_pages: 0,
   });
   // eslint-disable-next-line
-  const [pageSize, setPageSize] = useState(50);
+  const [pageSize, _setPageSize] = useState(50);
   const [currentPage, setCurrentPage] = useState(1);
 
   // Table data and modal states
@@ -114,7 +109,7 @@ function UploadCenter() {
 
   // Set default values on component mount
   useEffect(() => {
-    const { month, year } = getNextMonthAndYear();
+    const { month, year } = getNextMonthAndYear("Non-RFC");
     setSelectedMonth(month);
     setSelectedYear(year);
   }, []);
@@ -445,37 +440,13 @@ function UploadCenter() {
         </p>
       </div>
 
-      <div className="flex items-center gap-4 flex-wrap">
-        <div className="flex items-center gap-3">
-          <div className="flex flex-col gap-1">
-            <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-              <SelectTrigger id="month-select" className="w-[140px]">
-                <SelectValue placeholder="Select month" />
-              </SelectTrigger>
-              <SelectContent>
-                {months.map((month) => (
-                  <SelectItem key={month.value} value={month.value}>
-                    {month.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex flex-col gap-1">
-            <Select value={selectedYear} onValueChange={setSelectedYear}>
-              <SelectTrigger id="year-select" className="w-[100px]">
-                <SelectValue placeholder="Select year" />
-              </SelectTrigger>
-              <SelectContent>
-                {years.map((year) => (
-                  <SelectItem key={year.value} value={year.value}>
-                    {year.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
+      <div className="flex gap-3 flex-wrap">
+        <DateFilter
+          selectedMonth={selectedMonth}
+          setSelectedMonth={setSelectedMonth}
+          selectedYear={selectedYear}
+          setSelectedYear={setSelectedYear}
+        />
       </div>
 
       <div className="flex flex-col space-y-6">

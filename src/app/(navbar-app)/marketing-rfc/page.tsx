@@ -450,7 +450,7 @@ export default function MarketingRFC() {
           onApplyFilters={handleApplyFilters}
           editedValues={editedValues}
           onEditedValuesChange={handleEditedValuesChange}
-          // summaryData={summaryData}
+          summaryData={summaryData}
         />
       </div>
     </div>

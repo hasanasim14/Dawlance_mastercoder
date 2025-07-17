@@ -12,14 +12,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { getNextMonthAndYear, months, years } from "@/lib/utils";
+import { getNextMonthAndYear } from "@/lib/utils";
+import DateFilter from "@/components/DateFilter";
 
 interface UploadedData {
   Material: string;
@@ -44,8 +38,8 @@ export default function SKUOfferings() {
   });
   const [uploadedData, setUploadedData] = useState<UploadedData[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
-  const [selectedYear, setSelectedYear] = useState<string>();
-  const [selectedMonth, setSelectedMonth] = useState<string>();
+  const [selectedYear, setSelectedYear] = useState<string>("");
+  const [selectedMonth, setSelectedMonth] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [apiResponse, setApiResponse] = useState<{
     message?: string;
@@ -54,7 +48,7 @@ export default function SKUOfferings() {
   } | null>(null);
 
   useEffect(() => {
-    const { month, year } = getNextMonthAndYear();
+    const { month, year } = getNextMonthAndYear("Non-RFC");
     setSelectedMonth(month);
     setSelectedYear(year);
   }, []);
@@ -276,41 +270,13 @@ export default function SKUOfferings() {
             </div>
           </CardHeader>
           <div className="px-6 pb-4 border-b">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <label className="text-sm font-medium text-gray-700">
-                  Year:
-                </label>
-                <Select value={selectedYear} onValueChange={setSelectedYear}>
-                  <SelectTrigger id="year-select" className="w-[100px]">
-                    <SelectValue placeholder="Select year" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {years.map((year) => (
-                      <SelectItem key={year.value} value={year.value}>
-                        {year.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex items-center gap-2">
-                <label className="text-sm font-medium text-gray-700">
-                  Month:
-                </label>
-                <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-                  <SelectTrigger id="month-select" className="w-[140px]">
-                    <SelectValue placeholder="Select month" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {months.map((month) => (
-                      <SelectItem key={month.value} value={month.value}>
-                        {month.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="flex gap-3 flex-wrap">
+              <DateFilter
+                selectedMonth={selectedMonth}
+                setSelectedMonth={setSelectedMonth}
+                selectedYear={selectedYear}
+                setSelectedYear={setSelectedYear}
+              />
             </div>
           </div>
           <CardContent>
