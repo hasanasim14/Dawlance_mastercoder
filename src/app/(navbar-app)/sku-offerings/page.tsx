@@ -464,36 +464,28 @@ export default function SKUOfferings() {
 
         {/* Data Table Section */}
         {uploadedData?.length > 0 && (
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>SKU Offerings</CardTitle>
-              <div className="flex space-x-2"></div>
-            </CardHeader>
-            <CardContent>
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Material</TableHead>
-                      <TableHead>Material Description</TableHead>
-                      <TableHead>Product</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {uploadedData.map((record) => (
-                      <TableRow key={record.Material + record.Product}>
-                        <TableCell className="font-medium">
-                          {record.Material}
-                        </TableCell>
-                        <TableCell>{record["Material Description"]}</TableCell>
-                        <TableCell>{record.Product}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
+          <div className="rounded-md border p-2">
+            <Table>
+              <TableHeader className="bg-muted/50">
+                <TableRow>
+                  <TableHead>Material</TableHead>
+                  <TableHead>Material Description</TableHead>
+                  <TableHead>Product</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {uploadedData.map((record) => (
+                  <TableRow key={record.Material + record.Product}>
+                    <TableCell className="font-medium">
+                      {record.Material}
+                    </TableCell>
+                    <TableCell>{record["Material Description"]}</TableCell>
+                    <TableCell>{record.Product}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         )}
       </div>
     </div>
