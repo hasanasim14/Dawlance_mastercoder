@@ -167,7 +167,7 @@ export default function MarketingRFC() {
         }/rfc/lock?${permissionParams.toString()}`;
 
         // For summary table
-        const branchRFCProductEndpoint = `${process.env.NEXT_PUBLIC_BASE_URL}/marketing-rfc-product?${queryParams}`;
+        const RFCProductEndpoint = `${process.env.NEXT_PUBLIC_BASE_URL}/marketing-rfc-product?${queryParams}`;
 
         const [
           fetchEndpointResponse,
@@ -190,7 +190,7 @@ export default function MarketingRFC() {
             },
           }),
 
-          fetch(branchRFCProductEndpoint, {
+          fetch(RFCProductEndpoint, {
             method: "GET",
             headers: {
               "Content-Type": "application/json",

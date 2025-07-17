@@ -28,6 +28,7 @@ export default function DawlanceRFC() {
   const [currentBranch, setCurrentBranch] = useState<string>("");
   const [currentMonth, setCurrentMonth] = useState<string>("");
   const [currentYear, setCurrentYear] = useState<string>("");
+  const [summaryData, setSummaryData] = useState([]);
 
   // which columns to have the filter on
   const filterableColumns = ["Product"];
@@ -128,18 +129,36 @@ export default function DawlanceRFC() {
           year,
         });
 
-        const endpoint = `${
+        // Fetch data api
+        const fetchEndpoint = `${
           process.env.NEXT_PUBLIC_BASE_URL
         }/dawlance-rfc?${queryParams.toString()}`;
 
-        const res = await fetch(endpoint, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        });
+        // fetch summary table data
+        const RFCProductEndpoint = `${process.env.NEXT_PUBLIC_BASE_URL}/dawlance-rfc-product?${queryParams}`;
 
-        const data = await res.json();
+        const [fetchEndpointResponse, rfcProductResponse] = await Promise.all([
+          fetch(fetchEndpoint, {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }),
+
+          fetch(RFCProductEndpoint, {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }),
+        ]);
+
+        // for summary data
+        const productData = await rfcProductResponse.json();
+        setSummaryData(productData?.data);
+
+        // for fetch data
+        const data = await fetchEndpointResponse.json();
         const parsedData = typeof data === "string" ? JSON.parse(data) : data;
 
         if (parsedData && parsedData.data && Array.isArray(parsedData.data)) {
@@ -438,6 +457,7 @@ export default function DawlanceRFC() {
           onApplyFilters={handleApplyFilters}
           editedValues={editedValues}
           onEditedValuesChange={handleEditedValuesChange}
+          summaryData={summaryData}
         />
       </div>
     </div>

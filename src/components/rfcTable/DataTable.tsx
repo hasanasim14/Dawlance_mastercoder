@@ -75,6 +75,7 @@ export const RFCTable: React.FC<DataTableProps> = ({
   onApplyFilters,
   editedValues = {},
   onEditedValuesChange,
+  summaryData,
 }) => {
   // State for tracking which rows have been modified
   const [modifiedRows, setModifiedRows] = useState<Set<string>>(new Set());
@@ -281,6 +282,7 @@ export const RFCTable: React.FC<DataTableProps> = ({
         columnFilters={columnFilters}
         getRowKey={getRowKey}
         getCellValue={getCellValue}
+        summaryData={summaryData}
       />
 
       <div className="flex-1 overflow-hidden">

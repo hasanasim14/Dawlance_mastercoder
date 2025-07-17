@@ -23,6 +23,7 @@ export default function BranchRFC() {
     Record<string, Record<string, string>>
   >({});
   const [permission, setPermission] = useState(0);
+  const [summaryData, setSummaryData] = useState([]);
 
   //autosave state
   // eslint-disable-next-line
@@ -159,24 +160,43 @@ export default function BranchRFC() {
           process.env.NEXT_PUBLIC_BASE_URL
         }/rfc/lock?${queryParams.toString()}`;
 
-        const [fetchEndpointResponse, permissionEndpointResponse] =
-          await Promise.all([
-            fetch(fetchEndpoint, {
-              method: "GET",
-              headers: {
-                "Content-Type": "application/json",
-                // Authorization: `Bearer ${authToken}`,
-              },
-            }),
+        // for summary data
+        const RFCProductEndpoint = `${process.env.NEXT_PUBLIC_BASE_URL}/branch-rfc-product?${queryParams}`;
 
-            fetch(permissionEndpoint, {
-              method: "GET",
-              headers: {
-                "Content-Type": "application/json",
-                // Authorization: `Bearer ${authToken}`,
-              },
-            }),
-          ]);
+        const [
+          fetchEndpointResponse,
+          permissionEndpointResponse,
+          rfcProductResponse,
+        ] = await Promise.all([
+          fetch(fetchEndpoint, {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              // Authorization: `Bearer ${authToken}`,
+            },
+          }),
+
+          fetch(permissionEndpoint, {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              // Authorization: `Bearer ${authToken}`,
+            },
+          }),
+          // ]);
+
+          fetch(RFCProductEndpoint, {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              // Authorization: `Bearer ${authToken}`,
+            },
+          }),
+        ]);
+
+        //saving the RFC Summary data table
+        const productData = await rfcProductResponse.json();
+        setSummaryData(productData?.data);
 
         const permissionData = await permissionEndpointResponse.json();
         setPermission(permissionData?.data?.permission);
@@ -418,6 +438,7 @@ export default function BranchRFC() {
           onApplyFilters={handleApplyFilters}
           editedValues={editedValues}
           onEditedValuesChange={handleEditedValuesChange}
+          summaryData={summaryData}
         />
       </div>
     </div>

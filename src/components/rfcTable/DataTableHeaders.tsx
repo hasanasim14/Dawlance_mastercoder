@@ -14,6 +14,7 @@ import { Save, Send, Loader2, FilterX } from "lucide-react";
 import type { RowDataType, ColumnConfig } from "@/lib/types";
 import { getNextMonthAndYear } from "@/lib/utils";
 import DateFilter from "../DateFilter";
+import SummaryTable from "./SummaryTable";
 
 interface BranchOption {
   salesOffice: string;
@@ -52,6 +53,8 @@ interface HeadersProps {
     // eslint-disable-next-line
     originalValue: any
   ) => string;
+  // eslint-disable-next-line
+  summaryData: any[];
 }
 
 export const RFCTableHeaders: React.FC<HeadersProps> = ({
@@ -69,6 +72,7 @@ export const RFCTableHeaders: React.FC<HeadersProps> = ({
   columnFilters = {},
   getRowKey,
   getCellValue,
+  summaryData,
 }) => {
   const [branches, setBranches] = useState<BranchOption[]>([]);
   const [selectedBranch, setSelectedBranch] = useState<string>(
@@ -399,19 +403,7 @@ export const RFCTableHeaders: React.FC<HeadersProps> = ({
       </div>
       {/* Summary Table */}
       <div className="bg-[#f4f4f4] border border-gray-200 rounded-xl p-2 m-2">
-        <h2 className="text-sm font-medium text-gray-600 mb-2">
-          Summary (Product RFC)
-        </h2>
-        <ul className="space-y-1 text-sm text-gray-800">
-          <li className="flex">
-            <span>Refrigerator RFC</span>
-            <span className="font-semibold"> :150</span>
-          </li>
-          <li className="flex">
-            <span>Air Conditioner RFC</span>
-            <span className="font-semibold"> :150</span>
-          </li>
-        </ul>
+        <SummaryTable summaryData={summaryData} />
       </div>
     </div>
   );
