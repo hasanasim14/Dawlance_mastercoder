@@ -16,6 +16,7 @@ import type { ColumnConfig, RowDataType } from "@/lib/types";
 import { Loader2 } from "lucide-react";
 import { RFCTableHeaders } from "./DataTableHeaders";
 import { ColumnFilter } from "./ColumnFilter";
+import AnnualRFCModal from "./AnnualRFCModal";
 
 interface DataTableProps {
   permission: number;
@@ -81,6 +82,13 @@ export const RFCTable: React.FC<DataTableProps> = ({
   const [modifiedRows, setModifiedRows] = useState<Set<string>>(new Set());
   // eslint-disable-next-line
   const [editingCell, setEditingCell] = useState<string | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedMaterial, setSelectedMaterial] = useState<string | null>(null);
+
+  const handleMaterialClick = (material: string) => {
+    setSelectedMaterial(material);
+    setModalOpen(true);
+  };
 
   // Refs to track the latest values
   const editedValuesRef = useRef(editedValues);
@@ -419,6 +427,15 @@ export const RFCTable: React.FC<DataTableProps> = ({
                                 placeholder="Enter RFC value"
                               />
                             </div>
+                          ) : column.key === "Material" ? (
+                            <button
+                              onClick={() =>
+                                handleMaterialClick(String(row[column.key]))
+                              }
+                              className="truncate text-xs sm:text-sm w-full text-left hover:underline text-blue-600"
+                            >
+                              {String(row[column.key] ?? "")}
+                            </button>
                           ) : (
                             <div className="truncate text-xs sm:text-sm w-full">
                               {String(row[column.key] ?? "")}
@@ -433,6 +450,12 @@ export const RFCTable: React.FC<DataTableProps> = ({
             </TableBody>
           </Table>
         </div>
+        {/* <AnnualRFCModal /> */}
+        <AnnualRFCModal
+          open={modalOpen}
+          onClose={() => setModalOpen(false)}
+          materialId={selectedMaterial}
+        />
       </div>
     </div>
   );
