@@ -66,7 +66,7 @@ const ConfigTable = ({
   };
 
   return (
-    <div className="w-full flex flex-col overflow-hidden p-4 space-y-4">
+    <div className="w-full flex flex-col overflow-hidden p-4 space-y-4 h-[85vh]">
       <div className="flex justify-end gap-3">
         <DateFilter
           selectedMonth={selectedMonth}
@@ -78,7 +78,7 @@ const ConfigTable = ({
 
       <div className="overflow-x-auto rounded-md border">
         <Table className="min-w-full text-sm">
-          <TableHeader className="bg-muted">
+          <TableHeader className="bg-muted sticky top-0">
             <TableRow>
               <TableHead className="w-1/3 font-medium text-left">
                 Product
