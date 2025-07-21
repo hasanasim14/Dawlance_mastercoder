@@ -21,7 +21,6 @@ import {
 } from "@/components/ui/table";
 import { getNextMonthAndYear } from "@/lib/utils";
 import { PaginationData } from "@/lib/types";
-import DateFilter from "@/components/DateFilter";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -30,6 +29,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import DateFilter from "@/components/DateFilter";
+import SKUValidations from "@/components/sku-offerings/Validations";
 
 interface UploadedData {
   Material: string;
@@ -59,9 +60,10 @@ export default function SKUOfferings() {
   const [selectedMonth, setSelectedMonth] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [apiResponse, setApiResponse] = useState<{
-    message?: string;
-    recordsProcessed?: number;
-    errors?: string[];
+    // message?: string;
+    // recordsProcessed?: number;
+    // errors?: string[];
+    data?: string[];
   } | null>(null);
 
   // Pagination states
@@ -84,7 +86,6 @@ export default function SKUOfferings() {
   const fetchOffering = async (page = 1, recordsPerPage = 50) => {
     setIsLoading(true);
     try {
-      console.log("inside the try");
       if (!selectedMonth || !selectedYear) return;
 
       const queryParams = new URLSearchParams();
@@ -197,17 +198,24 @@ export default function SKUOfferings() {
         // Extract the error message from the API response
         const errorMessage =
           data?.message || data?.detail || "Upload failed. Please try again.";
+        setApiResponse({
+          data: data?.data || [],
+        });
         throw new Error(errorMessage);
       }
+
+      // if (!response.ok) {
+      // }
 
       if (data.data && Array.isArray(data.data)) {
         setUploadedData(data.data);
       }
 
       setApiResponse({
-        message: data.message || "File processed successfully",
-        recordsProcessed: data.data?.length || 0,
-        errors: data.errors || [],
+        // message: data.message || "File processed successfully",
+        // recordsProcessed: data.data?.length || 0,
+        // errors: data.errors || [],
+        data: data?.data || [],
       });
 
       // Set success status
@@ -255,10 +263,10 @@ export default function SKUOfferings() {
       case "uploading":
       case "processing":
         return <Clock className="w-4 h-4 animate-spin" />;
-      case "success":
-        return <CheckCircle className="w-4 h-4 text-green-600" />;
-      case "error":
-        return <AlertCircle className="w-4 h-4 text-red-600" />;
+      // case "success":
+      //   return <CheckCircle className="w-4 h-4 text-green-600" />;
+      // case "error":
+      //   return <AlertCircle className="w-4 h-4 text-red-600" />;
       default:
         return <Upload className="w-8 h-8 text-gray-400" />;
     }
@@ -270,10 +278,10 @@ export default function SKUOfferings() {
         return `Uploading... ${uploadStatus.progress}%`;
       case "processing":
         return "Processing file...";
-      case "success":
-        return "Upload completed successfully";
-      case "error":
-        return "Upload failed";
+      // case "success":
+      //   return "Upload completed successfully";
+      // case "error":
+      //   return "Upload failed";
       default:
         return "Drop Excel file here or click to browse";
     }
@@ -297,6 +305,8 @@ export default function SKUOfferings() {
   useEffect(() => {
     fetchOffering(currentPage, pageSize);
   }, []);
+
+  console.log("uploaded date", uploadedData);
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -342,10 +352,6 @@ export default function SKUOfferings() {
                 className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer ${
                   isDragOver
                     ? "border-blue-400 bg-blue-50"
-                    : uploadStatus.status === "success"
-                    ? "border-green-400 bg-green-50"
-                    : uploadStatus.status === "error"
-                    ? "border-red-400 bg-red-50"
                     : "border-gray-300 hover:border-gray-400"
                 }`}
                 onDragOver={handleDragOver}
@@ -361,9 +367,9 @@ export default function SKUOfferings() {
                   className="hidden"
                 />
 
-                <div className="flex flex-col items-center space-y-4">
+                <div className="flex flex-col items-center justify-center space-y-4 h-full text-center">
                   {getStatusIcon()}
-                  <div>
+                  <div className="flex flex-col items-center justify-center">
                     <p className="text-sm font-medium text-gray-900">
                       {getStatusText()}
                     </p>
@@ -404,33 +410,13 @@ export default function SKUOfferings() {
                     </div>
                   </div>
                 ) : uploadStatus.status === "success" && apiResponse ? (
-                  <div className="text-center space-y-3">
-                    <div className="text-green-600">
-                      <CheckCircle className="w-8 h-8 mx-auto mb-2" />
-                      <div className="text-sm font-medium">
-                        {apiResponse.message}
-                      </div>
-                      <div className="text-xs mt-1">
-                        {apiResponse.recordsProcessed} records processed
-                      </div>
-                    </div>
-                    {apiResponse.errors && apiResponse.errors?.length > 0 && (
-                      <div className="text-left">
-                        <div className="text-xs font-medium text-amber-600 mb-1">
-                          Warnings:
-                        </div>
-                        <div className="text-xs text-amber-600 space-y-1">
-                          {apiResponse.errors.map((error, index) => (
-                            <div key={index} className="flex items-start gap-1">
-                              <span className="text-amber-500">•</span>
-                              <span>{error}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
+                  <div className="h-[40vh] overflow-auto w-full">
+                    <SKUValidations
+                      validationData={apiResponse?.data ?? null}
+                    />
                   </div>
                 ) : uploadStatus.status === "uploading" ||
+                  // jab upload horaha hai
                   uploadStatus.status === "processing" ? (
                   <div className="text-center text-blue-600">
                     <Clock className="w-8 h-8 mx-auto mb-2 animate-spin" />
@@ -444,47 +430,10 @@ export default function SKUOfferings() {
                     </div>
                   </div>
                 ) : uploadStatus.status === "error" ? (
-                  <div className="border rounded-lg p-6 max-h-60 overflow-y-auto">
-                    <div className="flex items-center mb-3">
-                      <AlertCircle className="w-5 h-5 mr-2 text-red-600 flex-shrink-0" />
-                      <div className="text-sm font-medium text-red-600">
-                        Upload Failed
-                      </div>
-                    </div>
-
-                    <div className="text-xs text-gray-700 space-y-1">
-                      {uploadStatus.error?.split("\n").map((line, index) => (
-                        <div key={index} className="leading-relaxed">
-                          {line.trim() && (
-                            <>
-                              {line.startsWith("1.") ||
-                              line.startsWith("2.") ||
-                              line.startsWith("3.") ||
-                              line.startsWith("4.") ||
-                              line.startsWith("5.") ||
-                              line.startsWith("6.") ||
-                              line.startsWith("7.") ||
-                              line.startsWith("8.") ||
-                              line.startsWith("9.") ||
-                              /^\d+\./.test(line) ? (
-                                <div className="flex items-start gap-2 mt-2">
-                                  <span className="text-red-500 font-mono text-xs">
-                                    •
-                                  </span>
-                                  <span className="font-mono">{line}</span>
-                                </div>
-                              ) : (
-                                <div
-                                  className={index === 0 ? "font-medium" : ""}
-                                >
-                                  {line}
-                                </div>
-                              )}
-                            </>
-                          )}
-                        </div>
-                      ))}
-                    </div>
+                  <div className="h-[40vh] overflow-auto w-full">
+                    <SKUValidations
+                      validationData={apiResponse?.data ?? null}
+                    />
                   </div>
                 ) : (
                   <div className="text-center text-green-600">
