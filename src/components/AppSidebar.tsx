@@ -25,6 +25,7 @@ import {
   Store,
   Presentation,
   Settings,
+  Clock8,
 } from "lucide-react";
 import { mockUser } from "@/lib/mockUser";
 import { rolePages } from "@/lib/rolePages";
@@ -102,6 +103,11 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
       title: "Configure Dawlance RFC",
       url: "/configure-dawlance-rfc",
       icon: Settings,
+    },
+    {
+      title: "Access Timeframe",
+      url: "/access-timeframe",
+      icon: Clock8,
     },
     {
       title: "Dawlance RFC",

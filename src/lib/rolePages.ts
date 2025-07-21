@@ -11,6 +11,7 @@ export const rolePages = {
     "/marketing-rfc",
     "/dawlance-rfc",
     "/configure-dawlance-rfc",
+    "/access-timeframe",
     "/users",
     "/roles",
   ],

@@ -29,6 +29,7 @@ export const config = {
     "/marketing-rfc",
     "/dawlance-rfc",
     "/configure-dawlance-rfc",
+    "/access-timeframe",
     "/roles",
     "/users",
   ],
