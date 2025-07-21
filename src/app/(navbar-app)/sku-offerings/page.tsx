@@ -2,7 +2,14 @@
 
 import type React from "react";
 import { useState, useRef, useCallback, useEffect } from "react";
-import { Upload, Clock, CheckCircle, AlertCircle } from "lucide-react";
+import {
+  Upload,
+  Clock,
+  CheckCircle,
+  AlertCircle,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -15,6 +22,14 @@ import {
 import { getNextMonthAndYear } from "@/lib/utils";
 import { PaginationData } from "@/lib/types";
 import DateFilter from "@/components/DateFilter";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface UploadedData {
   Material: string;
@@ -39,6 +54,7 @@ export default function SKUOfferings() {
   });
   const [uploadedData, setUploadedData] = useState<UploadedData[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [selectedYear, setSelectedYear] = useState<string>("");
   const [selectedMonth, setSelectedMonth] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -47,6 +63,7 @@ export default function SKUOfferings() {
     recordsProcessed?: number;
     errors?: string[];
   } | null>(null);
+
   // Pagination states
   const [pagination, setPagination] = useState<PaginationData>({
     total_records: 0,
@@ -54,6 +71,8 @@ export default function SKUOfferings() {
     page: 1,
     total_pages: 0,
   });
+  const [pageSize, setPageSize] = useState(50);
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     const { month, year } = getNextMonthAndYear("Non-RFC");
@@ -61,35 +80,37 @@ export default function SKUOfferings() {
     setSelectedYear(year);
   }, []);
 
-  useEffect(() => {
-    const fetchOffering = async () => {
-      try {
-        if (!selectedMonth || !selectedYear) return;
+  // useEffect(() => {
+  const fetchOffering = async (page = 1, recordsPerPage = 50) => {
+    setIsLoading(true);
+    try {
+      console.log("inside the try");
+      if (!selectedMonth || !selectedYear) return;
 
-        const queryParams = new URLSearchParams();
-        queryParams.append("page", pagination.page.toString());
-        queryParams.append("limit", pagination.records_per_page.toString());
-        const authToken = localStorage.getItem("token");
+      const queryParams = new URLSearchParams();
+      queryParams.append("page", page.toString());
+      queryParams.append("limit", recordsPerPage.toString());
+      const authToken = localStorage.getItem("token");
 
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_BASE_URL}/offerings/${selectedMonth}/${selectedYear}?${queryParams}`,
-          {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${authToken}`,
-            },
-          }
-        );
-        const data = await res.json();
-
-        setUploadedData(data?.data);
-      } catch (error) {
-        console.error("The error is = ", error);
-      }
-    };
-    fetchOffering();
-  }, [selectedMonth, selectedYear]);
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/offerings/${selectedMonth}/${selectedYear}?${queryParams}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${authToken}`,
+          },
+        }
+      );
+      const data = await res.json();
+      setUploadedData(data?.data);
+      setPagination(data?.pagination);
+    } catch (error) {
+      console.error("The error is = ", error);
+    }
+  };
+  // fetchOffering();
+  // }, [selectedMonth, selectedYear]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -257,6 +278,25 @@ export default function SKUOfferings() {
         return "Drop Excel file here or click to browse";
     }
   };
+
+  // Pagination handlers
+  const handlePageSizeChange = (newPageSize: string) => {
+    const size = Number.parseInt(newPageSize);
+    setPageSize(size);
+    setCurrentPage(1);
+    fetchOffering(1, size);
+  };
+
+  // changing the page
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage);
+    fetchOffering(newPage, pageSize);
+  };
+
+  // calling the intial data load
+  useEffect(() => {
+    fetchOffering(currentPage, pageSize);
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -464,28 +504,113 @@ export default function SKUOfferings() {
 
         {/* Data Table Section */}
         {uploadedData?.length > 0 && (
-          <div className="rounded-md border p-2">
-            <Table>
-              <TableHeader className="bg-muted/50">
-                <TableRow>
-                  <TableHead>Material</TableHead>
-                  <TableHead>Material Description</TableHead>
-                  <TableHead>Product</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {uploadedData.map((record) => (
-                  <TableRow key={record.Material + record.Product}>
-                    <TableCell className="font-medium">
-                      {record.Material}
-                    </TableCell>
-                    <TableCell>{record["Material Description"]}</TableCell>
-                    <TableCell>{record.Product}</TableCell>
+          <>
+            <div className="rounded-md border p-2">
+              <Table>
+                <TableHeader className="bg-muted/50">
+                  <TableRow>
+                    <TableHead>Material</TableHead>
+                    <TableHead>Material Description</TableHead>
+                    <TableHead>Product</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+                </TableHeader>
+                <TableBody>
+                  {uploadedData.map((record) => (
+                    <TableRow key={record.Material + record.Product}>
+                      <TableCell className="font-medium">
+                        {record.Material}
+                      </TableCell>
+                      <TableCell>{record["Material Description"]}</TableCell>
+                      <TableCell>{record.Product}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+            {/* </> */}
+
+            <div className="p-4 border-t flex items-center justify-between flex-shrink-0">
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">Show:</span>
+                  <Select
+                    value={pageSize.toString()}
+                    onValueChange={handlePageSizeChange}
+                  >
+                    <SelectTrigger className="w-20">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="50">50</SelectItem>
+                      <SelectItem value="150">150</SelectItem>
+                      <SelectItem value="500">500</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <span className="text-sm text-muted-foreground">entries</span>
+                </div>
+
+                <div className="text-sm text-muted-foreground">
+                  Showing {(currentPage - 1) * pageSize + 1} to{" "}
+                  {Math.min(currentPage * pageSize, pagination.total_records)}{" "}
+                  of {pagination.total_records} entries
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage <= 1}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  Previous
+                </Button>
+
+                <div className="flex items-center gap-1">
+                  {Array.from(
+                    { length: Math.min(5, pagination.total_pages) },
+                    (_, i) => {
+                      let pageNum;
+                      if (pagination.total_pages <= 5) {
+                        pageNum = i + 1;
+                      } else if (currentPage <= 3) {
+                        pageNum = i + 1;
+                      } else if (currentPage >= pagination.total_pages - 2) {
+                        pageNum = pagination.total_pages - 4 + i;
+                      } else {
+                        pageNum = currentPage - 2 + i;
+                      }
+
+                      return (
+                        <Button
+                          key={pageNum}
+                          variant={
+                            currentPage === pageNum ? "default" : "outline"
+                          }
+                          size="sm"
+                          onClick={() => handlePageChange(pageNum)}
+                          className="w-8 h-8 p-0"
+                        >
+                          {pageNum}
+                        </Button>
+                      );
+                    }
+                  )}
+                </div>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage >= pagination.total_pages}
+                >
+                  Next
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </>
         )}
       </div>
     </div>
