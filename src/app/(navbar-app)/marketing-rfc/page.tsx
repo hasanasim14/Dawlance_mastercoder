@@ -451,6 +451,7 @@ export default function MarketingRFC() {
           editedValues={editedValues}
           onEditedValuesChange={handleEditedValuesChange}
           summaryData={summaryData}
+          option={"marketing"}
         />
       </div>
     </div>

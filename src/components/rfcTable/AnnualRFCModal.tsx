@@ -18,9 +18,17 @@ interface AnnualRFCModalProps {
   open: boolean;
   onClose: () => void;
   materialId: string | null;
+  option: string;
+  branch: string | null | undefined;
 }
 
-const AnnualRFCModal = ({ open, onClose, materialId }: AnnualRFCModalProps) => {
+const AnnualRFCModal = ({
+  open,
+  onClose,
+  materialId,
+  option,
+  branch,
+}: AnnualRFCModalProps) => {
   const [data, setData] = useState<RFCEntry[]>([]);
 
   useEffect(() => {
@@ -28,8 +36,13 @@ const AnnualRFCModal = ({ open, onClose, materialId }: AnnualRFCModalProps) => {
 
     const fetchRFCHistory = async () => {
       const queryParams = new URLSearchParams();
-      queryParams.append("option", "marketing");
-      queryParams.append("material", "1000000258");
+      queryParams.append("option", option);
+      queryParams.append("material", materialId);
+      console.log("branch", branch);
+
+      if (option === "branch" && branch) {
+        queryParams.append("branch", branch);
+      }
 
       try {
         const res = await fetch(

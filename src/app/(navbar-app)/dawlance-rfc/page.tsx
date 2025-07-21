@@ -458,6 +458,7 @@ export default function DawlanceRFC() {
           editedValues={editedValues}
           onEditedValuesChange={handleEditedValuesChange}
           summaryData={summaryData}
+          option={"dawlance"}
         />
       </div>
     </div>

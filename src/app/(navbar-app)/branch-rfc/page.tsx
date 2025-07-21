@@ -431,7 +431,6 @@ export default function BranchRFC() {
           isLoading={loading}
           isSaving={saving}
           isPosting={posting}
-          // isAutoSaving={autoSaving}
           filterableColumns={filterableColumns}
           columnFilters={columnFilters}
           onFilterChange={handleFilterChange}
@@ -439,6 +438,7 @@ export default function BranchRFC() {
           editedValues={editedValues}
           onEditedValuesChange={handleEditedValuesChange}
           summaryData={summaryData}
+          option={"branch"}
         />
       </div>
     </div>

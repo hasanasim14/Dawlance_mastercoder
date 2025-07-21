@@ -55,6 +55,7 @@ interface DataTableProps {
   ) => void;
   // eslint-disable-next-line
   summaryData: any[];
+  option: string;
 }
 
 export const RFCTable: React.FC<DataTableProps> = ({
@@ -77,6 +78,7 @@ export const RFCTable: React.FC<DataTableProps> = ({
   editedValues = {},
   onEditedValuesChange,
   summaryData,
+  option,
 }) => {
   // State for tracking which rows have been modified
   const [modifiedRows, setModifiedRows] = useState<Set<string>>(new Set());
@@ -84,6 +86,7 @@ export const RFCTable: React.FC<DataTableProps> = ({
   const [editingCell, setEditingCell] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedMaterial, setSelectedMaterial] = useState<string | null>(null);
+  const [branch, setBranch] = useState("");
 
   const handleMaterialClick = (material: string) => {
     setSelectedMaterial(material);
@@ -272,6 +275,14 @@ export const RFCTable: React.FC<DataTableProps> = ({
 
   const rfcColumns = getRFCColumns();
 
+  useEffect(() => {
+    if (originalRowData.length > 0) {
+      setBranch(originalRowData[0]["Branch"]);
+    } else {
+      setBranch("");
+    }
+  }, [originalRowData]);
+
   return (
     <div className="h-full w-full flex flex-col overflow-hidden">
       <RFCTableHeaders
@@ -450,11 +461,12 @@ export const RFCTable: React.FC<DataTableProps> = ({
             </TableBody>
           </Table>
         </div>
-        {/* <AnnualRFCModal /> */}
         <AnnualRFCModal
           open={modalOpen}
           onClose={() => setModalOpen(false)}
           materialId={selectedMaterial}
+          option={option}
+          branch={branch}
         />
       </div>
     </div>
