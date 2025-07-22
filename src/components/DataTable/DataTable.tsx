@@ -99,12 +99,14 @@ export function DataTable({
               <div className="min-w-[500px]">
                 <Table>
                   <DataTableHeader
+                    parent={selectionValue as string}
                     columns={columns}
                     isAllSelected={isAllSelected}
                     isIndeterminate={isIndeterminate}
                     onSelectAll={onSelectAll}
                   />
                   <DataTableBody
+                    parent={selectionValue as string}
                     selectionValue={selectionValue}
                     data={data}
                     columns={columns}

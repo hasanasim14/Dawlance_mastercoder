@@ -5,6 +5,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import type { ColumnConfig, RowDataType } from "@/lib/types";
 
 interface DataTableBodyProps {
+  parent: string;
   selectionValue: keyof RowDataType;
   data: RowDataType[];
   columns: readonly ColumnConfig[];
@@ -16,6 +17,7 @@ interface DataTableBodyProps {
 }
 
 export function DataTableBody({
+  parent,
   selectionValue,
   data,
   columns,
@@ -51,13 +53,18 @@ export function DataTableBody({
             className={`cursor-pointer hover:bg-muted/50 ${
               isRowSelected ? "bg-muted" : ""
             }`}
-            onClick={() => onRowClick(row)}
+            onClick={() => {
+              if (parent === "User") return;
+              onRowClick(row);
+              console.log("row clicked");
+            }}
           >
             <TableCell
               onClick={(e) => e.stopPropagation()}
               className="sticky left-0 bg-background z-30 w-12"
             >
               <Checkbox
+                disabled={parent === "User"}
                 checked={isSelected}
                 onCheckedChange={(checked) =>
                   onRowSelect(row, checked as boolean)

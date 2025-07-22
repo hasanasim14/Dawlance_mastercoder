@@ -222,7 +222,7 @@ export default function Users() {
       setSelectedRowId(null);
     } else {
       // Select new row
-      setSelectedRow(row);
+      // setSelectedRow(row);
       setSelectedRowId(clickedRowId);
     }
   };
@@ -261,7 +261,7 @@ export default function Users() {
       );
 
       // Update selected row data
-      setSelectedRow(data as RowDataType);
+      // setSelectedRow(data as RowDataType);
     } catch (error) {
       console.error("Error saving user data:", error);
       throw error;

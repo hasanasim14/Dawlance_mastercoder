@@ -30,25 +30,28 @@ export function TableActions({
       </div>
 
       <div className="flex items-center gap-2">
-        <Button
-          variant="destructive"
-          size="sm"
-          onClick={onDeleteClick}
-          disabled={deleting || !selectedRowsCount}
-          className="px-3 py-2"
-        >
-          {deleting ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Deleting...
-            </>
-          ) : (
-            <>
-              <Trash2 className="mr-2 h-4 w-4" />
-              Delete
-            </>
-          )}
-        </Button>
+        {btnName !== "User" && (
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={onDeleteClick}
+            disabled={deleting || !selectedRowsCount}
+            className="px-3 py-2"
+          >
+            {deleting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Deleting...
+              </>
+            ) : (
+              <>
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete
+              </>
+            )}
+          </Button>
+        )}
+
         <Button
           onClick={onAddClick}
           className="px-4 py-2 text-white rounded-md transition-colors"

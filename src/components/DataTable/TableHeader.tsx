@@ -5,6 +5,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import type { ColumnConfig } from "@/lib/types";
 
 interface DataTableHeaderProps {
+  parent: string;
   columns: readonly ColumnConfig[];
   isAllSelected: boolean;
   isIndeterminate: boolean;
@@ -12,6 +13,7 @@ interface DataTableHeaderProps {
 }
 
 export function DataTableHeader({
+  parent,
   columns,
   isAllSelected,
   isIndeterminate,
@@ -25,6 +27,7 @@ export function DataTableHeader({
           style={{ position: "sticky", left: 0 }}
         >
           <Checkbox
+            disabled={parent === "User"}
             checked={isAllSelected}
             onCheckedChange={onSelectAll}
             aria-label="Select all rows"

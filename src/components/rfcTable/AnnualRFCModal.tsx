@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -72,7 +71,6 @@ const AnnualRFCModal = ({
       <DialogContent className="max-w-3xl w-[75vw]">
         <DialogHeader>
           <DialogTitle>Annual RFC Overview</DialogTitle>
-          {/* <DialogDescription> */}
           <div className="text-m">
             RFC data for material: <strong>{materialId}</strong>
             {branch && (
@@ -81,7 +79,6 @@ const AnnualRFCModal = ({
               </p>
             )}
           </div>
-          {/* </DialogDescription> */}
         </DialogHeader>
 
         <div className="border rounded-lg overflow-hidden h-[calc(95vh-180px)]">
