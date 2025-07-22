@@ -4,6 +4,7 @@ export const rolePages = {
     "/dashboard-admin",
     "/sku-offerings",
     "/results",
+    "/prices",
     "/upload-center",
     "/phase-in-out",
     "/branch-master",

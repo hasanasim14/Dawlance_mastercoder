@@ -23,6 +23,7 @@ export const config = {
     "/master-coding",
     "/phase-in-out",
     "/results",
+    "/prices",
     "/upload-center",
     "/branch-master",
     "/branch-rfc",

@@ -26,6 +26,7 @@ import {
   Presentation,
   Settings,
   Clock8,
+  DollarSign,
 } from "lucide-react";
 import { mockUser } from "@/lib/mockUser";
 import { rolePages } from "@/lib/rolePages";
@@ -78,6 +79,11 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
       title: "Results",
       url: "/results",
       icon: TrendingUp,
+    },
+    {
+      title: "Prices",
+      url: "/prices",
+      icon: DollarSign,
     },
     {
       title: "Upload Files",
