@@ -16,6 +16,8 @@ const KEY_MAPPING = {
   Series: "series",
   Colour: "colour",
   "Key Feature": "key_feature",
+  Role: "role",
+  Branch: "branch",
 } as const;
 
 // Reverse mapping for transforming API response back to display format
@@ -32,6 +34,7 @@ const REVERSE_KEY_MAPPING = Object.entries(KEY_MAPPING).reduce(
  * @param data - Data object with display format keys
  * @returns Data object with API format keys
  */
+
 export function transformToApiFormat(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   data: Record<string, any>
@@ -46,6 +49,11 @@ export function transformToApiFormat(
       key.toLowerCase().replace(/\s+/g, "_");
     transformed[apiKey] = value;
   });
+
+  // Special handling for branch role
+  if (transformed.role !== "branch") {
+    transformed.branch = ["All"];
+  }
 
   return transformed;
 }
