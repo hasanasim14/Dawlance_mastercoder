@@ -72,9 +72,16 @@ const AnnualRFCModal = ({
       <DialogContent className="max-w-3xl w-[75vw]">
         <DialogHeader>
           <DialogTitle>Annual RFC Overview</DialogTitle>
-          <DialogDescription>
+          {/* <DialogDescription> */}
+          <div className="text-m">
             RFC data for material: <strong>{materialId}</strong>
-          </DialogDescription>
+            {branch && (
+              <p>
+                Branch: <span className="font-bold">{branch}</span>
+              </p>
+            )}
+          </div>
+          {/* </DialogDescription> */}
         </DialogHeader>
 
         <div className="border rounded-lg overflow-hidden h-[calc(95vh-180px)]">
