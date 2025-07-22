@@ -234,6 +234,8 @@ interface SKUValidationsProps {
 }
 
 const SKUValidations: React.FC<SKUValidationsProps> = ({ validationData }) => {
+  console.log("the data in format", validationData);
+
   if (!validationData) {
     return (
       <div className="text-center py-8 text-muted-foreground">

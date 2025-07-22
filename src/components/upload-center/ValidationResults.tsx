@@ -1,5 +1,6 @@
 import type React from "react";
 import { Badge } from "@/components/ui/badge";
+import { useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -16,7 +17,6 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ValidationData } from "@/app/(navbar-app)/upload-center/page";
-import { useEffect } from "react";
 
 // Modal content component for detailed error display
 function ErrorDetailsModal({
@@ -433,13 +433,16 @@ interface ValidationResultsProps {
   setNoValidationErrors: React.Dispatch<React.SetStateAction<boolean>>;
   validationData: ValidationData;
   uploadType: string;
+  checkStatement: string;
 }
 
 const ValidationResults: React.FC<ValidationResultsProps> = ({
   setNoValidationErrors,
   validationData,
   uploadType,
+  checkStatement,
 }) => {
+  console.log("the cai", validationData?.data?.data);
   // Get all keys from the validation data and sort them for consistent display
   const allKeys = Object.keys(validationData);
 
@@ -503,7 +506,7 @@ const ValidationResults: React.FC<ValidationResultsProps> = ({
                 : "bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-950 dark:text-yellow-400 dark:border-yellow-800"
             )}
           >
-            {passedCount}/{totalCount} Passed
+            {checkStatement}
           </Badge>
         </div>
       </div>

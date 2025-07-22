@@ -38,6 +38,7 @@ async function postFileAction(formData: FormData) {
     }
 
     const result = await response.json();
+
     return {
       success: true,
       message: result.message || `Successfully posted ${file.name}`,
@@ -106,7 +107,12 @@ function UploadCenter() {
   const [showTable, setShowTable] = useState(false);
   const [tableLoading, setTableLoading] = useState(false);
   const [currentTableType, setCurrentTableType] = useState<string>("");
-
+  // const [responseObject, setResponseObject] = useState({
+  //   allow_upload: "",
+  //   check_statement: "",
+  // });
+  const [allowUpload, setAllowUpload] = useState(false);
+  const [checkStatement, setCheckStatement] = useState("");
   // Set default values on component mount
   useEffect(() => {
     const { month, year } = getNextMonthAndYear("Non-RFC");
@@ -145,10 +151,14 @@ function UploadCenter() {
       }
 
       const result = await response.json();
+
+      setAllowUpload(result?.allow_upload);
+      setCheckStatement(result?.check_statement);
+
       return {
         success: true,
         message: result.message || `Successfully processed ${file.name}`,
-        validationData: result,
+        validationData: result?.data,
       };
     } catch (error) {
       console.error("Upload error:", error);
@@ -452,6 +462,9 @@ function UploadCenter() {
       <div className="flex flex-col space-y-6">
         {cards.map((card) => (
           <UploadCard
+            checkStatement={checkStatement}
+            allowUpload={allowUpload}
+            // responseObject={responseObject}
             key={card.id}
             card={card}
             onFileChange={handleFileChange}

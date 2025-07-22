@@ -22,6 +22,8 @@ import type {
 import { useState } from "react";
 
 interface UploadCardProps {
+  checkStatement: string;
+  allowUpload: boolean;
   card: UploadCardData;
   onFileChange: (
     cardId: string,
@@ -35,6 +37,8 @@ interface UploadCardProps {
 }
 
 function UploadCard({
+  checkStatement,
+  allowUpload,
   card,
   onFileChange,
   onFileDrop,
@@ -43,6 +47,7 @@ function UploadCard({
   onFetch,
   isLoading = false,
 }: UploadCardProps) {
+  // eslint-disable-next-line
   const [noValidationErrors, setNoValidationErrors] = useState(false);
 
   if (!card) {
@@ -128,6 +133,8 @@ function UploadCard({
     card.uploadedFile &&
     card.postStatus !== "pending";
 
+  console.log("allow upload ", allowUpload);
+
   return (
     <Card
       className="overflow-hidden border-l-4 transition-all hover:shadow-md"
@@ -192,7 +199,7 @@ function UploadCard({
             )}
             {card.lastPosted && (
               <div className="flex items-center text-xs text-muted-foreground">
-                <Send className="h-3 w-3 mr-1" />
+                {/* <Send className="h-3 w-3 mr-1" /> */}
                 <span>Last posted: {card.lastPosted}</span>
               </div>
             )}
@@ -245,11 +252,7 @@ function UploadCard({
               {canPost && (
                 <Button
                   onClick={() => onPost(card.id)}
-                  disabled={
-                    card.postStatus === "pending" ||
-                    card.postStatus === "success" ||
-                    !noValidationErrors
-                  }
+                  disabled={!allowUpload}
                   className="h-8 px-4 text-sm"
                   variant={
                     card.postStatus === "success" ? "outline" : "default"
@@ -306,6 +309,7 @@ function UploadCard({
                 setNoValidationErrors={setNoValidationErrors}
                 validationData={card.validationData}
                 uploadType={card.id}
+                checkStatement={checkStatement}
               />
             </div>
           ) : card.result ? (
