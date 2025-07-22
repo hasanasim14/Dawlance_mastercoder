@@ -199,7 +199,7 @@ export default function SKUOfferings() {
     e.preventDefault();
     setIsDragOver(false);
     const files = Array.from(e.dataTransfer.files);
-    if (files.length > 0) handleFileUpload(files[0]);
+    if (files?.length > 0) handleFileUpload(files[0]);
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -337,7 +337,7 @@ export default function SKUOfferings() {
           </CardContent>
         </Card>
 
-        {uploadedData.length > 0 && (
+        {uploadedData?.length > 0 && (
           <>
             <div className="rounded-md border p-2">
               <Table>
