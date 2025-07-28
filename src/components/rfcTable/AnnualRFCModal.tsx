@@ -7,6 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { SelectedMaterial } from "./DataTable";
 
 interface RFCEntry {
   Month: string;
@@ -16,7 +17,7 @@ interface RFCEntry {
 interface AnnualRFCModalProps {
   open: boolean;
   onClose: () => void;
-  materialId: string | null;
+  materialData: SelectedMaterial; // materialId: string | null;
   option: string;
   branch: string | null | undefined;
 }
@@ -24,19 +25,19 @@ interface AnnualRFCModalProps {
 const AnnualRFCModal = ({
   open,
   onClose,
-  materialId,
+  materialData,
   option,
   branch,
 }: AnnualRFCModalProps) => {
   const [data, setData] = useState<RFCEntry[]>([]);
 
   useEffect(() => {
-    if (!materialId) return;
+    if (!materialData?.material_id) return;
 
     const fetchRFCHistory = async () => {
       const queryParams = new URLSearchParams();
       queryParams.append("option", option);
-      queryParams.append("material", materialId);
+      queryParams.append("material", materialData?.material_id || "");
       console.log("branch", branch);
 
       if (option === "branch" && branch) {
@@ -62,20 +63,25 @@ const AnnualRFCModal = ({
     };
 
     fetchRFCHistory();
-  }, [materialId]);
-
-  console.log("the data,", data);
+  }, [materialData?.material_id]);
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-3xl w-[75vw]">
         <DialogHeader>
           <DialogTitle>Annual RFC Overview</DialogTitle>
-          <div className="text-m">
-            RFC data for material: <strong>{materialId}</strong>
+          <div className="text-m space-y-1">
+            <p>
+              RFC data for material:{" "}
+              <strong>{materialData?.material_id}</strong>
+            </p>
+            <p>
+              Material Description:{" "}
+              <strong>{materialData?.material_description}</strong>
+            </p>
             {branch && (
               <p>
-                Branch: <span className="font-bold">{branch}</span>
+                Branch: <strong>{branch}</strong>
               </p>
             )}
           </div>

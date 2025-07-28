@@ -24,6 +24,7 @@ export const config = {
     "/phase-in-out",
     "/results",
     "/prices",
+    "/price-group",
     "/upload-center",
     "/branch-master",
     "/branch-rfc",

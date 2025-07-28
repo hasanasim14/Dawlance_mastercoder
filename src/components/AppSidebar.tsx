@@ -8,7 +8,6 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarRail,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
@@ -27,11 +26,13 @@ import {
   Settings,
   Clock8,
   DollarSign,
+  Tag,
 } from "lucide-react";
 import { mockUser } from "@/lib/mockUser";
 import { rolePages } from "@/lib/rolePages";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { usePathname } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 
@@ -40,6 +41,7 @@ type Role = keyof typeof rolePages;
 export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
   const router = useRouter();
   const role = mockUser.role;
+  const pathname = usePathname();
 
   const allowedPages: string[] =
     role in rolePages ? rolePages[role as Role] : [];
@@ -84,6 +86,11 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
       title: "Prices",
       url: "/prices",
       icon: DollarSign,
+    },
+    {
+      title: "Price Group",
+      url: "/price-group",
+      icon: Tag,
     },
     {
       title: "Upload Files",
@@ -151,21 +158,32 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
         <SidebarTrigger className="h-8 w-8" />
       </SidebarHeader>
 
-      <SidebarContent className={cn("p-2 flex flex-col h-full")}>
-        <SidebarMenu>
-          {filteredItems.map((item) => (
-            <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton asChild tooltip={item.title}>
-                <Link href={item.url}>
-                  <item.icon className="h-4 w-4" />
-                  <span>{item.title}</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          ))}
-        </SidebarMenu>
+      <SidebarContent className="flex flex-col h-full">
+        {/* Scrollable content wrapper */}
+        <div className={cn("flex-1 p-2 overflow-y-auto")}>
+          <SidebarMenu>
+            {filteredItems.map((item) => (
+              <SidebarMenuItem key={item.title}>
+                <SidebarMenuButton
+                  asChild
+                  tooltip={item.title}
+                  className={cn(
+                    "transition-colors",
+                    pathname === item.url && "bg-gray-200 text-primary"
+                  )}
+                >
+                  <Link href={item.url}>
+                    <item.icon className="h-4 w-4" />
+                    <span>{item.title}</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            ))}
+          </SidebarMenu>
+        </div>
 
-        <div className="mt-auto">
+        {/* Sticky logout section */}
+        <div className="border-t border-border p-2 shrink-0">
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton
@@ -180,8 +198,6 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
           </SidebarMenu>
         </div>
       </SidebarContent>
-
-      <SidebarRail />
     </Sidebar>
   );
 }

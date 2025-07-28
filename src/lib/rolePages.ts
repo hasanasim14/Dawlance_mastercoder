@@ -5,6 +5,7 @@ export const rolePages = {
     "/sku-offerings",
     "/results",
     "/prices",
+    "/price-group",
     "/upload-center",
     "/phase-in-out",
     "/branch-master",

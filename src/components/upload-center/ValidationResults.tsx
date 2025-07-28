@@ -491,6 +491,7 @@ const ValidationResults: React.FC<ValidationResultsProps> = ({
   }).length;
 
   const totalCount = validationKeys.length;
+  console.log("Hum kis gali ja rahe hai", totalCount, passedCount);
 
   return (
     <div className="space-y-4">

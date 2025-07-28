@@ -58,6 +58,12 @@ interface DataTableProps {
   option: string;
 }
 
+// material object interface
+export interface SelectedMaterial {
+  material_id: string | null;
+  material_description: string | null;
+}
+
 export const RFCTable: React.FC<DataTableProps> = ({
   permission,
   branchFilter,
@@ -85,11 +91,21 @@ export const RFCTable: React.FC<DataTableProps> = ({
   // eslint-disable-next-line
   const [editingCell, setEditingCell] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
-  const [selectedMaterial, setSelectedMaterial] = useState<string | null>(null);
+  // const [selectedMaterial, setSelectedMaterial] = useState<string | null>(null);
+  const [selectedMaterial, setSelectedMaterial] = useState<SelectedMaterial>({
+    material_id: null,
+    material_description: null,
+  });
   const [branch, setBranch] = useState("");
 
-  const handleMaterialClick = (material: string) => {
-    setSelectedMaterial(material);
+  const handleMaterialClick = (
+    material: string,
+    material_description: string
+  ) => {
+    setSelectedMaterial({
+      material_id: material,
+      material_description: material_description,
+    });
     setModalOpen(true);
   };
 
@@ -381,7 +397,25 @@ export const RFCTable: React.FC<DataTableProps> = ({
                 rowData.map((row) => (
                   <TableRow
                     key={getRowKey(row)}
-                    className={`hover:bg-muted/50 ${
+                    onClick={(e) => {
+                      const target = e.target as HTMLElement;
+
+                      if (
+                        target.closest("input") ||
+                        target.closest("button") ||
+                        target.closest("textarea") ||
+                        target.closest("select")
+                      ) {
+                        return;
+                      }
+
+                      // handleMaterialClick(String(row["Material"] ?? ""));
+                      handleMaterialClick(
+                        String(row["Material"] ?? ""),
+                        String(row["Material Description"] ?? "")
+                      );
+                    }}
+                    className={`hover:bg-muted/50 cursor-pointer ${
                       isRowModified(row) ? "bg-blue-50 dark:bg-blue-950/20" : ""
                     }`}
                   >
@@ -438,15 +472,6 @@ export const RFCTable: React.FC<DataTableProps> = ({
                                 placeholder="Enter RFC value"
                               />
                             </div>
-                          ) : column.key === "Material" ? (
-                            <button
-                              onClick={() =>
-                                handleMaterialClick(String(row[column.key]))
-                              }
-                              className="truncate text-xs sm:text-sm w-full text-left hover:underline text-blue-600"
-                            >
-                              {String(row[column.key] ?? "")}
-                            </button>
                           ) : (
                             <div className="truncate text-xs sm:text-sm w-full">
                               {String(row[column.key] ?? "")}
@@ -464,7 +489,9 @@ export const RFCTable: React.FC<DataTableProps> = ({
         <AnnualRFCModal
           open={modalOpen}
           onClose={() => setModalOpen(false)}
-          materialId={selectedMaterial}
+          materialData={selectedMaterial}
+          // materialId={selectedMaterial}
+          // materialDescription={}
           option={option}
           branch={branch}
         />
