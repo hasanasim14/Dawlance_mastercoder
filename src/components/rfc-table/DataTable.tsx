@@ -516,16 +516,19 @@ export const RFCTable: React.FC<DataTableProps> = ({
                           {isEditable ? (
                             <div className="relative">
                               <Input
+                                disabled={permission?.save_allowed === 0}
                                 type="number"
                                 value={cellValue}
-                                disabled={permission?.save_allowed === 0}
-                                onChange={(e) =>
-                                  handleCellChange(
-                                    row,
-                                    column.key,
-                                    e.target.value
-                                  )
-                                }
+                                onChange={(e) => {
+                                  const val = Number(e.target.value);
+                                  if (val >= 0 || e.target.value === "") {
+                                    handleCellChange(
+                                      row,
+                                      column.key,
+                                      e.target.value
+                                    );
+                                  }
+                                }}
                                 onBlur={handleCellBlur}
                                 onKeyDown={(e) => {
                                   if (e.key === "Enter" || e.key === "Escape") {
