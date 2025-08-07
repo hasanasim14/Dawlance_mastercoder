@@ -1,13 +1,14 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import type { RowDataType, ColumnConfig } from "@/lib/types";
+import type { RowDataType, ColumnConfig, PermissionConfig } from "@/lib/types";
 import { transformArrayFromApiFormat } from "@/lib/data-transformers";
-import { RFCTable } from "@/components/rfcTable/DataTable";
+import { RFCTable } from "@/components/rfc-table/DataTable";
 
 export default function BranchRFC() {
   // Original data from API (unfiltered)
   const [originalRowData, setOriginalRowData] = useState<RowDataType[]>([]);
+  const [warningMessage, setWarningMessage] = useState("");
   // Store the filtered data
   const [filteredRowData, setFilteredRowData] = useState<RowDataType[]>([]);
   const [loading, setLoading] = useState(false);
@@ -22,7 +23,7 @@ export default function BranchRFC() {
   const [editedValues, setEditedValues] = useState<
     Record<string, Record<string, string>>
   >({});
-  const [permission, setPermission] = useState(0);
+  const [permission, setPermission] = useState<PermissionConfig | null>(null);
   const [summaryData, setSummaryData] = useState([]);
 
   //autosave state
@@ -39,24 +40,18 @@ export default function BranchRFC() {
   const generateColumnsFromData = (
     data: RowDataType[]
   ): readonly ColumnConfig[] => {
-    if (!data || data.length === 0) {
-      return [];
-    }
+    if (!data || data.length === 0) return [];
 
-    // Get all unique keys from the first row
     const firstRow = data[0];
     const keys = Object.keys(firstRow);
-
-    // Define the preferred order of columns
     const columnOrder = [
-      // "Branch",
+      "Branch",
       "Material",
       "Material Description",
       "Product",
       "Last RFC",
     ];
 
-    // Separate known columns from dynamic ones
     const knownColumns: string[] = [];
     const dynamicColumns: string[] = [];
 
@@ -68,34 +63,49 @@ export default function BranchRFC() {
       }
     });
 
-    // Sort known columns by preferred order
     knownColumns.sort(
       (a, b) => columnOrder.indexOf(a) - columnOrder.indexOf(b)
     );
 
-    // Sort dynamic columns (sales columns first, then RFC columns)
     dynamicColumns.sort((a, b) => {
       const aIsSales = a.includes("Sales");
       const bIsSales = b.includes("Sales");
       const aIsRFC = a.includes("RFC");
       const bIsRFC = b.includes("RFC");
 
-      // Sales columns come first
       if (aIsSales && !bIsSales) return -1;
       if (!aIsSales && bIsSales) return 1;
-
-      // Then RFC columns
       if (aIsRFC && !bIsRFC) return 1;
       if (!aIsRFC && bIsRFC) return -1;
 
-      // Alphabetical for same type
+      if (aIsRFC && bIsRFC) {
+        const parseDate = (label: string) => {
+          const [monthStr, yearStr] = label.trim().split(" ")[0].split("-");
+          const months = [
+            "Jan",
+            "Feb",
+            "Mar",
+            "Apr",
+            "May",
+            "Jun",
+            "Jul",
+            "Aug",
+            "Sep",
+            "Oct",
+            "Nov",
+            "Dec",
+          ];
+          return new Date(Number(yearStr), months.indexOf(monthStr));
+        };
+        // return parseDate(a) - parseDate(b);
+        return parseDate(a).getTime() - parseDate(b).getTime();
+      }
+
       return a.localeCompare(b);
     });
 
-    // Combine all columns in order
     const orderedKeys = [...knownColumns, ...dynamicColumns];
 
-    // Convert to ColumnConfig format
     return orderedKeys.map((key) => ({
       key,
       label: key,
@@ -150,29 +160,44 @@ export default function BranchRFC() {
           year,
         });
 
+        const authToken = localStorage.getItem("token");
+
         // get all data
         const fetchEndpoint = `${
           process.env.NEXT_PUBLIC_BASE_URL
         }/branch-rfc?${queryParams.toString()}`;
+
+        // for summary data
+        const RFCProductEndpoint = `${process.env.NEXT_PUBLIC_BASE_URL}/branch-rfc-product?${queryParams}`;
+
+        queryParams.delete("branch");
+
+        queryParams.append("branch_name", branch);
+        queryParams.append("branch", "Branches");
 
         // get post/save permission
         const permissionEndpoint = `${
           process.env.NEXT_PUBLIC_BASE_URL
         }/rfc/lock?${queryParams.toString()}`;
 
-        // for summary data
-        const RFCProductEndpoint = `${process.env.NEXT_PUBLIC_BASE_URL}/branch-rfc-product?${queryParams}`;
-
         const [
           fetchEndpointResponse,
-          permissionEndpointResponse,
           rfcProductResponse,
+          permissionEndpointResponse,
         ] = await Promise.all([
           fetch(fetchEndpoint, {
             method: "GET",
             headers: {
               "Content-Type": "application/json",
-              // Authorization: `Bearer ${authToken}`,
+              Authorization: `Bearer ${authToken}`,
+            },
+          }),
+
+          fetch(RFCProductEndpoint, {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${authToken}`,
             },
           }),
 
@@ -180,16 +205,7 @@ export default function BranchRFC() {
             method: "GET",
             headers: {
               "Content-Type": "application/json",
-              // Authorization: `Bearer ${authToken}`,
-            },
-          }),
-          // ]);
-
-          fetch(RFCProductEndpoint, {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-              // Authorization: `Bearer ${authToken}`,
+              Authorization: `Bearer ${authToken}`,
             },
           }),
         ]);
@@ -199,10 +215,14 @@ export default function BranchRFC() {
         setSummaryData(productData?.data);
 
         const permissionData = await permissionEndpointResponse.json();
-        setPermission(permissionData?.data?.permission);
+        setPermission({
+          post_allowed: permissionData?.data?.permission?.post_allowed,
+          save_allowed: permissionData?.data?.permission?.save_allowed,
+        });
 
         const data = await fetchEndpointResponse.json();
         const parsedData = typeof data === "string" ? JSON.parse(data) : data;
+        setWarningMessage(data?.warning);
 
         if (parsedData && parsedData.data && Array.isArray(parsedData.data)) {
           const transformedData = transformArrayFromApiFormat(
@@ -275,22 +295,7 @@ export default function BranchRFC() {
           year,
         }).toString();
 
-        // const authToken = localStorage.getItem("token");
-
-        // Find the RFC column (same logic as in RFCTable component)
-        const rfcColumn = columns.find(
-          (col) => col.key.includes("RFC") && !col.key.includes("Last")
-        );
-
-        if (!rfcColumn) {
-          throw new Error("RFC column not found");
-        }
-
-        // Transform data to only include material and rfc, same format as save API
-        const postData = data.map((row) => ({
-          material: String(row["Material"] || ""),
-          rfc: String(row[rfcColumn.key] || ""),
-        }));
+        const authToken = localStorage.getItem("token");
 
         const branchRFCPostEndpoint = `${process.env.NEXT_PUBLIC_BASE_URL}/branch-rfc?${query}`;
         const branchRFCSaveEndpoint = `${process.env.NEXT_PUBLIC_BASE_URL}/branch-rfc-save?${query}`;
@@ -301,17 +306,17 @@ export default function BranchRFC() {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              // Authorization: `Bearer ${authToken}`,
+              Authorization: `Bearer ${authToken}`,
             },
-            body: JSON.stringify(postData),
+            body: JSON.stringify(data),
           }),
           fetch(branchRFCSaveEndpoint, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              // Authorization: `Bearer ${authToken}`,
+              Authorization: `Bearer ${authToken}`,
             },
-            body: JSON.stringify(postData),
+            body: JSON.stringify(data),
           }),
         ]);
 
@@ -326,9 +331,6 @@ export default function BranchRFC() {
             `Second API error! status: ${secondApiResponse.status}`
           );
         }
-
-        // const branchRfcResult = await branchRfcResponse.json();
-        // const secondApiResult = await secondApiResponse.json();
 
         await fetchBranchRFCData(branch, month, year);
       } catch (error) {
@@ -347,19 +349,17 @@ export default function BranchRFC() {
       year: string,
       // eslint-disable-next-line
       changedData: Array<{ material: string; [key: string]: any }>
-      // changedData: Array<{ material: string; rfc: string }>
     ) => {
       setSaving(true);
       try {
         const query = new URLSearchParams({ branch, month, year }).toString();
-        const authToken = localStorage.getItem("token");
         const endpoint = `${process.env.NEXT_PUBLIC_BASE_URL}/branch-rfc-save?${query}`;
 
         const response = await fetch(endpoint, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${authToken}`,
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
           body: JSON.stringify(changedData),
         });
@@ -391,14 +391,13 @@ export default function BranchRFC() {
           year: currentYear,
         }).toString();
 
-        // const authToken = localStorage.getItem("token");
         const endpoint = `${process.env.NEXT_PUBLIC_BASE_URL}/branch-rfc-save?${query}`;
 
         const response = await fetch(endpoint, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            // Authorization: `Bearer ${authToken}`,
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
           body: JSON.stringify(changedData),
         });
@@ -439,6 +438,7 @@ export default function BranchRFC() {
           onEditedValuesChange={handleEditedValuesChange}
           summaryData={summaryData}
           option={"branch"}
+          warningMessage={warningMessage}
         />
       </div>
     </div>

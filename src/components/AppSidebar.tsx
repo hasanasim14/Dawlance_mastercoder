@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   Sidebar,
   SidebarContent,
@@ -23,12 +23,10 @@ import {
   Gift,
   Store,
   Presentation,
-  Settings,
   Clock8,
   DollarSign,
   Tag,
 } from "lucide-react";
-import { mockUser } from "@/lib/mockUser";
 import { rolePages } from "@/lib/rolePages";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -39,9 +37,22 @@ import Image from "next/image";
 type Role = keyof typeof rolePages;
 
 export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
+  const [role, setRole] = useState<string | null>(null);
   const router = useRouter();
-  const role = mockUser.role;
   const pathname = usePathname();
+
+  useEffect(() => {
+    const getUserRoleFromCookie = () => {
+      if (typeof document === "undefined") return null;
+      const match = document.cookie.match(/(?:^|;\s*)user_role=([^;]*)/);
+      return match ? decodeURIComponent(match[1]) : null;
+    };
+
+    const roleFromCookie = getUserRoleFromCookie();
+    setRole(roleFromCookie);
+  }, []);
+
+  if (!role) return null;
 
   const allowedPages: string[] =
     role in rolePages ? rolePages[role as Role] : [];
@@ -73,14 +84,38 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
       icon: Repeat,
     },
     {
+      title: "Access Timeframe",
+      url: "/access-timeframe",
+      icon: Clock8,
+    },
+    {
       title: "SKU Offerings",
       url: "/sku-offerings",
       icon: Gift,
     },
     {
-      title: "Results",
-      url: "/results",
-      icon: TrendingUp,
+      title: "Branch RFC",
+      url: "/branch-rfc",
+      icon: Store,
+    },
+    {
+      title: "Marketing RFC",
+      url: "/marketing-rfc",
+      icon: Presentation,
+    },
+
+    {
+      title: "Dawlance RFC",
+      url: "/dawlance-rfc",
+      icon: () => (
+        <Image
+          width={8}
+          height={8}
+          src="/dawlance.svg"
+          alt="Dawlance"
+          className="w-5 h-5 object-contain"
+        />
+      ),
     },
     {
       title: "Prices",
@@ -103,37 +138,9 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
       icon: Workflow,
     },
     {
-      title: "Branch RFC",
-      url: "/branch-rfc",
-      icon: Store,
-    },
-    {
-      title: "Marketing RFC",
-      url: "/marketing-rfc",
-      icon: Presentation,
-    },
-    {
-      title: "Configure Dawlance RFC",
-      url: "/configure-dawlance-rfc",
-      icon: Settings,
-    },
-    {
-      title: "Access Timeframe",
-      url: "/access-timeframe",
-      icon: Clock8,
-    },
-    {
-      title: "Dawlance RFC",
-      url: "/dawlance-rfc",
-      icon: () => (
-        <Image
-          width={8}
-          height={8}
-          src="/dawlance.svg"
-          alt="Dawlance"
-          className="w-5 h-5 object-contain"
-        />
-      ),
+      title: "Results",
+      url: "/results",
+      icon: TrendingUp,
     },
     {
       title: "Users",

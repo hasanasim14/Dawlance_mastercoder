@@ -1,22 +1,23 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { RightSheet } from "@/components/RightSheet";
-import { ConfirmDialog } from "@/components/ConfirmDialog";
 import type {
   RowDataType,
   PaginationData,
   FieldConfig,
   ColumnConfig,
 } from "@/lib/types";
-import { DataTable } from "@/components/DataTable/DataTable";
 import {
   transformToApiFormat,
   transformArrayFromApiFormat,
   extractFields,
 } from "@/lib/data-transformers";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { DataTable } from "@/components/data-table/DataTable";
 import { cn } from "@/lib/utils";
+import { RightSheet } from "@/components/right-sheet/RightSheet";
 import SearchComponent from "@/components/SearchComponent";
+import { toast } from "sonner";
 
 export default function MasterCoding() {
   const [selectedRow, setSelectedRow] = useState<RowDataType | null>(null);
@@ -50,7 +51,13 @@ export default function MasterCoding() {
       type: "number",
       readOnly: true,
     },
-    { key: "Product", label: "Product", type: "text", required: true },
+    {
+      key: "Product",
+      label: "Product",
+      type: "searchable-select",
+      apiEndpoint: "/mastercoding/distinct/product",
+      required: true,
+    },
     {
       key: "Material",
       label: "Material",
@@ -63,29 +70,62 @@ export default function MasterCoding() {
       type: "text",
       required: true,
     },
-    { key: "Model", label: "Model", type: "text", required: true },
+    {
+      key: "Model",
+      label: "Model",
+      type: "searchable-select",
+      apiEndpoint: "/mastercoding/distinct/model",
+      required: true,
+    },
     {
       key: "Measurement Instrument",
       label: "Measurement Instrument",
-      type: "text",
+      type: "searchable-select",
+      apiEndpoint: "/mastercoding/distinct/measurement_instrument",
       required: true,
     },
     {
       key: "Colour Similarity",
       label: "Colour Similarity",
-      type: "text",
+      type: "searchable-select",
+      apiEndpoint: "/mastercoding/distinct/colour_similarity",
       required: true,
     },
     {
       key: "Product Type",
       label: "Product Type",
-      type: "text",
+      type: "searchable-select",
+      apiEndpoint: "/mastercoding/distinct/product_type",
       required: true,
     },
-    { key: "Function", label: "Function", type: "text", required: true },
-    { key: "Series", label: "Series", type: "text", required: true },
-    { key: "Colour", label: "Colour", type: "text", required: true },
-    { key: "Key Feature", label: "Key Feature", type: "text", required: true },
+    {
+      key: "Function",
+      label: "Function",
+      type: "searchable-select",
+      apiEndpoint: "/mastercoding/distinct/function",
+      required: true,
+    },
+    {
+      key: "Series",
+      label: "Series",
+      type: "searchable-select",
+      apiEndpoint: "/mastercoding/distinct/series",
+      required: true,
+    },
+    {
+      key: "Colour",
+      label: "Colour",
+      type: "searchable-select",
+      apiEndpoint: "/mastercoding/distinct/colour",
+      required: true,
+    },
+    {
+      key: "Key Feature",
+      label: "Key Feature",
+      type: "searchable-select",
+      apiEndpoint: "/mastercoding/distinct/key_feature",
+      required: true,
+    },
   ];
 
   const columns: readonly ColumnConfig[] = [
@@ -103,6 +143,14 @@ export default function MasterCoding() {
     { key: "Key Feature", label: "Key Feature" },
   ];
 
+  // to send to the search component
+  const columnsToOmit = ["Master ID"];
+
+  const filteredColumns: readonly ColumnConfig[] = columns.filter(
+    (col) => !columnsToOmit.includes(col.key)
+  );
+
+  // fetch master coding data
   const fetchMasterData = async (
     searchParams: Record<string, string> = {},
     page = 1,
@@ -113,7 +161,6 @@ export default function MasterCoding() {
       let endpoint = `${process.env.NEXT_PUBLIC_BASE_URL}/mastercoding`;
 
       const queryParams = new URLSearchParams();
-
       queryParams.append("page", page.toString());
       queryParams.append("limit", recordsPerPage.toString());
 
@@ -126,18 +173,17 @@ export default function MasterCoding() {
         });
       }
 
-      const authToken = localStorage.getItem("token");
       endpoint = `${endpoint}?${queryParams.toString()}`;
 
       const res = await fetch(endpoint, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${authToken}`,
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
       });
-      const data = await res.json();
 
+      const data = await res.json();
       const parsedData = typeof data === "string" ? JSON.parse(data) : data;
 
       if (parsedData && parsedData.data && Array.isArray(parsedData.data)) {
@@ -168,7 +214,6 @@ export default function MasterCoding() {
     if (!query.trim()) return [];
 
     try {
-      const authToken = localStorage.getItem("token");
       const fieldForApi = field.replace(/\s+/g, "_");
       const endpoint = `${process.env.NEXT_PUBLIC_BASE_URL}/mastercoding/distinct/${fieldForApi}?filt=${query}`;
 
@@ -176,7 +221,7 @@ export default function MasterCoding() {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${authToken}`,
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
       });
 
@@ -248,7 +293,6 @@ export default function MasterCoding() {
       const deletePayload = {
         master_id: masterIds,
       };
-      const authToken = localStorage.getItem("token");
 
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_BASE_URL}/mastercoding/delete`,
@@ -256,7 +300,7 @@ export default function MasterCoding() {
           method: "DELETE",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${authToken}`,
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
           body: JSON.stringify(deletePayload),
         }
@@ -276,6 +320,7 @@ export default function MasterCoding() {
     } catch (error) {
       console.error("Error deleting records:", error);
     } finally {
+      toast.success("Records deleted successfully");
       setDeleting(false);
       setShowDeleteDialog(false);
     }
@@ -372,19 +417,23 @@ export default function MasterCoding() {
         : `${process.env.NEXT_PUBLIC_BASE_URL}/mastercoding/add`;
 
       const method = isUpdate ? "PUT" : "POST";
-      const authToken = localStorage.getItem("token");
-
       const response = await fetch(endpoint, {
         method: method,
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${authToken}`,
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
         body: JSON.stringify(apiFormattedData),
       });
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      if (method === "POST") {
+        toast.success("Master ID created successfully");
+      } else {
+        toast.success("Master ID updated successfully");
       }
 
       setRowData((prevData) =>
@@ -423,7 +472,7 @@ export default function MasterCoding() {
         >
           <div className="h-full overflow-auto">
             <SearchComponent
-              fields={columns}
+              fields={filteredColumns}
               onSearch={handleSearch}
               onClearFilters={handleClearFilters}
               fetchSuggestions={fetchSuggestions}

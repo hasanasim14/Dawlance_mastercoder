@@ -28,6 +28,10 @@ async function postFileAction(formData: FormData) {
       `${process.env.NEXT_PUBLIC_BASE_URL}/upload/post/${option}`,
       {
         method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
         body: newFormData,
       }
     );
@@ -72,7 +76,7 @@ export interface UploadCardData {
   postStatus: PostStatus;
   lastUploaded: string | null;
   lastPosted: string | null;
-  inputRef: React.RefObject<HTMLInputElement | null>;
+  inputRef: React.RefObject<HTMLInputElement>;
   icon: React.ReactNode;
   result: string | null;
   postResult: string | null;
@@ -107,15 +111,11 @@ function UploadCenter() {
   const [showTable, setShowTable] = useState(false);
   const [tableLoading, setTableLoading] = useState(false);
   const [currentTableType, setCurrentTableType] = useState<string>("");
-  // const [responseObject, setResponseObject] = useState({
-  //   allow_upload: "",
-  //   check_statement: "",
-  // });
   const [allowUpload, setAllowUpload] = useState(false);
   const [checkStatement, setCheckStatement] = useState("");
   // Set default values on component mount
   useEffect(() => {
-    const { month, year } = getNextMonthAndYear("Non-RFC");
+    const { month, year } = getNextMonthAndYear("uploads");
     setSelectedMonth(month);
     setSelectedYear(year);
   }, []);
@@ -141,6 +141,10 @@ function UploadCenter() {
         `${process.env.NEXT_PUBLIC_BASE_URL}/upload/${option}/${selectedMonth}/${selectedYear}`,
         {
           method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
           body: newFormData,
         }
       );
@@ -406,6 +410,10 @@ function UploadCenter() {
         `${process.env.NEXT_PUBLIC_BASE_URL}/upload/${cardId}?page=${page}&limit=${limit}`,
         {
           method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
         }
       );
 

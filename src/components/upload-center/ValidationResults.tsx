@@ -442,7 +442,6 @@ const ValidationResults: React.FC<ValidationResultsProps> = ({
   uploadType,
   checkStatement,
 }) => {
-  console.log("the cai", validationData?.data?.data);
   // Get all keys from the validation data and sort them for consistent display
   const allKeys = Object.keys(validationData);
 
@@ -491,7 +490,6 @@ const ValidationResults: React.FC<ValidationResultsProps> = ({
   }).length;
 
   const totalCount = validationKeys.length;
-  console.log("Hum kis gali ja rahe hai", totalCount, passedCount);
 
   return (
     <div className="space-y-4">

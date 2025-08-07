@@ -12,14 +12,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import type { ColumnConfig, RowDataType } from "@/lib/types";
+import type { ColumnConfig, PermissionConfig, RowDataType } from "@/lib/types";
 import { Loader2 } from "lucide-react";
 import { RFCTableHeaders } from "./DataTableHeaders";
 import { ColumnFilter } from "./ColumnFilter";
 import AnnualRFCModal from "./AnnualRFCModal";
 
 interface DataTableProps {
-  permission: number;
+  permission: PermissionConfig | null;
   branchFilter: boolean;
   rowData: RowDataType[];
   originalRowData: RowDataType[];
@@ -56,6 +56,8 @@ interface DataTableProps {
   // eslint-disable-next-line
   summaryData: any[];
   option: string;
+  warningMessage: string;
+  autoSaveCheck?: () => void;
 }
 
 // material object interface
@@ -85,6 +87,8 @@ export const RFCTable: React.FC<DataTableProps> = ({
   onEditedValuesChange,
   summaryData,
   option,
+  warningMessage,
+  autoSaveCheck,
 }) => {
   // State for tracking which rows have been modified
   const [modifiedRows, setModifiedRows] = useState<Set<string>>(new Set());
@@ -97,6 +101,11 @@ export const RFCTable: React.FC<DataTableProps> = ({
     material_description: null,
   });
   const [branch, setBranch] = useState("");
+  const [dates, setDates] = useState({
+    month: "",
+    year: "",
+  });
+  const [canPost, setCanPost] = useState(false);
 
   const handleMaterialClick = (
     material: string,
@@ -149,6 +158,18 @@ export const RFCTable: React.FC<DataTableProps> = ({
     });
   }, []);
 
+  // debugging
+  // const getRFCColumnsWithTrailingSpace = useCallback(() => {
+  //   return columnsRef.current.filter((col) => {
+  //     const key = col.key;
+  //     const isTrailingSpaceRFC = key.includes("RFC") && key.endsWith("RFC");
+
+  //     return isTrailingSpaceRFC;
+  //   });
+  // }, []);
+
+  // const trailingSpaceRFCCount = getRFCColumnsWithTrailingSpace().length;
+
   // Prepare changed data for API call - collects all RFC values for modified rows
   const prepareChangedData = useCallback(() => {
     // eslint-disable-next-line
@@ -180,14 +201,18 @@ export const RFCTable: React.FC<DataTableProps> = ({
         const finalValue =
           editedValue !== undefined ? editedValue : originalValue;
 
-        // Add the RFC field to the row data
-        // Use rfc_1, rfc_2, rfc_3, etc. for multiple RFC columns
-        if (allRFCColumns.length === 1) {
-          rowData.rfc = finalValue;
+        if (option === "dawlance") {
+          const reversedIndex = allRFCColumns.length - 1 - index;
+          const fieldName = `rfc-${reversedIndex}`;
+          rowData[fieldName] =
+            finalValue !== "" && !isNaN(Number(finalValue))
+              ? Number(finalValue)
+              : 0;
         } else {
-          // For multiple RFC columns, use rfc_1, rfc_2, rfc_3, etc.
-          const fieldName = `rfc${index}`;
-          rowData[fieldName] = Number(finalValue);
+          rowData.rfc =
+            finalValue !== "" && !isNaN(Number(finalValue))
+              ? Number(finalValue)
+              : null;
         }
       });
 
@@ -291,19 +316,54 @@ export const RFCTable: React.FC<DataTableProps> = ({
 
   const rfcColumns = getRFCColumns();
 
+  const getEditableRFCColumns = () => {
+    return rfcColumns.filter((col) => {
+      const key = col.key;
+      return (
+        key.includes("RFC") &&
+        key.endsWith(" RFC") &&
+        !key.includes("Branch") &&
+        !key.includes("Marketing") &&
+        !key.includes("Last")
+      );
+    });
+  };
+
+  const areAllEditableRFCInputsFilled = (): boolean => {
+    const editableRFCColumns = getEditableRFCColumns();
+
+    return rowData.every((row) => {
+      const rowKey = getRowKey(row);
+      const edits = editedValues[rowKey] || {};
+
+      return editableRFCColumns.every((col) => {
+        const edited = edits[col.key];
+        const original = row[col.key];
+        const value = edited !== undefined ? edited : original;
+
+        const isFilled =
+          value !== "" && value !== null && !isNaN(Number(value));
+
+        return isFilled;
+      });
+    });
+  };
+
+  const handleAutoSaveSignal = () => {
+    autoSaveCheck?.();
+  };
+
   useEffect(() => {
-    if (originalRowData.length > 0) {
-      setBranch(originalRowData[0]["Branch"]);
-    } else {
-      setBranch("");
-    }
-  }, [originalRowData]);
+    setCanPost(areAllEditableRFCInputsFilled());
+  }, [rowData, editedValues, rfcColumns]);
 
   return (
     <div className="h-full w-full flex flex-col overflow-hidden">
       <RFCTableHeaders
+        option={option}
         permission={permission}
         branchFilter={branchFilter}
+        setBranch={setBranch}
         onPost={onPost}
         onSave={onSave}
         onFetchData={onFetchData}
@@ -318,11 +378,17 @@ export const RFCTable: React.FC<DataTableProps> = ({
         getRowKey={getRowKey}
         getCellValue={getCellValue}
         summaryData={summaryData}
+        warningMessage={warningMessage}
+        onDateChange={(month: string, year: string) =>
+          setDates({ month, year })
+        }
+        onAutoSave={handleAutoSaveSignal}
+        canUserPost={canPost}
       />
 
       <div className="flex-1 overflow-hidden rounded-lg border bg-card shadow-sm m-2 p-2">
-        <div className="h-full w-full overflow-auto">
-          <Table className="relative w-full">
+        <div className="w-full h-[50vh] overflow-auto">
+          <Table className="relative w-full h-[50vh]">
             <TableHeader className="sticky top-0 z-50 bg-muted">
               <TableRow className="hover:bg-transparent border-b shadow-sm">
                 {columns.map((column) => {
@@ -340,6 +406,10 @@ export const RFCTable: React.FC<DataTableProps> = ({
   ${
     column.key === "Material Description" &&
     "sticky left-[120px] z-20 w-[240px] min-w-[240px] max-w-[240px]"
+  }
+  ${
+    column.key === "Product" &&
+    "sticky left-[360px] z-10 w-[150px] min-w-[150px] max-w-[150px]"
   }
 `}
                     >
@@ -409,7 +479,6 @@ export const RFCTable: React.FC<DataTableProps> = ({
                         return;
                       }
 
-                      // handleMaterialClick(String(row["Material"] ?? ""));
                       handleMaterialClick(
                         String(row["Material"] ?? ""),
                         String(row["Material Description"] ?? "")
@@ -446,6 +515,10 @@ export const RFCTable: React.FC<DataTableProps> = ({
     column.key === "Material Description" &&
     "sticky left-[120px] z-20 bg-background w-[240px] min-w-[240px] max-w-[240px]"
   }
+    ${
+      column.key === "Product" &&
+      "sticky left-[360px] z-10 bg-background w-[150px] min-w-[150px] max-w-[150px]"
+    }
 `}
                           title={String(row[column.key] ?? "")}
                         >
@@ -454,6 +527,7 @@ export const RFCTable: React.FC<DataTableProps> = ({
                               <Input
                                 type="number"
                                 value={cellValue}
+                                // disabled={permission?.save_allowed === 0}
                                 onChange={(e) =>
                                   handleCellChange(
                                     row,
@@ -467,9 +541,8 @@ export const RFCTable: React.FC<DataTableProps> = ({
                                     handleCellBlur();
                                   }
                                 }}
-                                disabled={permission == 0}
                                 className="w-full h-7 sm:h-8 text-xs sm:text-sm"
-                                placeholder="Enter RFC value"
+                                placeholder=""
                               />
                             </div>
                           ) : (
@@ -490,10 +563,9 @@ export const RFCTable: React.FC<DataTableProps> = ({
           open={modalOpen}
           onClose={() => setModalOpen(false)}
           materialData={selectedMaterial}
-          // materialId={selectedMaterial}
-          // materialDescription={}
           option={option}
           branch={branch}
+          dates={dates}
         />
       </div>
     </div>

@@ -31,7 +31,6 @@ export type RowDataType = {
 
 export type SortConfig = {
   key: keyof RowDataType;
-  direction: "asc" | "desc";
 } | null;
 
 export type FilterConfig = {
@@ -48,13 +47,23 @@ export type PaginationData = {
 export interface FieldConfig {
   key: string;
   label: string;
-  type?: "text" | "number" | "email" | "tel" | "select" | "multi-select";
+  type?:
+    | "text"
+    | "number"
+    | "email"
+    | "tel"
+    | "select"
+    | "multi-select"
+    | "searchable-select"
+    | "conditional"
+    | "date";
   required?: boolean;
   readOnly?: boolean;
   selectOptions?: SelectOption[];
   apiEndpoint?: string;
   dependsOn?: string;
   dependsOnValue?: string | string[];
+  checkboxLabel?: string;
 }
 
 interface SelectOption {
@@ -65,4 +74,9 @@ interface SelectOption {
 export type ColumnConfig = {
   key: string;
   label: string;
+};
+
+export type PermissionConfig = {
+  post_allowed: number;
+  save_allowed: number;
 };

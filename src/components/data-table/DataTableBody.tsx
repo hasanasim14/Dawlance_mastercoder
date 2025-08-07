@@ -56,7 +56,6 @@ export function DataTableBody({
             onClick={() => {
               if (parent === "User") return;
               onRowClick(row);
-              console.log("row clicked");
             }}
           >
             <TableCell
@@ -73,11 +72,21 @@ export function DataTableBody({
                 className="mr-2"
               />
             </TableCell>
-            {columns.map((column) => (
-              <TableCell key={column.key} className="max-w-[200px] truncate">
-                {row[column.key as keyof RowDataType]}
-              </TableCell>
-            ))}
+            {columns.map((column) => {
+              const isBranchCell = parent === "User" && column.key === "branch";
+              return (
+                <TableCell
+                  key={column.key}
+                  className={`max-w-[400px] ${
+                    isBranchCell
+                      ? "h-auto whitespace-nowrap overflow-auto"
+                      : "truncate"
+                  }`}
+                >
+                  {row[column.key as keyof RowDataType]}
+                </TableCell>
+              );
+            })}
           </TableRow>
         );
       })}

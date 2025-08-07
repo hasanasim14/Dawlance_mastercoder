@@ -1,13 +1,15 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import type { RowDataType, ColumnConfig } from "@/lib/types";
+import type { RowDataType, ColumnConfig, PermissionConfig } from "@/lib/types";
 import { transformArrayFromApiFormat } from "@/lib/data-transformers";
-import { RFCTable } from "@/components/rfcTable/DataTable";
+import { RFCTable } from "@/components/rfc-table/DataTable";
+import { toast } from "sonner";
 
 export default function DawlanceRFC() {
   // Original data from API (unfiltered)
   const [originalRowData, setOriginalRowData] = useState<RowDataType[]>([]);
+  const [warningMessage, setWarningMessage] = useState("");
   // Store the filtered data
   const [filteredRowData, setFilteredRowData] = useState<RowDataType[]>([]);
   const [loading, setLoading] = useState(false);
@@ -22,16 +24,22 @@ export default function DawlanceRFC() {
   const [editedValues, setEditedValues] = useState<
     Record<string, Record<string, string>>
   >({});
-  // Autosave state
-  // eslint-disable-next-line
-  const [autoSaving, setAutoSaving] = useState(false);
   const [currentBranch, setCurrentBranch] = useState<string>("");
   const [currentMonth, setCurrentMonth] = useState<string>("");
   const [currentYear, setCurrentYear] = useState<string>("");
+  const [permission, setPermission] = useState<PermissionConfig | null>(null);
   const [summaryData, setSummaryData] = useState([]);
+  const [isAutoSaving, setIsAutoSaving] = useState(0);
 
   // which columns to have the filter on
   const filterableColumns = ["Product"];
+
+  // refresh the page when auto-save
+  useEffect(() => {
+    if (currentBranch && currentMonth && currentYear) {
+      fetchDawlanceRFCData(currentBranch, currentMonth, currentYear);
+    }
+  }, [isAutoSaving]);
 
   // Generate columns from API response data
   const generateColumnsFromData = (
@@ -121,45 +129,77 @@ export default function DawlanceRFC() {
       setCurrentBranch(branch);
       setCurrentMonth(month);
       setCurrentYear(year);
+      setSummaryData([]);
 
       try {
         const queryParams = new URLSearchParams({
-          branch,
           month,
           year,
         });
+
+        const authToken = localStorage.getItem("token");
 
         // Fetch data api
         const fetchEndpoint = `${
           process.env.NEXT_PUBLIC_BASE_URL
         }/dawlance-rfc?${queryParams.toString()}`;
 
-        // fetch summary table data
-        const RFCProductEndpoint = `${process.env.NEXT_PUBLIC_BASE_URL}/dawlance-rfc-product?${queryParams}`;
+        // fetch Summary Data
+        const fetchSummaryData = `${
+          process.env.NEXT_PUBLIC_BASE_URL
+        }/dawlance-rfc-product?${queryParams.toString()}`;
 
-        const [fetchEndpointResponse, rfcProductResponse] = await Promise.all([
+        queryParams.append("branch", "Dawlance");
+
+        // get permission data
+        const permissionEndpoint = `${
+          process.env.NEXT_PUBLIC_BASE_URL
+        }/rfc/lock?${queryParams.toString()}`;
+
+        const [
+          fetchEndpointResponse,
+          fetchSummaryDataResponse,
+          permissionEndpointResponse,
+        ] = await Promise.all([
           fetch(fetchEndpoint, {
             method: "GET",
             headers: {
               "Content-Type": "application/json",
+              Authorization: `Bearer ${authToken}`,
             },
           }),
 
-          fetch(RFCProductEndpoint, {
+          fetch(fetchSummaryData, {
             method: "GET",
             headers: {
               "Content-Type": "application/json",
+              Authorization: `Bearer ${authToken}`,
+            },
+          }),
+
+          fetch(permissionEndpoint, {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${authToken}`,
             },
           }),
         ]);
 
-        // for summary data
-        const productData = await rfcProductResponse.json();
-        setSummaryData(productData?.data);
-
         // for fetch data
         const data = await fetchEndpointResponse.json();
         const parsedData = typeof data === "string" ? JSON.parse(data) : data;
+        setWarningMessage(data?.warning);
+
+        const summaryData = await fetchSummaryDataResponse.json();
+        setSummaryData(summaryData?.data);
+
+        // setting permission data
+        const permissionData = await permissionEndpointResponse.json();
+        setPermission({
+          post_allowed: permissionData?.data?.permission?.post_allowed,
+          save_allowed: permissionData?.data?.permission?.save_allowed,
+        });
 
         if (parsedData && parsedData.data && Array.isArray(parsedData.data)) {
           const transformedData = transformArrayFromApiFormat(
@@ -178,18 +218,20 @@ export default function DawlanceRFC() {
           console.error("Invalid data structure received:", parsedData);
           setOriginalRowData([]);
           setFilteredRowData([]);
+          setSummaryData([]);
           setColumns([]);
         }
       } catch (error) {
         console.error("Error fetching branch rfc data", error);
         setOriginalRowData([]);
         setFilteredRowData([]);
+        setSummaryData([]);
         setColumns([]);
       } finally {
         setLoading(false);
       }
     },
-    [applyFiltersToData, columnFilters]
+    [applyFiltersToData, columnFilters, isAutoSaving]
   );
 
   // Apply filters when columnFilters change
@@ -224,87 +266,18 @@ export default function DawlanceRFC() {
       year: string,
       data: RowDataType[]
     ) => {
+      const authToken = localStorage.getItem("token");
       setPosting(true);
+
       try {
-        // Find all RFC columns that are month-year RFC format
-        const rfcColumns = columns.filter((col) => {
-          const key = col.key;
-          return (
-            key.includes("RFC") &&
-            key.endsWith(" RFC") &&
-            !key.includes("Branch") &&
-            !key.includes("Marketing") &&
-            !key.includes("Last")
-          );
-        });
+        const queryParams = new URLSearchParams({
+          month,
+          year,
+        }).toString();
 
-        if (rfcColumns.length === 0) {
-          throw new Error("RFC columns not found");
-        }
+        const dawlanceRFCPost = `${process.env.NEXT_PUBLIC_BASE_URL}/dawlance-rfc?${queryParams}`;
 
-        // Helper function to get row key (same as in DataTable)
-        const getRowKey = (row: RowDataType): string => {
-          return `${row["Material"] || ""}_${row["Branch"] || ""}`;
-        };
-
-        // Only include rows that have been modified and have valid RFC changes
-        // eslint-disable-next-line
-        const postData: Array<{ material: string; [key: string]: any }> = [];
-
-        data.forEach((row) => {
-          const rowKey = getRowKey(row);
-          const rowEdits = editedValues[rowKey];
-
-          // Only process rows that have been edited
-          if (rowEdits) {
-            // eslint-disable-next-line
-            const record: { material: string; [key: string]: any } = {
-              material: String(row["Material"] || ""),
-            };
-
-            let hasValidChanges = false;
-
-            // Handle single RFC vs multiple RFCs - only include changed values
-            if (rfcColumns.length === 1) {
-              const rfcValue = rowEdits[rfcColumns[0].key];
-              if (
-                rfcValue !== undefined &&
-                rfcValue !== "" &&
-                rfcValue !== null
-              ) {
-                record.rfc = Number(rfcValue) || 0;
-                hasValidChanges = true;
-              }
-            } else {
-              // Multiple RFCs - only include the ones that were actually changed
-              rfcColumns.forEach((rfcColumn, index) => {
-                const rfcValue = rowEdits[rfcColumn.key];
-                if (
-                  rfcValue !== undefined &&
-                  rfcValue !== "" &&
-                  rfcValue !== null
-                ) {
-                  record[`rfc${index}`] = Number(rfcValue) || 0;
-                  hasValidChanges = true;
-                }
-              });
-            }
-
-            // Only add the record if it has valid changes
-            if (hasValidChanges) {
-              postData.push(record);
-            }
-          }
-        });
-
-        // If no changes to post, show message
-        if (postData.length === 0) {
-          alert("No changes to post. Please edit some RFC values first.");
-          return;
-        }
-
-        const dawlanceRFCPost = `${process.env.NEXT_PUBLIC_BASE_URL}/dawlance-rfc`;
-        const dawlanceRFCSave = `${process.env.NEXT_PUBLIC_BASE_URL}/dawlance-rfc-save`;
+        const dawlanceRFCSave = `${process.env.NEXT_PUBLIC_BASE_URL}/dawlance-rfc-save?${queryParams}`;
 
         // Calling both APIs in parallel
         const [branchRfcResponse, secondApiResponse] = await Promise.all([
@@ -312,15 +285,17 @@ export default function DawlanceRFC() {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
+              Authorization: `Bearer ${authToken}`,
             },
-            body: JSON.stringify(postData),
+            body: JSON.stringify(data),
           }),
           fetch(dawlanceRFCSave, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
+              Authorization: `Bearer ${authToken}`,
             },
-            body: JSON.stringify(postData),
+            body: JSON.stringify(data),
           }),
         ]);
 
@@ -341,6 +316,7 @@ export default function DawlanceRFC() {
         console.error("Error posting RFC data:", error);
       } finally {
         setPosting(false);
+        toast.success("Values Posted Successfully");
       }
     },
     [fetchDawlanceRFCData, columns, editedValues]
@@ -356,15 +332,18 @@ export default function DawlanceRFC() {
     ) => {
       setSaving(true);
       try {
-        const authToken = localStorage.getItem("token");
+        const queryParams = new URLSearchParams({
+          month,
+          year,
+        }).toString();
 
-        const endpoint = `${process.env.NEXT_PUBLIC_BASE_URL}/dawlance-rfc-save`;
+        const endpoint = `${process.env.NEXT_PUBLIC_BASE_URL}/dawlance-rfc-save?${queryParams}`;
 
         const response = await fetch(endpoint, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${authToken}`,
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
           body: JSON.stringify(changedData),
         });
@@ -397,17 +376,14 @@ export default function DawlanceRFC() {
         return;
       }
 
-      setAutoSaving(true);
       try {
-        // eslint-disable-next-line
-        const query = new URLSearchParams({
-          branch: currentBranch,
+        const queryParams = new URLSearchParams({
           month: currentMonth,
           year: currentYear,
         }).toString();
 
         const authToken = localStorage.getItem("token");
-        const endpoint = `${process.env.NEXT_PUBLIC_BASE_URL}/dawlance-rfc-save`;
+        const endpoint = `${process.env.NEXT_PUBLIC_BASE_URL}/dawlance-rfc-save?${queryParams}`;
 
         const response = await fetch(endpoint, {
           method: "POST",
@@ -422,23 +398,25 @@ export default function DawlanceRFC() {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
 
-        // Don't refresh data on autosave to avoid disrupting user input
-        // await fetchDawlanceRFCData(currentBranch, currentMonth, currentYear);
+        if (response.ok) {
+          setIsAutoSaving((prev) => prev + 1);
+        }
       } catch (error) {
         console.error("Error auto-saving RFC data:", error);
-        // toast.error("Auto-save failed");
-      } finally {
-        setAutoSaving(false);
       }
     },
     [currentBranch, currentMonth, currentYear]
   );
 
+  const handleOnSaveTrigger = () => {
+    setIsAutoSaving((prev) => prev + 1);
+  };
+
   return (
     <div className="@container/main flex flex-1 flex-col gap-2">
       <div className="flex flex-col gap-4 md:gap-6">
         <RFCTable
-          permission={1}
+          permission={permission}
           branchFilter={false}
           rowData={filteredRowData}
           originalRowData={originalRowData}
@@ -450,7 +428,6 @@ export default function DawlanceRFC() {
           isLoading={loading}
           isSaving={saving}
           isPosting={posting}
-          // isAutoSaving={autoSaving}
           filterableColumns={filterableColumns}
           columnFilters={columnFilters}
           onFilterChange={handleFilterChange}
@@ -459,6 +436,8 @@ export default function DawlanceRFC() {
           onEditedValuesChange={handleEditedValuesChange}
           summaryData={summaryData}
           option={"dawlance"}
+          warningMessage={warningMessage}
+          autoSaveCheck={handleOnSaveTrigger}
         />
       </div>
     </div>

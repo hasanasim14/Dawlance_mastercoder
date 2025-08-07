@@ -234,8 +234,6 @@ interface SKUValidationsProps {
 }
 
 const SKUValidations: React.FC<SKUValidationsProps> = ({ validationData }) => {
-  console.log("the data in format", validationData);
-
   if (!validationData) {
     return (
       <div className="text-center py-8 text-muted-foreground">
@@ -249,14 +247,14 @@ const SKUValidations: React.FC<SKUValidationsProps> = ({ validationData }) => {
     (key) => !["message", "timestamp", "file_name", "file_size"].includes(key)
   );
 
-  const passedCount = validationKeys.filter((key) => {
-    const value = validationData[key];
-    if (typeof value === "boolean") return value;
-    if (Array.isArray(value)) return value.length === 0;
-    if (typeof value === "object" && value !== null)
-      return Object.keys(value).length === 0;
-    return true;
-  }).length;
+  // const passedCount = validationKeys.filter((key) => {
+  //   const value = validationData[key];
+  //   if (typeof value === "boolean") return value;
+  //   if (Array.isArray(value)) return value.length === 0;
+  //   if (typeof value === "object" && value !== null)
+  //     return Object.keys(value).length === 0;
+  //   return true;
+  // }).length;
 
   const totalCount = validationKeys.length;
 
@@ -272,7 +270,7 @@ const SKUValidations: React.FC<SKUValidationsProps> = ({ validationData }) => {
     <div className="space-y-4 p-2">
       <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
         <span className="text-sm font-medium">Validation Summary</span>
-        <span
+        {/* <span
           className={cn(
             "text-xs font-medium px-2 py-1 rounded border",
             passedCount === totalCount
@@ -281,7 +279,7 @@ const SKUValidations: React.FC<SKUValidationsProps> = ({ validationData }) => {
           )}
         >
           {passedCount}/{totalCount} Passed
-        </span>
+        </span> */}
       </div>
 
       <div className="space-y-1">

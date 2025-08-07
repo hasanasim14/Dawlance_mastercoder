@@ -17,9 +17,13 @@ interface RFCEntry {
 interface AnnualRFCModalProps {
   open: boolean;
   onClose: () => void;
-  materialData: SelectedMaterial; // materialId: string | null;
+  materialData: SelectedMaterial;
   option: string;
   branch: string | null | undefined;
+  dates: {
+    month: string;
+    year: string;
+  };
 }
 
 const AnnualRFCModal = ({
@@ -28,6 +32,7 @@ const AnnualRFCModal = ({
   materialData,
   option,
   branch,
+  dates,
 }: AnnualRFCModalProps) => {
   const [data, setData] = useState<RFCEntry[]>([]);
 
@@ -36,9 +41,10 @@ const AnnualRFCModal = ({
 
     const fetchRFCHistory = async () => {
       const queryParams = new URLSearchParams();
+      queryParams.append("month", dates?.month);
+      queryParams.append("year", dates?.year);
       queryParams.append("option", option);
       queryParams.append("material", materialData?.material_id || "");
-      console.log("branch", branch);
 
       if (option === "branch" && branch) {
         queryParams.append("branch", branch);
@@ -51,11 +57,11 @@ const AnnualRFCModal = ({
             method: "GET",
             headers: {
               "Content-Type": "application/json",
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
             },
           }
         );
         const data = await res.json();
-        console.log("tje", data?.data);
         setData(data?.data || []);
       } catch (error) {
         console.error("Error fetching RFC history:", error);

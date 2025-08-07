@@ -12,8 +12,10 @@ export const getNextMonthAndYear = (type: string) => {
   const currentYear = now.getFullYear();
 
   let nextMonth;
-  if (type === "RFC") {
+  if (type === "RFC" || type === "offering") {
     nextMonth = currentMonth + 4;
+  } else if (type === "uploads") {
+    nextMonth = currentMonth - 1;
   } else {
     nextMonth = currentMonth + 1;
   }
@@ -52,3 +54,23 @@ export const years = Array.from({ length: 10 }, (_, i) => ({
   value: (currentYear - 5 + i).toString(),
   label: (currentYear - 5 + i).toString(),
 }));
+
+// get full month names
+export const getFullMonthName = (monthNumber: string) => {
+  const monthNames = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+  ];
+  const index = parseInt(monthNumber, 10) - 1;
+  return monthNames[index] || monthNumber;
+};

@@ -1,7 +1,7 @@
 "use client";
 
 import type React from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { rolePages } from "@/lib/rolePages";
 
 export function LoginForm({
   className,
@@ -25,6 +26,22 @@ export function LoginForm({
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    const role = localStorage.getItem("user_role");
+
+    if (token && role && role in rolePages) {
+      const firstAccessiblePage =
+        rolePages[role as keyof typeof rolePages]?.[0];
+
+      if (firstAccessiblePage) {
+        router.push(firstAccessiblePage);
+      } else {
+        router.push("/unauthorized");
+      }
+    }
+  }, []);
 
   // Email Validation Function
   const isValidEmail = (email: string) => {
@@ -70,23 +87,25 @@ export function LoginForm({
         localStorage.setItem("token", data?.access_token);
         localStorage.setItem("user_name", data?.user_name);
         localStorage.setItem("user_role", data?.user_role);
+        localStorage.setItem("branches", data?.branch);
+        localStorage.setItem("product", data?.product);
 
-        if (data?.user_role === "branch") {
-          localStorage.setItem("branches", data?.branch);
-        }
+        // Save role in cookie
+        document.cookie = `user_role=${data?.user_role}; path=/`;
+        type Role = keyof typeof rolePages;
+        const role = data?.user_role as Role;
+        const firstAccessiblePage = rolePages[role]?.[0];
 
         setTimeout(() => {
-          router.push("/master-coding");
+          router.push(firstAccessiblePage || "/unauthorized");
         }, 1000);
 
         toast.success("Login Successful");
-      }
-
-      if (!res.ok) {
+      } else {
         toast.error("Incorrect email or password");
       }
     } catch (error) {
-      console.error("Login API failed, the error = ", error);
+      console.error("Login API failed:", error);
       toast.error("Login Failed. Please try again");
     } finally {
       setIsLoading(false);

@@ -1,17 +1,25 @@
-import { redirect } from "next/navigation";
-import { mockUser } from "@/lib/mockUser";
+"use client";
+
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { rolePages } from "@/lib/rolePages";
 
-type Role = "admin" | "marketing" | "manager";
-
 export default function HomePage() {
-  const role = mockUser.role as Role;
+  const router = useRouter();
 
-  const firstPage = rolePages[role]?.[0];
+  useEffect(() => {
+    const role = localStorage.getItem("user_role");
 
-  if (firstPage) {
-    redirect(firstPage);
-  }
+    if (role && role in rolePages) {
+      const firstPage = rolePages[role as keyof typeof rolePages]?.[0];
+      if (firstPage) {
+        router.replace(firstPage);
+        return;
+      }
+    }
 
-  redirect("/unauthorized");
+    router.replace("/unauthorized");
+  }, [router]);
+
+  return null; 
 }

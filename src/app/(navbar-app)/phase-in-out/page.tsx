@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { RightSheet } from "@/components/RightSheet";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import {
   transformToApiFormat,
@@ -14,9 +13,11 @@ import type {
   FieldConfig,
   ColumnConfig,
 } from "@/lib/types";
-import { DataTable } from "@/components/DataTable/DataTable";
+import { DataTable } from "@/components/data-table/DataTable";
 import { cn } from "@/lib/utils";
+import { RightSheet } from "@/components/right-sheet/RightSheet";
 import SearchComponent from "@/components/SearchComponent";
+import { toast } from "sonner";
 
 export default function PhaseIO() {
   const [selectedRow, setSelectedRow] = useState<RowDataType | null>(null);
@@ -66,19 +67,33 @@ export default function PhaseIO() {
       readOnly: true,
     },
     {
-      key: "Phase Out",
-      label: "Phase Out",
-      type: "text",
+      key: "Phase In",
+      label: "Phase In",
+      type: "date",
       required: true,
     },
     {
-      key: "Phase In",
-      label: "Phase In",
-      type: "text",
+      key: "Phase Out",
+      label: "Phase Out",
+      type: "conditional",
+      required: true,
+      apiEndpoint: "/phaseinout/distinct/phase_out",
+      checkboxLabel: "Use date",
+    },
+    {
+      key: "Price Group",
+      label: "Price Group",
+      type: "searchable-select",
+      apiEndpoint: "/phaseinout/distinct/price_group",
       required: true,
     },
-    { key: "Price Group", label: "Price Group", type: "text", required: true },
-    { key: "Sales Group", label: "Sales Group", type: "text", required: true },
+    {
+      key: "Sales Group",
+      label: "Sales Group",
+      type: "searchable-select",
+      apiEndpoint: "/phaseinout/distinct/sales_group",
+      required: true,
+    },
   ];
 
   const columns: readonly ColumnConfig[] = [
@@ -101,10 +116,8 @@ export default function PhaseIO() {
       let endpoint = `${process.env.NEXT_PUBLIC_BASE_URL}/phaseinout`;
 
       const queryParams = new URLSearchParams();
-
       queryParams.append("page", page.toString());
       queryParams.append("limit", recordsPerPage.toString());
-
       const hasSearchParams = Object.keys(searchParams).length > 0;
 
       if (hasSearchParams) {
@@ -115,22 +128,19 @@ export default function PhaseIO() {
       }
 
       endpoint = `${endpoint}?${queryParams.toString()}`;
-      const authToken = localStorage.getItem("token");
 
       const res = await fetch(endpoint, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${authToken}`,
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
       });
       const data = await res.json();
 
       const parsedData = typeof data === "string" ? JSON.parse(data) : data;
 
-      // Fix: Access the data array from the response
       if (parsedData && parsedData.data && Array.isArray(parsedData.data)) {
-        // Transform the received data from API format to display format
         const transformedData = transformArrayFromApiFormat(
           parsedData.data
         ) as RowDataType[];
@@ -159,7 +169,6 @@ export default function PhaseIO() {
     if (!query.trim()) return [];
 
     try {
-      const authToken = localStorage.getItem("token");
       const fieldForApi = field.replace(/\s+/g, "_");
       const endpoint = `${process.env.NEXT_PUBLIC_BASE_URL}/phaseinout/distinct/${fieldForApi}?filt=${query}`;
 
@@ -167,7 +176,7 @@ export default function PhaseIO() {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${authToken}`,
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
       });
 
@@ -240,14 +249,13 @@ export default function PhaseIO() {
         material: productsIds,
       };
 
-      const authToken = localStorage.getItem("token");
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_BASE_URL}/phaseinout/delete`,
         {
           method: "DELETE",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${authToken}`,
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
           body: JSON.stringify(deletePayload),
         }
@@ -267,6 +275,7 @@ export default function PhaseIO() {
     } catch (error) {
       console.error("Error deleting records:", error);
     } finally {
+      toast.success("Records deleted successfully");
       setDeleting(false);
       setShowDeleteDialog(false);
     }
@@ -363,13 +372,11 @@ export default function PhaseIO() {
         : `${process.env.NEXT_PUBLIC_BASE_URL}/phaseinout/add`;
 
       const method = isUpdate ? "PUT" : "POST";
-      const authToken = localStorage.getItem("token");
-
       const response = await fetch(endpoint, {
         method: method,
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${authToken}`,
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
         body: JSON.stringify(apiFormattedData),
       });
@@ -384,6 +391,12 @@ export default function PhaseIO() {
           row["Product"] === data["Product"] ? { ...row, ...data } : row
         )
       );
+
+      if (method === "POST") {
+        toast.success("Master ID created successfully");
+      } else {
+        toast.success("Master ID updated successfully");
+      }
 
       // Update selected row data
       setSelectedRow(data as RowDataType);
