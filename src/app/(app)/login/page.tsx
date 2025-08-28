@@ -12,7 +12,7 @@ export default function LoginPage() {
               alt="Master Coding Header"
               width={1200}
               height={120}
-              className="w-50 object-cover opacity-90"
+              className="w-1/2 object-cover opacity-90"
               priority
             />
           </a>
@@ -29,7 +29,6 @@ export default function LoginPage() {
           alt="Login Image"
           className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"
           fill
-          priority
         />
       </div>
     </div>
