@@ -138,6 +138,15 @@ export default function MarketingRFC() {
 
       try {
         const queryParams = new URLSearchParams({ month, year });
+        const marketingProducts = localStorage.getItem("product");
+        if (marketingProducts) {
+          if (marketingProducts === "All") {
+            queryParams.append("product", "All");
+          } else {
+            queryParams.append("product", marketingProducts);
+          }
+        }
+
         const fetchEndpoint = `${process.env.NEXT_PUBLIC_BASE_URL}/marketing-rfc?${queryParams}`;
         const permissionParams = new URLSearchParams(queryParams);
         permissionParams.append("branch", "Marketing");

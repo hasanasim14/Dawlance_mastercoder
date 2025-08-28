@@ -54,7 +54,10 @@ export function transformToApiFormat(
     if (transformed.role !== "branch") {
       transformed.branch = ["All"];
     }
-    if (transformed.role !== "product_manager") {
+    if (
+      transformed.role !== "product_manager" &&
+      transformed.role !== "marketing"
+    ) {
       transformed.product = ["All"];
     }
   }

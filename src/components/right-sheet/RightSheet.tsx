@@ -288,7 +288,11 @@ export function RightSheet({
   // Load product options when role changes to "Product Manager"
   useEffect(() => {
     const loadProductOptions = async () => {
-      if (formData.role === "product_manager" && !selectOptionsCache.products) {
+      if (
+        (formData.role === "product_manager" ||
+          formData.role === "marketing") &&
+        !selectOptionsCache.products
+      ) {
         const productField = effectiveFields.find(
           (field) => field.key === "product"
         );
@@ -551,8 +555,11 @@ export function RightSheet({
     }
 
     // Handle Multi-select fields for products - only show when role is "Product Manager"
-    if (field.key === "products") {
-      if (formData.role !== "product_manager") {
+    if (field.key === "product") {
+      if (
+        formData.role !== "product_manager" &&
+        formData.role !== "marketing"
+      ) {
         return null;
       }
       return (

@@ -90,7 +90,7 @@ export const RFCTableHeaders: React.FC<HeadersProps> = ({
 }) => {
   const [branches, setBranches] = useState<BranchOption[]>([]);
   const [selectedBranch, setSelectedBranch] = useState<string>(
-    branchFilter ? "" : "DEFAULT_BRANCH"
+    branchFilter ? "" : ""
   );
   const [selectedMonth, setSelectedMonth] = useState<string>("");
   const [selectedYear, setSelectedYear] = useState<string>("");
