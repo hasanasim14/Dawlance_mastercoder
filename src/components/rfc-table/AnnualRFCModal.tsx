@@ -12,6 +12,7 @@ import { SelectedMaterial } from "./DataTable";
 interface RFCEntry {
   Month: string;
   RFC: number;
+  Sales: number;
 }
 
 interface AnnualRFCModalProps {
@@ -109,6 +110,9 @@ const AnnualRFCModal = ({
                   <th className="p-3 text-left font-medium border-r whitespace-nowrap">
                     RFC
                   </th>
+                  <th className="p-3 text-left font-medium border-r whitespace-nowrap">
+                    Sales
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -123,6 +127,9 @@ const AnnualRFCModal = ({
                       </td>
                       <td className="p-3 border-r whitespace-nowrap">
                         {entry.RFC}
+                      </td>
+                      <td className="p-3 border-r whitespace-nowrap">
+                        {entry.Sales}
                       </td>
                     </tr>
                   ))

@@ -13,6 +13,7 @@ export default function AppLayout({
 }>) {
   return (
     <html lang="en">
+      <head />
       <body className={`${inter.className} h-full`}>{children}</body>
     </html>
   );
