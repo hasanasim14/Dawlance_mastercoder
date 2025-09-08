@@ -26,6 +26,7 @@ import {
   Clock8,
   DollarSign,
   Tag,
+  ChartColumn,
 } from "lucide-react";
 import { rolePages } from "@/lib/rolePages";
 import { useRouter } from "next/navigation";
@@ -126,6 +127,11 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
       title: "Price Group",
       url: "/price-group",
       icon: Tag,
+    },
+    {
+      title: "Reports",
+      url: "/reports",
+      icon: ChartColumn,
     },
     {
       title: "Upload Files",
