@@ -28,6 +28,7 @@ export const config = {
     "/results",
     "/prices",
     "/price-group",
+    "/reports",
     "/upload-center",
     "/branch-master",
     "/branch-rfc",
