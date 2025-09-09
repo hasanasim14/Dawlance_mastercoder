@@ -381,7 +381,7 @@ export const RFCTableHeaders: React.FC<HeadersProps> = ({
           />
 
           {/* Action Buttons */}
-          <div className="flex items-center gap-2 ml-4">
+          <div className="flex items-center gap-2">
             <Button
               onClick={handleSave}
               disabled={
