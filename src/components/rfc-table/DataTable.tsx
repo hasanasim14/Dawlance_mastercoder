@@ -382,14 +382,17 @@ export const RFCTable: React.FC<DataTableProps> = ({
           <Table className="relative w-full h-[50vh]">
             <TableHeader className="sticky top-0 z-50 bg-muted">
               <TableRow className="hover:bg-transparent border-b shadow-sm">
-                {columns.map((column) => {
-                  const isFilterable = filterableColumns.includes(column.key);
-                  const hasActiveFilter = columnFilters[column.key]?.length > 0;
+                {columns
+                  .filter((column) => column.key !== "Edit")
+                  .map((column) => {
+                    const isFilterable = filterableColumns.includes(column.key);
+                    const hasActiveFilter =
+                      columnFilters[column.key]?.length > 0;
 
-                  return (
-                    <TableHead
-                      key={column.key}
-                      className={`text-sm whitespace-nowrap bg-[#f5f5f4]
+                    return (
+                      <TableHead
+                        key={column.key}
+                        className={`text-sm whitespace-nowrap bg-[#f5f5f4]
   ${
     column.key === "Material" &&
     "sticky left-0 z-30 w-[120px] min-w-[120px] max-w-[120px]"
@@ -403,39 +406,41 @@ export const RFCTable: React.FC<DataTableProps> = ({
     "sticky left-[360px] z-10 w-[150px] min-w-[150px] max-w-[150px]"
   }
 `}
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <span className="truncate text-xs sm:text-sm">
-                            {column.label}
-                          </span>
-                          {hasActiveFilter && (
-                            <div className="w-2 h-2 bg-blue-600 rounded-full flex-shrink-0" />
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="truncate text-xs sm:text-sm">
+                              {column.label}
+                            </span>
+                            {hasActiveFilter && (
+                              <div className="w-2 h-2 bg-blue-600 rounded-full flex-shrink-0" />
+                            )}
+                          </div>
+                          {isFilterable && (
+                            <div className="flex-shrink-0">
+                              <ColumnFilter
+                                columnKey={column.key}
+                                columnLabel={column.label}
+                                data={rowData}
+                                selectedFilters={
+                                  columnFilters[column.key] || []
+                                }
+                                onFilterChange={handleFilterChange}
+                                onApplyFilter={handleApplyFilter}
+                              />
+                            </div>
                           )}
                         </div>
-                        {isFilterable && (
-                          <div className="flex-shrink-0">
-                            <ColumnFilter
-                              columnKey={column.key}
-                              columnLabel={column.label}
-                              data={rowData}
-                              selectedFilters={columnFilters[column.key] || []}
-                              onFilterChange={handleFilterChange}
-                              onApplyFilter={handleApplyFilter}
-                            />
-                          </div>
-                        )}
-                      </div>
-                    </TableHead>
-                  );
-                })}
+                      </TableHead>
+                    );
+                  })}
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableRow>
                   <TableCell
-                    colSpan={columns.length}
+                    colSpan={columns.filter((col) => col.key !== "Edit").length}
                     className="text-center py-8"
                   >
                     <div className="flex items-center justify-center gap-2">
@@ -447,7 +452,7 @@ export const RFCTable: React.FC<DataTableProps> = ({
               ) : rowData.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={columns.length}
+                    colSpan={columns.filter((col) => col.key !== "Edit").length}
                     className="text-center py-8 text-muted-foreground"
                   >
                     No data available. Please select branch, month, and year to
@@ -479,24 +484,31 @@ export const RFCTable: React.FC<DataTableProps> = ({
                       isRowModified(row) ? "bg-blue-50 dark:bg-blue-950/20" : ""
                     }`}
                   >
-                    {columns.map((column) => {
-                      const isRFCColumn =
-                        column.key.includes("RFC") &&
-                        column.key.endsWith(" RFC") &&
-                        !column.key.includes("Branch") &&
-                        !column.key.includes("Marketing") &&
-                        !column.key.includes("Last");
-                      const isEditable = isRFCColumn;
-                      const cellValue = getCellValue(
-                        row,
-                        column.key,
-                        row[column.key]
-                      );
+                    {columns
+                      .filter((column) => column.key !== "Edit")
+                      .map((column) => {
+                        const isRFCColumn =
+                          column.key.includes("RFC") &&
+                          column.key.endsWith(" RFC") &&
+                          !column.key.includes("Branch") &&
+                          !column.key.includes("Marketing") &&
+                          !column.key.includes("Last");
 
-                      return (
-                        <TableCell
-                          key={column.key}
-                          className={`
+                        const editValue = row["Edit"];
+                        const isRowEditable =
+                          editValue === 1 || editValue === "1";
+                        const isEditable = isRFCColumn && isRowEditable;
+
+                        const cellValue = getCellValue(
+                          row,
+                          column.key,
+                          row[column.key]
+                        );
+
+                        return (
+                          <TableCell
+                            key={column.key}
+                            className={`
   bg-background text-sm whitespace-nowrap
   ${
     column.key === "Material" &&
@@ -511,42 +523,45 @@ export const RFCTable: React.FC<DataTableProps> = ({
       "sticky left-[360px] z-10 bg-background w-[150px] min-w-[150px] max-w-[150px]"
     }
 `}
-                          title={String(row[column.key] ?? "")}
-                        >
-                          {isEditable ? (
-                            <div className="relative">
-                              <Input
-                                disabled={permission?.save_allowed === 0}
-                                type="number"
-                                value={cellValue}
-                                onChange={(e) => {
-                                  const val = Number(e.target.value);
-                                  if (val >= 0 || e.target.value === "") {
-                                    handleCellChange(
-                                      row,
-                                      column.key,
-                                      e.target.value
-                                    );
-                                  }
-                                }}
-                                onBlur={handleCellBlur}
-                                onKeyDown={(e) => {
-                                  if (e.key === "Enter" || e.key === "Escape") {
-                                    handleCellBlur();
-                                  }
-                                }}
-                                className="w-full h-7 sm:h-8 text-xs sm:text-sm"
-                                placeholder=""
-                              />
-                            </div>
-                          ) : (
-                            <div className="truncate text-xs sm:text-sm w-full">
-                              {String(row[column.key] ?? "")}
-                            </div>
-                          )}
-                        </TableCell>
-                      );
-                    })}
+                            title={String(row[column.key] ?? "")}
+                          >
+                            {isEditable ? (
+                              <div className="relative">
+                                <Input
+                                  disabled={permission?.save_allowed === 0}
+                                  type="number"
+                                  value={cellValue}
+                                  onChange={(e) => {
+                                    const val = Number(e.target.value);
+                                    if (val >= 0 || e.target.value === "") {
+                                      handleCellChange(
+                                        row,
+                                        column.key,
+                                        e.target.value
+                                      );
+                                    }
+                                  }}
+                                  onBlur={handleCellBlur}
+                                  onKeyDown={(e) => {
+                                    if (
+                                      e.key === "Enter" ||
+                                      e.key === "Escape"
+                                    ) {
+                                      handleCellBlur();
+                                    }
+                                  }}
+                                  className="w-full h-7 sm:h-8 text-xs sm:text-sm"
+                                  placeholder=""
+                                />
+                              </div>
+                            ) : (
+                              <div className="truncate text-xs sm:text-sm w-full">
+                                {String(row[column.key] ?? "")}
+                              </div>
+                            )}
+                          </TableCell>
+                        );
+                      })}
                   </TableRow>
                 ))
               )}

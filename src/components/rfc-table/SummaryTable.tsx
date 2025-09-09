@@ -1,3 +1,5 @@
+"use client";
+
 import {
   Table,
   TableBody,
@@ -7,7 +9,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Input } from "../ui/input";
-import { PermissionConfig } from "@/lib/types";
+import type { PermissionConfig } from "@/lib/types";
 import { getFullMonthName } from "@/lib/utils";
 
 interface SummaryDataProps {
@@ -30,6 +32,8 @@ const SummaryTable = ({
 }: SummaryDataProps) => {
   const headers = summaryData.length > 0 ? Object.keys(summaryData[0]) : [];
   const stringMonth = getFullMonthName(month);
+
+  const visibleHeaders = headers.filter((header) => header !== "Edit");
 
   const handleAutoSave = async (product: string, rfc: number) => {
     try {
@@ -59,14 +63,12 @@ const SummaryTable = ({
 
   return (
     <div className="overflow-x-auto">
-      <span className="uppercase font-bold block text-center mb-2">
-        {`Summary Table - ${stringMonth} ${year}`}
-      </span>
+      <span className="uppercase font-bold block text-center mb-2">{`Summary Table - ${stringMonth} ${year}`}</span>
 
-      <Table className="min-w-full text-sm">
-        <TableHeader className="bg-muted">
+      <Table className="relative w-full h-[50vh]">
+        <TableHeader className="sticky top-0 z-50 bg-muted">
           <TableRow>
-            {headers.map((header) => (
+            {visibleHeaders.map((header) => (
               <TableHead key={header} className="text-left whitespace-nowrap">
                 {header.trim()}
               </TableHead>
@@ -78,11 +80,15 @@ const SummaryTable = ({
           {summaryData.length > 0 ? (
             summaryData.map((item, idx) => (
               <TableRow key={idx} className="hover:bg-muted/50">
-                {headers.map((key) => {
+                {visibleHeaders.map((key) => {
                   const isRFC = key.includes("RFC");
                   const endsWithSpace = key.endsWith(" ");
+                  const isRowEditable = item["Edit"] === 1;
                   const shouldShowInput =
-                    option === "dawlance" && isRFC && !endsWithSpace;
+                    option === "dawlance" &&
+                    isRFC &&
+                    !endsWithSpace &&
+                    isRowEditable;
 
                   return (
                     <TableCell key={key}>
@@ -93,7 +99,7 @@ const SummaryTable = ({
                           defaultValue={item[key]}
                           disabled={permission?.save_allowed === 0}
                           onBlur={(e) => {
-                            const value = parseFloat(e.target.value);
+                            const value = Number.parseFloat(e.target.value);
                             if (!isNaN(value)) {
                               handleAutoSave(item["Product"], value);
                             }
@@ -112,7 +118,7 @@ const SummaryTable = ({
           ) : (
             <TableRow>
               <TableCell
-                colSpan={headers.length}
+                colSpan={visibleHeaders.length}
                 className="text-center py-6 text-muted-foreground"
               >
                 No data available
