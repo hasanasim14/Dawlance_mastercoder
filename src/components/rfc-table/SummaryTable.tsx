@@ -62,14 +62,22 @@ const SummaryTable = ({
   };
 
   return (
-    <div className="overflow-x-auto">
-      <span className="uppercase font-bold block text-center mb-2">{`Summary Table - ${stringMonth} ${year}`}</span>
+    <div className="w-full h-[50vh] overflow-auto relative">
+      {/* Sticky summary heading */}
+      <div className="sticky top-0 z-60 bg-background py-2">
+        <span className="uppercase font-bold block text-center">
+          {`Summary Table - ${stringMonth} ${year}`}
+        </span>
+      </div>
 
-      <Table className="relative w-full h-[50vh]">
-        <TableHeader className="sticky top-0 z-50 bg-muted">
-          <TableRow>
+      <Table className="relative w-full">
+        <TableHeader className="sticky top-10 z-50 bg-muted">
+          <TableRow className="hover:bg-transparent border-b shadow-sm">
             {visibleHeaders.map((header) => (
-              <TableHead key={header} className="text-left whitespace-nowrap">
+              <TableHead
+                key={header}
+                className="text-left whitespace-nowrap bg-[#f5f5f4]"
+              >
                 {header.trim()}
               </TableHead>
             ))}
@@ -91,11 +99,14 @@ const SummaryTable = ({
                     isRowEditable;
 
                   return (
-                    <TableCell key={key}>
+                    <TableCell
+                      key={key}
+                      className="bg-background text-sm whitespace-nowrap"
+                    >
                       {shouldShowInput ? (
                         <Input
                           type="number"
-                          className="w-full border rounded px-2 py-1 text-sm"
+                          className="w-full h-7 sm:h-8 text-xs sm:text-sm"
                           defaultValue={item[key]}
                           disabled={permission?.save_allowed === 0}
                           onBlur={(e) => {
