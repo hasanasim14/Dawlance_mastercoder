@@ -1,21 +1,20 @@
 "use client";
 
 import { useEffect, useState } from "react";
-// import { RightSheet } from "@/components/RightSheet";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { DataTable } from "@/components/data-table/DataTable";
+import { RightSheet } from "@/components/right-sheet/RightSheet";
 import type {
   RowDataType,
   PaginationData,
   FieldConfig,
   ColumnConfig,
 } from "@/lib/types";
-import { DataTable } from "@/components/data-table/DataTable";
 import {
   transformToApiFormat,
   transformArrayFromApiFormat,
   extractFields,
 } from "@/lib/data-transformers";
-import { RightSheet } from "@/components/right-sheet/RightSheet";
 
 export default function Users() {
   const [selectedRow, setSelectedRow] = useState<RowDataType | null>(null);
@@ -26,6 +25,8 @@ export default function Users() {
   const [deleting, setDeleting] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+
+  console.log("the row data", rowData);
 
   // Pagination states
   const [pagination, setPagination] = useState<PaginationData>({
@@ -139,18 +140,18 @@ export default function Users() {
   };
 
   const handleBulkDelete = async () => {
-    if (selectedRows.length === 0) return;
+    // if (selectedRows.length === 0) return;
 
     setDeleting(true);
     try {
-      const masterIds = extractFields(selectedRows, "Master ID");
+      const user_ids = extractFields(selectedRows, "User Id");
 
       const deletePayload = {
-        master_id: masterIds,
+        user_id: user_ids,
       };
 
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/mastercoding/delete`,
+        `${process.env.NEXT_PUBLIC_BASE_URL}/users/delete`,
         {
           method: "DELETE",
           headers: {
@@ -203,7 +204,7 @@ export default function Users() {
       setSelectedRows((prev) => [...prev, row]);
     } else {
       setSelectedRows((prev) =>
-        prev.filter((r) => r["Master ID"] !== row["Master ID"])
+        prev.filter((r) => r["User Id"] !== row["User Id"])
       );
     }
   };
@@ -220,7 +221,7 @@ export default function Users() {
   // Handle row click
   const handleRowClick = (row: RowDataType) => {
     setIsSheetOpen(true);
-    const clickedRowId = row["Master ID"];
+    const clickedRowId = row["User Id"];
 
     // If clicking the same row, toggle the sheet
     if (selectedRowId === clickedRowId) {
@@ -228,7 +229,7 @@ export default function Users() {
       setSelectedRowId(null);
     } else {
       // Select new row
-      // setSelectedRow(row);
+      console.log("the clicked row", clickedRowId);
       setSelectedRowId(clickedRowId);
     }
   };
@@ -241,7 +242,7 @@ export default function Users() {
       const isUpdate = !!selectedRowId;
 
       const endpoint = isUpdate
-        ? `${process.env.NEXT_PUBLIC_BASE_URL}/mastercoding/update/${selectedRowId}`
+        ? `${process.env.NEXT_PUBLIC_BASE_URL}/users/update/${selectedRowId}`
         : `${process.env.NEXT_PUBLIC_BASE_URL}/register`;
 
       const method = isUpdate ? "PUT" : "POST";
@@ -261,15 +262,15 @@ export default function Users() {
 
       setRowData((prevData) =>
         prevData.map((row) =>
-          row["Master ID"] === data["Master ID"] ? { ...row, ...data } : row
+          row["User Id"] === data["User Id"] ? { ...row, ...data } : row
         )
       );
-
-      // Update selected row data
-      // setSelectedRow(data as RowDataType);
     } catch (error) {
       console.error("Error saving user data:", error);
       throw error;
+    } finally {
+      setIsSheetOpen(false);
+      fetchUserData({}, currentPage, pageSize);
     }
   };
 
@@ -288,7 +289,7 @@ export default function Users() {
       <div className="w-full h-full flex flex-col lg:flex-row gap-4 overflow-hidden">
         <div className="flex-1 h-full overflow-hidden min-w-0">
           <DataTable
-            selectionValue="User"
+            selectionValue="User Id"
             loading={loading}
             deleting={deleting}
             data={rowData}

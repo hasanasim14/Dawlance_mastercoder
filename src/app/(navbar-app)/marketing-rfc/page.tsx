@@ -5,6 +5,7 @@ import type { RowDataType, ColumnConfig, PermissionConfig } from "@/lib/types";
 import { transformArrayFromApiFormat } from "@/lib/data-transformers";
 import { RFCTable } from "@/components/rfc-table/DataTable";
 import { toast } from "sonner";
+import { startServerAPI } from "@/lib/utils";
 
 export default function MarketingRFC() {
   const [originalRowData, setOriginalRowData] = useState<RowDataType[]>([]);
@@ -26,6 +27,10 @@ export default function MarketingRFC() {
   const [currentBranch, setCurrentBranch] = useState<string>("");
   const [currentMonth, setCurrentMonth] = useState<string>("");
   const [currentYear, setCurrentYear] = useState<string>("");
+
+  useEffect(() => {
+    startServerAPI();
+  }, []);
 
   const filterableColumns = ["Product"];
 

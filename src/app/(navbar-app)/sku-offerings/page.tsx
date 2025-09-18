@@ -13,7 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { getNextMonthAndYear } from "@/lib/utils";
+import { getNextMonthAndYear, startServerAPI } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -68,7 +68,12 @@ export default function SKUOfferings() {
     total_pages: 0,
   });
   const [pageSize, setPageSize] = useState(50);
+
   const [currentPage, setCurrentPage] = useState(1);
+
+  useEffect(() => {
+    startServerAPI();
+  }, []);
 
   const isBusy =
     uploadStatus.status === "uploading" || uploadStatus.status === "processing";

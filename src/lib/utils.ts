@@ -74,3 +74,11 @@ export const getFullMonthName = (monthNumber: string) => {
   const index = parseInt(monthNumber, 10) - 1;
   return monthNames[index] || monthNumber;
 };
+
+export const startServerAPI = async () => {
+  try {
+    await fetch("http://10.92.0.77:3295");
+  } catch (err) {
+    console.error("API call failed:", err);
+  }
+};

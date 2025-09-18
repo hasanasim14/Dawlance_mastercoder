@@ -13,7 +13,6 @@ interface DataTableHeaderProps {
 }
 
 export function DataTableHeader({
-  parent,
   columns,
   isAllSelected,
   isIndeterminate,
@@ -27,7 +26,6 @@ export function DataTableHeader({
           style={{ position: "sticky", left: 0 }}
         >
           <Checkbox
-            disabled={parent === "User"}
             checked={isAllSelected}
             onCheckedChange={onSelectAll}
             aria-label="Select all rows"

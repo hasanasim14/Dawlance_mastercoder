@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { rolePages } from "@/lib/rolePages";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft } from "lucide-react";
+import { startServerAPI } from "@/lib/utils";
 
 const UnauthorizedPage = () => {
   const router = useRouter();
@@ -13,6 +14,11 @@ const UnauthorizedPage = () => {
   );
 
   useEffect(() => {
+    startServerAPI();
+  }, []);
+
+  useEffect(() => {
+    localStorage.clear();
     const role = localStorage.getItem("user_role");
     if (role && role in rolePages) {
       const firstPage = rolePages[role as keyof typeof rolePages]?.[0];
@@ -30,14 +36,14 @@ const UnauthorizedPage = () => {
           Unauthorized Access
         </h2>
         <p className="text-gray-600 mb-6">
-          You do not have permission to view this page.
+          You have been logged out. Please sign in again to continue.
         </p>
         <Button
           onClick={() => {
             if (firstAccessiblePage) {
               router.push(firstAccessiblePage);
             } else {
-              router.push("/");
+              router.push("/login");
             }
           }}
         >

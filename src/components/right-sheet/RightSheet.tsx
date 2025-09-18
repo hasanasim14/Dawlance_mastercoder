@@ -283,8 +283,6 @@ export function RightSheet({
     loadBranchOptions();
   }, [formData.role, effectiveFields]);
 
-  console.log("the role", formData?.role);
-
   // Load product options when role changes to "Product Manager"
   useEffect(() => {
     const loadProductOptions = async () => {

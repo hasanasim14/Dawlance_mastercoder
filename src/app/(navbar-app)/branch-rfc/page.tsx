@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect } from "react";
 import type { RowDataType, ColumnConfig, PermissionConfig } from "@/lib/types";
 import { transformArrayFromApiFormat } from "@/lib/data-transformers";
 import { RFCTable } from "@/components/rfc-table/DataTable";
+import { startServerAPI } from "@/lib/utils";
 
 export default function BranchRFC() {
   // Original data from API (unfiltered)
@@ -32,6 +33,10 @@ export default function BranchRFC() {
   const [currentBranch, setCurrentBranch] = useState<string>("");
   const [currentMonth, setCurrentMonth] = useState<string>("");
   const [currentYear, setCurrentYear] = useState<string>("");
+
+  useEffect(() => {
+    startServerAPI();
+  }, []);
 
   // which columns to have the filter on
   const filterableColumns = ["Product"];

@@ -63,7 +63,6 @@ export function DataTableBody({
               className="sticky left-0 bg-background z-30 w-12"
             >
               <Checkbox
-                disabled={parent === "User"}
                 checked={isSelected}
                 onCheckedChange={(checked) =>
                   onRowSelect(row, checked as boolean)

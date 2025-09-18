@@ -17,6 +17,7 @@ export type RowDataType = {
   "Sales Office": string;
   "Branch Manager": string;
   // Users
+  user_id: number;
   User: string;
   Name: string;
   Email: string;

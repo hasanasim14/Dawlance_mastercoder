@@ -14,7 +14,7 @@ import {
 } from "@/lib/data-transformers";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { DataTable } from "@/components/data-table/DataTable";
-import { cn } from "@/lib/utils";
+import { cn, startServerAPI } from "@/lib/utils";
 import { RightSheet } from "@/components/right-sheet/RightSheet";
 import SearchComponent from "@/components/SearchComponent";
 import { toast } from "sonner";
@@ -42,6 +42,10 @@ export default function MasterCoding() {
   });
   const [pageSize, setPageSize] = useState(50);
   const [currentPage, setCurrentPage] = useState(1);
+
+  useEffect(() => {
+    startServerAPI();
+  }, []);
 
   // Define field configuration for the RightSheet
   const fieldConfig: FieldConfig[] = [
