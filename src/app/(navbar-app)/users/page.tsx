@@ -26,8 +26,6 @@ export default function Users() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
 
-  console.log("the row data", rowData);
-
   // Pagination states
   const [pagination, setPagination] = useState<PaginationData>({
     total_records: 0,
@@ -229,7 +227,6 @@ export default function Users() {
       setSelectedRowId(null);
     } else {
       // Select new row
-      console.log("the clicked row", clickedRowId);
       setSelectedRowId(clickedRowId);
     }
   };

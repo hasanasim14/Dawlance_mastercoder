@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   Popover,
   PopoverContent,
@@ -41,7 +41,18 @@ export default function DateFilter({
   const [year, setYear] = useState(Number(selectedYear) || currentYear);
   const [open, setOpen] = useState(false);
 
-  const normalizedMonth = selectedMonth ? Number(selectedMonth) - 1 : undefined;
+  // 🔄 Sync internal year state when parent selectedYear changes
+  useEffect(() => {
+    if (selectedYear) {
+      setYear(Number(selectedYear));
+    }
+  }, [selectedYear]);
+
+  // Memoized normalized month index
+  const normalizedMonth = useMemo(
+    () => (selectedMonth ? Number(selectedMonth) - 1 : undefined),
+    [selectedMonth]
+  );
 
   const handleSelect = (monthIndex: number) => {
     const formattedMonth = (monthIndex + 1).toString().padStart(2, "0");
@@ -49,6 +60,8 @@ export default function DateFilter({
     setSelectedYear(year.toString());
     setOpen(false);
   };
+
+  const currentMonth = new Date().getMonth();
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -60,10 +73,12 @@ export default function DateFilter({
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[215px]">
+        {/* Year navigation */}
         <div className="flex items-center justify-between mb-3">
           <Button
             size="sm"
             variant="ghost"
+            aria-label="Previous Year"
             onClick={() => setYear((y) => y - 1)}
           >
             <ChevronLeft />
@@ -72,6 +87,7 @@ export default function DateFilter({
           <Button
             size="sm"
             variant="ghost"
+            aria-label="Next Year"
             onClick={() => setYear((y) => y + 1)}
           >
             <ChevronRight />
@@ -84,6 +100,11 @@ export default function DateFilter({
             <Button
               key={m}
               size="sm"
+              className={
+                currentMonth === i && year === currentYear
+                  ? "ring-2 ring-blue-500"
+                  : ""
+              }
               variant={
                 normalizedMonth === i && Number(selectedYear) === year
                   ? "default"

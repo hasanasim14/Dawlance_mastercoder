@@ -8,29 +8,24 @@ export function cn(...inputs: ClassValue[]) {
 // Function to get the current month and year
 export const getNextMonthAndYear = (type: string) => {
   const now = new Date();
-  const currentMonth = now.getMonth();
-  const currentYear = now.getFullYear();
+  let baseMonth = now.getMonth();
+  const baseYear = now.getFullYear();
 
-  let nextMonth;
-  if (type === "RFC" || type === "offering") {
-    nextMonth = currentMonth + 4;
-  } else if (type === "uploads") {
-    nextMonth = currentMonth - 1;
-  } else {
-    nextMonth = currentMonth + 1;
+  // If today is the 15th or later, consider the "current" month as next month
+  if (now.getDate() >= 15) {
+    baseMonth += 1;
   }
 
-  let nextYear = currentYear;
+  let offset = 1; // default
+  if (type === "RFC" || type === "offering") offset = 4;
+  else if (type === "uploads") offset = -1;
 
-  if (nextMonth > 11) {
-    nextMonth = 0;
-    nextYear = currentYear + 1;
-  }
+  const next = new Date(baseYear, baseMonth + offset, 1);
 
-  const monthString = String(nextMonth + 1).padStart(2, "0");
-  const yearString = String(nextYear);
-
-  return { month: monthString, year: yearString };
+  return {
+    month: String(next.getMonth() + 1).padStart(2, "0"),
+    year: String(next.getFullYear()),
+  };
 };
 
 // months for select dropdown

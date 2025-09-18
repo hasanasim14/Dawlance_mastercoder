@@ -3,7 +3,14 @@
 import type React from "react";
 import type { PaginationData, PermissionConfig } from "@/lib/types";
 import { useState, useRef, useEffect } from "react";
-import { Upload, Clock, ChevronLeft, ChevronRight, X } from "lucide-react";
+import {
+  Upload,
+  Clock,
+  ChevronLeft,
+  ChevronRight,
+  X,
+  Download,
+} from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -29,9 +36,13 @@ import SKUValidations from "@/components/sku-offerings/Validations";
 import TimeFrames from "@/components/TimeFrames";
 
 interface UploadedData {
-  Material: string;
-  "Material Description": string;
-  Product: string;
+  "Exc Status": string;
+  Category: string;
+  Categorization: string;
+  "Current Item Codes": string;
+  description: string;
+  Remarks: string;
+  Text: string;
 }
 
 interface FileUploadStatus {
@@ -347,6 +358,44 @@ export default function SKUOfferings() {
     (product) => !selectedProducts.includes(product)
   );
 
+  const handleDownload = async () => {
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/download_file`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ filename: "Offerings_Template.xlsx" }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch: ${response.statusText}`);
+      }
+
+      // Convert response to Blob (Excel file)
+      const blob = await response.blob();
+
+      // Create temporary URL for the blob
+      const downloadUrl = window.URL.createObjectURL(blob);
+
+      // Create and click a hidden link to trigger download
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+      link.download = "Offering-Template.xlsx"; // Suggested file name
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      // Revoke the object URL to free memory
+      window.URL.revokeObjectURL(downloadUrl);
+    } catch (error) {
+      console.error("Error fetching the data:", error);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -402,6 +451,22 @@ export default function SKUOfferings() {
                   selectedYear={selectedYear}
                   setSelectedYear={setSelectedYear}
                 />
+
+                <Button onClick={handleDownload} variant="outline">
+                  <Download className="mr-2" /> Download Template
+                </Button>
+
+                <p className="text-sm leading-relaxed text-gray-700">
+                  <span className="font-semibold text-gray-900">
+                    Guidelines:
+                  </span>{" "}
+                  Remarks can only be one of the following:
+                </p>
+                <ul className="mt-1 ml-5 list-disc text-sm text-gray-700">
+                  <li>New launch</li>
+                  <li>Discontinued</li>
+                  <li>Change in Description</li>
+                </ul>
               </div>
 
               {/* Selected Products Display */}
@@ -542,19 +607,34 @@ export default function SKUOfferings() {
               <Table>
                 <TableHeader className="bg-muted/50">
                   <TableRow>
-                    <TableHead>Material</TableHead>
-                    <TableHead>Material Description</TableHead>
-                    <TableHead>Product</TableHead>
+                    <TableHead>Exc Status</TableHead>
+                    <TableHead>Category</TableHead>
+                    <TableHead>Categorization</TableHead>
+                    <TableHead>Current Item Codes</TableHead>
+                    <TableHead>Description</TableHead>
+                    <TableHead>Remarks</TableHead>
+                    <TableHead>Text</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {uploadedData.map((record) => (
-                    <TableRow key={record.Material + record.Product}>
-                      <TableCell className="font-medium">
-                        {record.Material}
+                    <TableRow key={record["Exc Status"]}>
+                      <TableCell>
+                        {record["Exc Status"]?.trim() || "-"}
                       </TableCell>
-                      <TableCell>{record["Material Description"]}</TableCell>
-                      <TableCell>{record.Product}</TableCell>
+                      <TableCell className="font-medium">
+                        {record.Category?.trim() || "-"}
+                      </TableCell>
+                      <TableCell>
+                        {record.Categorization?.trim() || "-"}
+                      </TableCell>
+
+                      <TableCell>
+                        {record["Current Item Codes"]?.trim() || "-"}
+                      </TableCell>
+                      <TableCell>{record.description?.trim() || "-"}</TableCell>
+                      <TableCell>{record.Remarks?.trim() || "-"}</TableCell>
+                      <TableCell>{record.Text?.trim() || "-"}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

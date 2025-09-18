@@ -59,11 +59,6 @@ export default function Prices() {
         queryParams.append("product", filters.Product.join(","));
       }
 
-      const endpoint = `${
-        process.env.NEXT_PUBLIC_BASE_URL
-      }/prices?${queryParams.toString()}`;
-      console.log("endoin", endpoint);
-
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_BASE_URL}/prices?${queryParams.toString()}`,
         {

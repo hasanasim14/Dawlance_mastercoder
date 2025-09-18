@@ -156,8 +156,6 @@ export function extractFields(
   selectedRows: Record<string, any>[],
   fieldName: string
 ) {
-  console.log("the selected rows", selectedRows);
-  console.log("the field name", fieldName);
   return selectedRows
     .map((row) => row[fieldName])
     .filter((id) => id !== undefined && id !== null);
